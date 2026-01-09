@@ -46,6 +46,7 @@ export default function Leads() {
 
     // Sincronização de grupo
     const [syncing, setSyncing] = useState(false);
+    const [initialSyncing, setInitialSyncing] = useState(true); // Novo estado para sync inicial
 
     // Exportação
     const [showExportMenu, setShowExportMenu] = useState(false);
@@ -398,21 +399,38 @@ export default function Leads() {
         }
     };
 
-    // Carregamento inicial
+    // Carregamento inicial - SINCRONIZAR ANTES DE CARREGAR LEADS
     useEffect(() => {
-        api.getStatuses().then(d => setStatuses(d.statuses));
-        api.getWhatsAppTemplates().then(d => setWhatsappTemplates(d.templates || [])).catch(() => { });
-        // Vendedoras e admin carregam campanhas e subcampanhas
-        api.getCampaigns({ active_only: true }).then(d => setCampaigns(d.campaigns));
-        api.getSubcampaigns({ active_only: true }).then(d => setSubcampaigns(d.subcampaigns || [])).catch(() => { });
-        if (isAdmin) {
-            api.getSellers().then(d => setSellers(d.sellers || []));
-        }
-        loadLeads();
+        const initializePage = async () => {
+            try {
+                setInitialSyncing(true);
 
-        // Sincronizar status de grupo automaticamente (silencioso)
-        syncGroupStatus();
-    }, [loadLeads, isAdmin]);
+                // Carregar dados básicos
+                api.getStatuses().then(d => setStatuses(d.statuses));
+                api.getWhatsAppTemplates().then(d => setWhatsappTemplates(d.templates || [])).catch(() => { });
+                api.getCampaigns({ active_only: true }).then(d => setCampaigns(d.campaigns));
+                api.getSubcampaigns({ active_only: true }).then(d => setSubcampaigns(d.subcampaigns || [])).catch(() => { });
+
+                if (isAdmin) {
+                    api.getSellers().then(d => setSellers(d.sellers || []));
+                }
+
+                // IMPORTANTE: Sincronizar grupos ANTES de carregar leads
+                console.log('🔄 Sincronizando status de grupos antes de carregar leads...');
+                await syncGroupStatus(false); // Silencioso
+
+                // Agora sim, carregar leads com status correto
+                await loadLeads();
+
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+            } finally {
+                setInitialSyncing(false);
+            }
+        };
+
+        initializePage();
+    }, [isAdmin]); // Apenas quando isAdmin muda (mount)
 
     // Recarregar quando filtros ou página mudam (SEM DEBOUNCE - filtro instantâneo)
     useEffect(() => {
@@ -592,6 +610,18 @@ export default function Leads() {
             <div className="page-header">
                 <h1 className="page-title">Leads</h1>
             </div>
+
+            {/* Loading durante sincronização inicial */}
+            {initialSyncing && (
+                <div className="card" style={{ marginBottom: 16, padding: '20px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                        <RefreshCw size={20} className="spinning" style={{ color: 'var(--primary)' }} />
+                        <span style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>
+                            Sincronizando status de grupos... Aguarde
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Filtros */}
             <div className="card" style={{ marginBottom: 16 }}>

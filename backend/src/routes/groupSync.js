@@ -9,6 +9,13 @@ import { getActiveConnection } from '../services/whatsappService.js';
 
 const router = express.Router();
 
+// Cache de participantes de grupos (TTL de 5 minutos)
+const groupParticipantsCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos em milissegundos
+
+// Timestamp da última sincronização por campanha
+const lastSyncTimestamps = new Map();
+
 /**
  * Normaliza telefone para comparação
  * Mantém o DDI completo para comparação precisa
@@ -124,14 +131,26 @@ router.post('/sync-group-status', async (req, res) => {
 
             const groupParticipants = new Set();
 
-            // Buscar participantes dos grupos desta campanha
+            // Buscar participantes dos grupos desta campanha (com cache)
             await Promise.all(groups.map(async (group) => {
                 try {
+                    const cacheKey = `${group.connection_id}_${group.group_id}`;
+                    const cached = groupParticipantsCache.get(cacheKey);
+
+                    // Usar cache se disponível e não expirado
+                    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+                        console.log(`   📦 Usando cache para grupo ${group.group_name}`);
+                        cached.participants.forEach(p => groupParticipants.add(p));
+                        return;
+                    }
+
+                    // Buscar do WhatsApp se não tem cache
                     const sock = getActiveConnection(group.connection_id);
                     if (!sock) return;
 
                     const metadata = await sock.groupMetadata(group.group_id);
                     const participants = metadata.participants || [];
+                    const normalizedParticipants = new Set();
 
                     participants.forEach(p => {
                         let phone = null;
@@ -140,9 +159,20 @@ router.post('/sync-group-status', async (req, res) => {
 
                         if (phone) {
                             const normalized = normalizeForComparison(phone);
-                            if (normalized) groupParticipants.add(normalized);
+                            if (normalized) {
+                                groupParticipants.add(normalized);
+                                normalizedParticipants.add(normalized);
+                            }
                         }
                     });
+
+                    // Salvar no cache
+                    groupParticipantsCache.set(cacheKey, {
+                        participants: normalizedParticipants,
+                        timestamp: Date.now()
+                    });
+
+                    console.log(`   ✅ Cache atualizado para grupo ${group.group_name} (${normalizedParticipants.size} participantes)`);
                 } catch (e) {
                     console.error(`❌ Erro grupo ${group.group_name}: ${e.message}`);
                 }
@@ -272,6 +302,9 @@ router.post('/sync-group-status', async (req, res) => {
             totalNotInGroup += campaignNotInGroup;
 
             console.log(`   📊 Campanha ${campaignId}: ${campaignInGroup} no grupo | ${campaignNotInGroup} fora do grupo`);
+
+            // Atualizar timestamp da última sincronização desta campanha
+            lastSyncTimestamps.set(campaignId, Date.now());
         }
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -303,6 +336,34 @@ router.post('/sync-group-status', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Erro na sincronização rápida:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Verificar quando foi a última sincronização
+ * GET /api/group-sync/last-sync
+ */
+router.get('/last-sync', async (req, res) => {
+    try {
+        const syncInfo = {};
+
+        for (const [campaignId, timestamp] of lastSyncTimestamps.entries()) {
+            const ageMinutes = Math.floor((Date.now() - timestamp) / 60000);
+            syncInfo[campaignId] = {
+                timestamp,
+                ageMinutes,
+                needsSync: ageMinutes >= 5 // Precisa sincronizar se passou mais de 5 minutos
+            };
+        }
+
+        res.json({
+            lastSync: syncInfo,
+            cacheSize: groupParticipantsCache.size,
+            cacheTTL: CACHE_TTL / 60000 // em minutos
+        });
+    } catch (error) {
+        console.error('❌ Erro ao verificar última sincronização:', error);
         res.status(500).json({ error: error.message });
     }
 });
