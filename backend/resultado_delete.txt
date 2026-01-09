@@ -1,0 +1,7 @@
+﻿
+ÔÜá´©Å DELETANDO TODOS OS LEADS DO BANCO DE DADOS
+
+======================================================================
+­ƒôè Total de leads no banco: 0
+
+Ô£à N├úo h├í leads para deletar!

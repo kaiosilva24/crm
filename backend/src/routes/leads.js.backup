@@ -1,0 +1,529 @@
+/**
+ * Leads Routes - Supabase Version
+ */
+
+import { Router } from 'express';
+import { db } from '../database/supabase.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+
+const router = Router();
+
+router.use(authenticate);
+
+/**
+ * GET /api/leads
+ */
+router.get('/', async (req, res) => {
+    try {
+        const { status, search, search_observation, campaign_id, subcampaign_id, in_group, show_inactive, seller_id, page = 1, limit = 50 } = req.query;
+
+        // Lógica de filtro de vendedor:
+        // - Admin: vê todos, pode filtrar por seller_id
+        // - Vendedora: vê só seus leads por padrão
+        // - Vendedora com pesquisa: vê todos (pesquisa geral)
+        let effectiveSellerId = null;
+
+        if (req.user.role === 'seller') {
+            // Se está pesquisando, mostra todos os leads (pesquisa geral)
+            // Caso contrário, mostra apenas os leads da vendedora
+            if (!search && !search_observation) {
+                effectiveSellerId = req.user.id;
+            }
+            // Se pesquisar, effectiveSellerId fica null = mostra todos
+        } else if (seller_id) {
+            // Admin pode filtrar por vendedor
+            effectiveSellerId = parseInt(seller_id);
+        }
+
+        const filters = {
+            status,
+            search,
+            search_observation,
+            campaign_id,
+            subcampaign_id,
+            in_group,
+            show_inactive: show_inactive === 'true',
+            seller_id: effectiveSellerId,
+            page: parseInt(page),
+            limit: parseInt(limit)
+        };
+
+        const { leads, total } = await db.getLeads(filters);
+
+        res.json({
+            leads,
+            pagination: {
+                page: filters.page,
+                limit: filters.limit,
+                total,
+                pages: Math.ceil(total / filters.limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching leads:', error);
+        res.status(500).json({ error: 'Erro ao buscar leads' });
+    }
+});
+
+/**
+ * GET /api/leads/all-uuids
+ */
+router.get('/all-uuids', authorize('admin'), async (req, res) => {
+    try {
+        const { status, search, campaign_id, in_group, show_inactive } = req.query;
+        const uuids = await db.getAllLeadUuids({ status, search, campaign_id, in_group, show_inactive });
+        res.json({ uuids, total: uuids.length });
+    } catch (error) {
+        console.error('Error fetching all uuids:', error);
+        res.status(500).json({ error: 'Erro ao buscar UUIDs' });
+    }
+});
+
+/**
+ * GET /api/leads/statuses
+ */
+router.get('/statuses', async (req, res) => {
+    try {
+        const statuses = await db.getStatuses();
+        res.json({ statuses });
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+        res.status(500).json({ error: 'Erro ao buscar status' });
+    }
+});
+
+/**
+ * GET /api/leads/:uuid
+ */
+router.get('/:uuid', async (req, res) => {
+    try {
+        const lead = await db.getLeadByUuid(req.params.uuid);
+
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão para ver este lead' });
+        }
+
+        res.json({ lead });
+    } catch (error) {
+        console.error('Error fetching lead:', error);
+        res.status(500).json({ error: 'Erro ao buscar lead' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/status
+ */
+router.patch('/:uuid/status', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { status_id } = req.body;
+
+        // status_id pode ser null para limpar o status
+
+        const lead = await db.getLeadByUuid(uuid);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão para atualizar este lead' });
+        }
+
+        await db.updateLead(uuid, { status_id: status_id || null });
+        res.json({ message: 'Status atualizado com sucesso' });
+    } catch (error) {
+        console.error('Error updating lead status:', error);
+        res.status(500).json({ error: 'Erro ao atualizar status' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/observation
+ */
+router.patch('/:uuid/observation', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { observation } = req.body;
+
+        if (!observation || !observation.trim()) {
+            return res.status(400).json({ error: 'Observação é obrigatória' });
+        }
+
+        const lead = await db.getLeadByUuid(uuid);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão para atualizar este lead' });
+        }
+
+        const timestamp = new Date().toLocaleString('pt-BR');
+        const newObservation = `[${timestamp} - ${req.user.name}]: ${observation.trim()}`;
+        const updatedObservations = lead.observations
+            ? `${lead.observations}\n\n${newObservation}`
+            : newObservation;
+
+        await db.updateLead(uuid, { observations: updatedObservations });
+        res.json({ message: 'Observação adicionada com sucesso', observations: updatedObservations });
+    } catch (error) {
+        console.error('Error adding observation:', error);
+        res.status(500).json({ error: 'Erro ao adicionar observação' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/reassign (Admin only)
+ */
+router.patch('/:uuid/reassign', authorize('admin'), async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { seller_id } = req.body;
+
+        if (seller_id) {
+            const seller = await db.getUserById(seller_id);
+            if (!seller || seller.role !== 'seller' || !seller.is_active) {
+                return res.status(400).json({ error: 'Vendedora não encontrada ou inativa' });
+            }
+        }
+
+        await db.updateLead(uuid, { seller_id: seller_id || null });
+        res.json({ message: 'Lead reatribuído com sucesso' });
+    } catch (error) {
+        console.error('Error reassigning lead:', error);
+        res.status(500).json({ error: 'Erro ao reatribuir lead' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/in-group
+ */
+router.patch('/:uuid/in-group', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { in_group } = req.body;
+
+        if (typeof in_group !== 'boolean') {
+            return res.status(400).json({ error: 'in_group deve ser boolean' });
+        }
+
+        const lead = await db.getLeadByUuid(uuid);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão' });
+        }
+
+        await db.updateLead(uuid, { in_group });
+        res.json({ message: 'Marcação atualizada' });
+    } catch (error) {
+        console.error('Error updating in_group:', error);
+        res.status(500).json({ error: 'Erro ao atualizar' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/checking
+ */
+router.patch('/:uuid/checking', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { checking } = req.body;
+
+        if (typeof checking !== 'boolean') {
+            return res.status(400).json({ error: 'checking deve ser boolean' });
+        }
+
+        const lead = await db.getLeadByUuid(uuid);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão' });
+        }
+
+        await db.updateLead(uuid, { checking });
+        res.json({ message: 'Checking atualizado' });
+    } catch (error) {
+        console.error('Error updating checking:', error);
+        res.status(500).json({ error: 'Erro ao atualizar' });
+    }
+});
+
+/**
+ * PATCH /api/leads/:uuid/sale-completed
+ */
+router.patch('/:uuid/sale-completed', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const { sale_completed } = req.body;
+
+        if (typeof sale_completed !== 'boolean') {
+            return res.status(400).json({ error: 'sale_completed deve ser boolean' });
+        }
+
+        const lead = await db.getLeadByUuid(uuid);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
+            return res.status(403).json({ error: 'Sem permissão' });
+        }
+
+        await db.updateLead(uuid, { sale_completed });
+        res.json({ message: 'Venda atualizada' });
+    } catch (error) {
+        console.error('Error updating sale_completed:', error);
+        res.status(500).json({ error: 'Erro ao atualizar' });
+    }
+});
+
+/**
+ * PATCH /api/leads/bulk/in-group (Admin only)
+ */
+router.patch('/bulk/in-group', authorize('admin'), async (req, res) => {
+    try {
+        const { lead_uuids, in_group } = req.body;
+
+        if (!Array.isArray(lead_uuids) || lead_uuids.length === 0) {
+            return res.status(400).json({ error: 'lead_uuids deve ser um array' });
+        }
+
+        for (const uuid of lead_uuids) {
+            await db.updateLead(uuid, { in_group: in_group ? true : false });
+        }
+
+        res.json({ message: `${lead_uuids.length} leads atualizados` });
+    } catch (error) {
+        console.error('Error bulk updating:', error);
+        res.status(500).json({ error: 'Erro ao atualizar' });
+    }
+});
+
+/**
+ * DELETE /api/leads/bulk (Admin only)
+ */
+router.delete('/bulk', authorize('admin'), async (req, res) => {
+    try {
+        const { lead_uuids } = req.body;
+
+        if (!Array.isArray(lead_uuids) || lead_uuids.length === 0) {
+            return res.status(400).json({ error: 'lead_uuids deve ser um array' });
+        }
+
+        for (const uuid of lead_uuids) {
+            await db.deleteLead(uuid);
+        }
+
+        res.json({ message: `${lead_uuids.length} leads deletados`, deleted: lead_uuids.length });
+    } catch (error) {
+        console.error('Error bulk deleting:', error);
+        res.status(500).json({ error: 'Erro ao deletar' });
+    }
+});
+
+/**
+ * DELETE /api/leads/:uuid (Admin only)
+ */
+router.delete('/:uuid', authorize('admin'), async (req, res) => {
+    try {
+        const result = await db.deleteLead(req.params.uuid);
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+        res.json({ message: 'Lead deletado' });
+    } catch (error) {
+        console.error('Error deleting lead:', error);
+        res.status(500).json({ error: 'Erro ao deletar lead' });
+    }
+});
+
+/**
+ * POST /api/leads/sync-with-groups
+ * Sincroniza leads com contatos dos grupos WhatsApp
+ */
+router.post('/sync-with-groups', async (req, res) => {
+    try {
+        console.log('\n' + '='.repeat(70));
+        console.log('🔄 SINCRONIZAÇÃO DE LEADS COM GRUPOS');
+        console.log('='.repeat(70));
+
+        // Importar dependências necessárias
+        const { supabase } = await import('../database/supabase.js');
+        const { getActiveConnection } = await import('../services/whatsappService.js');
+
+        // 1. Buscar apenas grupos que estão em campanhas
+        const { data: campaignGroups, error: cgError } = await supabase
+            .from('campaign_groups')
+            .select('whatsapp_group_id');
+
+        if (cgError) throw cgError;
+
+        if (!campaignGroups || campaignGroups.length === 0) {
+            return res.json({
+                success: true,
+                totalGroupContacts: 0,
+                totalLeads: 0,
+                leadsInGroup: 0,
+                leadsNotInGroup: 0,
+                message: 'Nenhum grupo associado a campanhas'
+            });
+        }
+
+        const groupIds = [...new Set(campaignGroups.map(cg => cg.whatsapp_group_id))];
+
+        const { data: groups, error: groupsError } = await supabase
+            .from('whatsapp_groups')
+            .select('id, group_id, group_name, connection_id')
+            .in('id', groupIds);
+
+        if (groupsError) throw groupsError;
+
+        console.log(`📊 Total de grupos em campanhas: ${groups.length}`);
+
+        // 2. Buscar participantes de cada grupo
+        const allContacts = [];
+        const seenPhones = new Set();
+
+
+        for (const group of groups) {
+            try {
+                const sock = getActiveConnection(group.connection_id);
+                if (!sock) {
+                    console.log(`⚠️ Conexão não ativa para grupo ${group.group_name}`);
+                    continue;
+                }
+
+                const groupMetadata = await sock.groupMetadata(group.group_id);
+                const participants = groupMetadata.participants || [];
+
+                console.log(`📱 Grupo "${group.group_name}": ${participants.length} participantes`);
+
+                for (const participant of participants) {
+                    let phone = null;
+                    let name = null;
+
+                    if (!participant.id.includes('@lid')) {
+                        phone = participant.id.split('@')[0];
+                    } else if (participant.phoneNumber) {
+                        phone = participant.phoneNumber;
+                    }
+
+                    name = participant.notify || participant.verifiedName || phone;
+
+                    if (phone) {
+                        const formatted = formatForExport(phone);
+                        if (formatted && !seenPhones.has(formatted)) {
+                            seenPhones.add(formatted);
+                            allContacts.push({
+                                phone,
+                                formatted_phone: formatted,
+                                name,
+                                group_name: group.group_name
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Erro ao processar grupo ${group.group_name}:`, error.message);
+            }
+        }
+
+        console.log(`✅ Total de contatos únicos: ${allContacts.length}`);
+
+        // 3. Substituir cache
+        console.log('🗑️ Limpando cache antigo...');
+        const { error: deleteError } = await supabase.from('group_contacts_cache').delete().neq('id', 0);
+        if (deleteError) {
+            console.error('❌ Erro ao limpar cache:', deleteError);
+            throw deleteError;
+        }
+
+        console.log('💾 Salvando novos contatos...');
+        if (allContacts.length > 0) {
+            const { error: insertError } = await supabase.from('group_contacts_cache').upsert(allContacts, { onConflict: 'formatted_phone' });
+            if (insertError) {
+                console.error('❌ Erro ao inserir no cache:', insertError);
+                throw insertError;
+            }
+        }
+
+        console.log(`✅ ${allContacts.length} contatos salvos no cache`);
+
+        // 4. Cruzar com leads
+        console.log('🔄 Cruzando com leads...');
+        const { data: leads, error: leadsError } = await supabase.from('leads').select('id, phone');
+        if (leadsError) throw leadsError;
+
+        console.log(`📊 Total de leads: ${leads.length}`);
+        let leadsInGroup = 0;
+        let leadsNotInGroup = 0;
+
+        for (const lead of leads) {
+            const formattedLeadPhone = formatForExport(lead.phone);
+            const { data: match } = await supabase
+                .from('group_contacts_cache')
+                .select('id')
+                .eq('formatted_phone', formattedLeadPhone)
+                .maybeSingle();
+
+            const isInGroup = !!match;
+            await supabase.from('leads').update({ in_group: isInGroup }).eq('id', lead.id);
+
+            if (isInGroup) leadsInGroup++;
+            else leadsNotInGroup++;
+        }
+
+        console.log('✅ SINCRONIZAÇÃO CONCLUÍDA!');
+        console.log(`📊 Contatos nos grupos: ${allContacts.length}`);
+        console.log(`✅ Leads no grupo: ${leadsInGroup}`);
+        console.log(`⚠️ Leads fora do grupo: ${leadsNotInGroup}`);
+
+        res.json({
+            success: true,
+            totalGroupContacts: allContacts.length,
+            totalLeads: leads.length,
+            leadsInGroup,
+            leadsNotInGroup
+        });
+    } catch (error) {
+        console.error('❌ ERRO DETALHADO:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            details: error.details
+        });
+        res.status(500).json({
+            error: error.message,
+            details: error.details || 'Verifique os logs do servidor'
+        });
+    }
+});
+
+/**
+ * Formata número para exportação (adiciona DDI 55, remove espaços)
+ */
+function formatForExport(phone) {
+    if (!phone) return null;
+    let cleaned = phone.replace(/\D/g, '');
+
+    if (cleaned.startsWith('55') && cleaned.length >= 12 && cleaned.length <= 13) {
+        return cleaned;
+    }
+
+    if (cleaned.length >= 10 && cleaned.length <= 11 && !cleaned.startsWith('55')) {
+        return '55' + cleaned;
+    }
+
+    return cleaned;
+}
+
+export default router;

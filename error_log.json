@@ -1,0 +1,6 @@
+{
+  "code": "23502",
+  "details": "Failing row contains (25376, e3385521-c090-4e19-96d6-be1301705702, 5511999999999, null, 5511999999999, Produto Desconhecido, null, null, 1, 1, null, test, t, t, null, 2026-01-04 05:31:44.48+00, 2026-01-04 05:31:44.824537+00, f, f, null, null, null).",
+  "hint": null,
+  "message": "null value in column \"email\" of relation \"leads\" violates not-null constraint"
+}

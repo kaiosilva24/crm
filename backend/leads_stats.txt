@@ -1,0 +1,27 @@
+﻿­ƒöì Verificando leads no banco de dados...
+
+­ƒôè Total de leads no banco: 564
+
+­ƒôï Leads por origem:
+   whapi_import: 564
+
+Ô£à Leads importados do Whapi: 564
+
+­ƒôï Leads por campanha:
+   JAN 10 e 11: 564
+
+Ô£à Nenhum telefone duplicado!
+
+­ƒåò Leads criados nas ├║ltimas 24h: 564
+
+­ƒôØ ├Ültimos 10 leads importados:
+   1. 5519992376761 - whapi_import - 02/01/2026, 00:58:03
+   2. 5545920006757 - whapi_import - 02/01/2026, 00:58:03
+   3. 553491993490 - whapi_import - 02/01/2026, 00:58:03
+   4. 554497357921 - whapi_import - 02/01/2026, 00:58:03
+   5. 554899840575 - whapi_import - 02/01/2026, 00:58:03
+   6. 554891419672 - whapi_import - 02/01/2026, 00:58:03
+   7. 5521982955854 - whapi_import - 02/01/2026, 00:58:03
+   8. 555181009086 - whapi_import - 02/01/2026, 00:58:03
+   9. 5511986683251 - whapi_import - 02/01/2026, 00:58:02
+   10. 555491447500 - whapi_import - 02/01/2026, 00:58:02

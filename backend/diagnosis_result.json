@@ -1,0 +1,108 @@
+{
+  "leads": {
+    "total": 822,
+    "withPhone": 822,
+    "examples": [
+      {
+        "name": "Silvia Hélena da Sìlvá",
+        "original": "5517996502336",
+        "normalized": "5517996502336",
+        "originalLength": 13
+      },
+      {
+        "name": "Aline Galhardi",
+        "original": "5543999784040",
+        "normalized": "5543999784040",
+        "originalLength": 13
+      },
+      {
+        "name": "Edson de Oliveira",
+        "original": "5565992466507",
+        "normalized": "5565992466507",
+        "originalLength": 13
+      },
+      {
+        "name": "Vitória Régia Wolff",
+        "original": "5547997803888",
+        "normalized": "5547997803888",
+        "originalLength": 13
+      },
+      {
+        "name": "Rosemara dos santos França",
+        "original": "5519992482672",
+        "normalized": "5519992482672",
+        "originalLength": 13
+      },
+      {
+        "name": "José Mario Pereira",
+        "original": "5542999403359",
+        "normalized": "5542999403359",
+        "originalLength": 13
+      },
+      {
+        "name": "Maria Crepaldi",
+        "original": "5519997091416",
+        "normalized": "5519997091416",
+        "originalLength": 13
+      },
+      {
+        "name": "Eunice Izabel da Silva Pablos",
+        "original": "5519992810338",
+        "normalized": "5519992810338",
+        "originalLength": 13
+      },
+      {
+        "name": "Gilmar Sanches da Silva",
+        "original": "5517997057955",
+        "normalized": "5517997057955",
+        "originalLength": 13
+      },
+      {
+        "name": "Maria rivanda",
+        "original": "5511953319427",
+        "normalized": "5511953319427",
+        "originalLength": 13
+      }
+    ]
+  },
+  "groups": {
+    "total": 6,
+    "uniqueNumbers": 0
+  },
+  "comparison": {
+    "matches": 0,
+    "noMatches": 822,
+    "matchRate": "0.00%"
+  },
+  "examples": {
+    "participants": [],
+    "matches": [],
+    "noMatches": [
+      {
+        "name": "Silvia Hélena da Sìlvá",
+        "phone": "5517996502336",
+        "normalized": "5517996502336"
+      },
+      {
+        "name": "Aline Galhardi",
+        "phone": "5543999784040",
+        "normalized": "5543999784040"
+      },
+      {
+        "name": "Edson de Oliveira",
+        "phone": "5565992466507",
+        "normalized": "5565992466507"
+      },
+      {
+        "name": "Vitória Régia Wolff",
+        "phone": "5547997803888",
+        "normalized": "5547997803888"
+      },
+      {
+        "name": "Rosemara dos santos França",
+        "phone": "5519992482672",
+        "normalized": "5519992482672"
+      }
+    ]
+  }
+}

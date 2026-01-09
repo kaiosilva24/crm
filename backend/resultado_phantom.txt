@@ -1,0 +1,17 @@
+﻿
+­ƒöì VERIFICANDO N├ÜMERO FANTASMA NO BANCO DE DADOS
+
+======================================================================
+­ƒôï Procurando por varia├º├Áes:
+   1. 5511981194533
+   2. 11981194533
+   3. 5511981194533
+
+Ô£à N├ÜMERO FANTASMA N├âO ENCONTRADO NO BANCO!
+======================================================================
+
+­ƒÄë CONCLUS├âO: O bloqueio funcionou perfeitamente!
+
+O n├║mero 5511981194533 foi detectado e rejeitado
+pela blacklist antes de ser importado.
+======================================================================

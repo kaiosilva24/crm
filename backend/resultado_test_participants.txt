@@ -1,0 +1,35 @@
+﻿
+­ƒº¬ TESTANDO ENDPOINT DE PARTICIPANTES
+
+======================================================================
+­ƒôï Campanha ID: 4
+
+node : ÔØî Erro ao 
+buscar 
+campaign_groups: {
+No linha:1 
+caractere:1
++ node test_participa
+nts_endpoint.js 2>&1 
+| Out-File -FilePath 
+resultad ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : 
+NotSpecified: (ÔØî E 
+   rro ao buscar 
+campaign_    groups: 
+{:String) [], R    
+emoteException
+    + FullyQualifiedE
+rrorId     : 
+NativeCommandError
+ 
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column ca
+mpaign_groups.group_i
+d does not exist'
+}

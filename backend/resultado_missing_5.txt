@@ -1,0 +1,46 @@
+﻿
+­ƒöì VERIFICANDO N├ÜMEROS QUE FALTAM NO BAILEYS
+
+======================================================================
+­ƒôï N├║meros do Redirect+ que n├úo est├úo no Baileys:
+
+
+­ƒöì Procurando: 5551995441658
+   Tamanho: 13 d├¡gitos
+   Ô£à ENCONTRADO como: 51995441658
+      Lead ID: 18172, Nome: 555195441658, Source: phoneNumber
+
+­ƒöì Procurando: 5519984104599
+   Tamanho: 13 d├¡gitos
+   ÔØî N├âO ENCONTRADO em nenhuma varia├º├úo
+   ­ƒÜ½ FANTASMA CONHECIDO - Bloqueado pela blacklist Ô£à
+
+­ƒöì Procurando: 5512997467112
+   Tamanho: 13 d├¡gitos
+   ÔØî N├âO ENCONTRADO em nenhuma varia├º├úo
+   ­ƒÜ½ FANTASMA CONHECIDO - Bloqueado pela blacklist Ô£à
+
+­ƒöì Procurando: 551134840929
+   Tamanho: 12 d├¡gitos
+   Ô£à ENCONTRADO como: 1134840929
+      Lead ID: 18570, Nome: 551134840929, Source: phoneNumber
+
+­ƒöì Procurando: 5511981194533
+   Tamanho: 13 d├¡gitos
+   ÔØî N├âO ENCONTRADO em nenhuma varia├º├úo
+   ­ƒÜ½ FANTASMA CONHECIDO - Bloqueado pela blacklist Ô£à
+
+======================================================================
+
+­ƒôè RESUMO:
+
+N├║meros fantasmas (esperado n├úo importar): 3
+  - 5519984104599 Ô£à
+  - 5512997467112 Ô£à
+  - 5511981194533 Ô£à
+
+N├║meros v├ílidos (esperado importar): 2
+  - 5551995441658 (celular)
+  - 551134840929 (fixo)
+
+======================================================================

@@ -1,0 +1,71 @@
+﻿
+­ƒöì INVESTIGA├ç├âO: N├║mero Suspeito na Exporta├º├úo
+
+======================================================================
+N├║mero: 5511934840929
+======================================================================
+
+­ƒôè AN├üLISE DO N├ÜMERO:
+Tamanho: 13 d├¡gitos
+DDI: 55
+DDD: 11
+3┬║ d├¡gito: 9 (celular)
+N├║mero: 934840929
+
+­ƒöä COMPARA├ç├âO:
+Fixo original:     551134840929 (12 d├¡gitos)
+Fixo normalizado:  11934840929 (11 d├¡gitos)
+N├║mero suspeito:   5511934840929 (13 d├¡gitos)
+
+ÔÜá´©Å PROBLEMA IDENTIFICADO:
+O n├║mero suspeito tem 13 d├¡gitos = DDI 55 + DDD 11 + 9 + n├║mero
+Parece que o sistema adicionou um "9" ao telefone FIXO!
+
+TRANSFORMA├ç├âO INCORRETA:
+551134840929 (fixo) ÔåÆ 5511934840929 (celular incorreto)
+
+­ƒöì BUSCANDO NO BANCO DE DADOS:
+
+Procurando: 5511934840929...
+  ÔØî N├úo encontrado
+Procurando: 11934840929...
+  Ô£à ENCONTRADO! (1 registro(s))
+
+  1. Lead ID: 17875
+     Phone: 11934840929
+     Nome: 551134840929
+     Email: 11934840929@whatsapp.gw
+     Source: phoneNumber
+     Campaign ID: 4
+     Criado: 03/01/2026, 13:55:09
+Procurando: 551134840929...
+  ÔØî N├úo encontrado
+Procurando: 11934840929...
+  Ô£à ENCONTRADO! (1 registro(s))
+
+  1. Lead ID: 17875
+     Phone: 11934840929
+     Nome: 551134840929
+     Email: 11934840929@whatsapp.gw
+     Source: phoneNumber
+     Campaign ID: 4
+     Criado: 03/01/2026, 13:55:09
+Procurando: 1134840929...
+  ÔØî N├úo encontrado
+
+======================================================================
+
+­ƒôï CONCLUS├âO:
+
+ÔÜá´©Å O n├║mero FOI ENCONTRADO na tabela leads!
+
+POSS├ìVEIS CAUSAS:
+1. Normaliza├º├úo incorreta adicionou "9" ao telefone fixo
+2. O n├║mero foi importado em uma sincroniza├º├úo anterior
+3. Bug na fun├º├úo normalizePhone() que adiciona 9 em fixos
+
+SOLU├ç├âO:
+1. Deletar este lead do banco
+2. Corrigir a fun├º├úo normalizePhone() para n├úo adicionar 9 em fixos
+3. Reimportar os contatos
+======================================================================

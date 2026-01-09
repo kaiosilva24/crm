@@ -1,0 +1,74 @@
+﻿
+­ƒöì INVESTIGANDO ORIGEM DOS LEADS
+
+======================================================================
+­ƒôè Total de leads: 79
+
+­ƒôè Leads por fonte:
+
+   phoneNumber: 79 leads
+
+======================================================================
+
+­ƒôï Primeiros 10 leads:
+
+1. 555599632221
+   Phone: 55999632221
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.621+00:00
+
+2. 5548920036473
+   Phone: 48920036473
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.525+00:00
+
+3. 5512981541192
+   Phone: 12981541192
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.434+00:00
+
+4. 5517996774796
+   Phone: 17996774796
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.341+00:00
+
+5. 5519996834291
+   Phone: 19996834291
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.243+00:00
+
+6. 556596392334
+   Phone: 65996392334
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.138+00:00
+
+7. 556999922617
+   Phone: 69999922617
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:32.036+00:00
+
+8. 5516997165709
+   Phone: 16997165709
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:31.828+00:00
+
+9. 554999353550
+   Phone: 49999353550
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:31.707+00:00
+
+10. 5511969196585
+   Phone: 11969196585
+   Source: phoneNumber
+   Campaign: 4
+   Created: 2026-01-04T00:05:31.619+00:00
+

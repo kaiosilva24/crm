@@ -1,0 +1,42 @@
+﻿
+­ƒöì VERIFICA├ç├âO DETALHADA DOS 4 N├ÜMEROS
+
+======================================================================
+
+­ƒôï 5551995441658 (Celular)
+----------------------------------------------------------------------
+Ô£à ENCONTRADO NO BANCO
+   Salvo como: 51995441658
+   Lead ID: 18172
+   Nome: 555195441658
+   Source: phoneNumber
+   Criado: 03/01/2026, 14:26:12
+   Ô£à OK: N├║mero v├ílido importado corretamente
+
+­ƒôï 5519984104599 (Fantasma conhecido)
+----------------------------------------------------------------------
+ÔØî N├âO ENCONTRADO NO BANCO
+   Ô£à OK: Fantasma bloqueado pela blacklist
+
+­ƒôï 5512997467112 (Fantasma conhecido)
+----------------------------------------------------------------------
+ÔØî N├âO ENCONTRADO NO BANCO
+   Ô£à OK: Fantasma bloqueado pela blacklist
+
+­ƒôï 5511981194533 (Fantasma conhecido)
+----------------------------------------------------------------------
+ÔØî N├âO ENCONTRADO NO BANCO
+   Ô£à OK: Fantasma bloqueado pela blacklist
+
+======================================================================
+
+­ƒôè RESUMO:
+
+N├║meros v├ílidos (esperado: 1):
+  - Encontrados: 1 Ô£à
+
+N├║meros fantasmas (esperado: 0):
+  - Encontrados: 0 Ô£à
+
+­ƒÄë PERFEITO! Sistema funcionando 100%
+======================================================================

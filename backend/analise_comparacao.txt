@@ -1,0 +1,68 @@
+📊 ANÁLISE DE DIFERENÇAS REDIRECT+ vs BAILEYS
+============================================================
+
+Baseado nos dados fornecidos:
+
+RESUMO:
+- Total Redirect+ (coluna esquerda): 351 números
+- Total Baileys (coluna direita): 351 números  
+- Números em comum: 347 números
+
+============================================================
+
+❌ APENAS NO REDIRECT+ (4 números que NÃO estão no Baileys):
+============================================================
+
+1. 5571996568613
+2. 5218123647837
+3. 5564992677707
+4. 5516981568551
+
+============================================================
+
+❌ APENAS NO BAILEYS (4 números que NÃO estão no Redirect+):
+============================================================
+
+1. 5511981194533
+2. 5512997467112
+3. 5519984104599
+4. 5516981568551
+
+============================================================
+
+⚠️ OBSERVAÇÃO IMPORTANTE:
+
+O número 5516981568551 aparece DUPLICADO - está tanto na lista 
+"apenas no Redirect+" quanto "apenas no Baileys". Isso indica 
+que este número aparece na última linha da sua comparação de 
+forma espelhada.
+
+Na verdade, são apenas 3 números únicos em cada lado:
+
+REDIRECT+ (3 números exclusivos):
+- 5571996568613
+- 5218123647837  
+- 5564992677707
+
+BAILEYS (3 números exclusivos):
+- 5511981194533
+- 5512997467112
+- 5519984104599
+
+============================================================
+
+🔍 PRÓXIMOS PASSOS RECOMENDADOS:
+
+1. Verificar se esses 3 números do Baileys realmente existem 
+   no grupo do WhatsApp
+
+2. Investigar por que esses 3 números do Redirect+ não foram 
+   capturados pelo Baileys
+
+3. Possíveis causas:
+   - Números adicionados/removidos entre as duas capturas
+   - Diferenças no formato de normalização dos números
+   - Problemas com LIDs (LinkedIn IDs) do WhatsApp
+   - Membros que saíram/entraram no grupo
+
+============================================================
