@@ -162,7 +162,7 @@ router.post('/sync-group-status', async (req, res) => {
 
                 const { data: chunk, error: leadsError } = await supabase
                     .from('leads')
-                    .select('id, phone, in_group')
+                    .select('id, phone')
                     .eq('campaign_id', campaignId)
                     .range(start, end);
 
@@ -181,6 +181,22 @@ router.post('/sync-group-status', async (req, res) => {
                 } else {
                     hasMore = false;
                 }
+            }
+
+            // Buscar status atual de in_group da tabela lead_campaign_groups
+            const leadIds = leads.map(l => l.id);
+            let currentGroupStatus = new Map();
+
+            if (leadIds.length > 0) {
+                const { data: groupStatuses } = await supabase
+                    .from('lead_campaign_groups')
+                    .select('lead_id, in_group')
+                    .eq('campaign_id', campaignId)
+                    .in('lead_id', leadIds);
+
+                (groupStatuses || []).forEach(gs => {
+                    currentGroupStatus.set(gs.lead_id, gs.in_group);
+                });
             }
 
             const idsInGroup = [];
@@ -207,22 +223,45 @@ router.post('/sync-group-status', async (req, res) => {
                 }
             }
 
-            // Atualizar status no banco (somente quem mudou)
+            // Atualizar status no banco usando lead_campaign_groups (específico por campanha)
+            // Comparar com o status atual da tabela lead_campaign_groups
             const toUpdateTrue = idsInGroup.filter(id => {
-                const l = leads.find(x => x.id === id);
-                return l.in_group !== true;
+                return currentGroupStatus.get(id) !== true;
             });
 
             const toUpdateFalse = idsNotInGroup.filter(id => {
-                const l = leads.find(x => x.id === id);
-                return l.in_group !== false;
+                return currentGroupStatus.get(id) !== false;
             });
 
+            // Atualizar na tabela lead_campaign_groups (isolado por campanha)
             if (toUpdateTrue.length > 0) {
-                await supabase.from('leads').update({ in_group: true }).in('id', toUpdateTrue);
+                const records = toUpdateTrue.map(leadId => ({
+                    lead_id: leadId,
+                    campaign_id: campaignId,
+                    in_group: true,
+                    updated_at: new Date().toISOString()
+                }));
+
+                await supabase
+                    .from('lead_campaign_groups')
+                    .upsert(records, { onConflict: 'lead_id,campaign_id' });
+
+                console.log(`   ✅ ${toUpdateTrue.length} leads marcados como "no grupo" na campanha ${campaignId}`);
             }
+
             if (toUpdateFalse.length > 0) {
-                await supabase.from('leads').update({ in_group: false }).in('id', toUpdateFalse);
+                const records = toUpdateFalse.map(leadId => ({
+                    lead_id: leadId,
+                    campaign_id: campaignId,
+                    in_group: false,
+                    updated_at: new Date().toISOString()
+                }));
+
+                await supabase
+                    .from('lead_campaign_groups')
+                    .upsert(records, { onConflict: 'lead_id,campaign_id' });
+
+                console.log(`   ✅ ${toUpdateFalse.length} leads marcados como "fora do grupo" na campanha ${campaignId}`);
             }
 
             // Acumular totais
@@ -232,7 +271,7 @@ router.post('/sync-group-status', async (req, res) => {
             totalInGroup += campaignInGroup;
             totalNotInGroup += campaignNotInGroup;
 
-            console.log(`   ✅ Campaign ${campaignId}: ${toUpdateTrue.length} Updated True | ${toUpdateFalse.length} Updated False`);
+            console.log(`   📊 Campanha ${campaignId}: ${campaignInGroup} no grupo | ${campaignNotInGroup} fora do grupo`);
         }
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);

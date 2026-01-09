@@ -178,10 +178,9 @@ export const db = {
         }
         if (campaign_id) query = query.eq('campaign_id', campaign_id);
         if (subcampaign_id) query = query.eq('subcampaign_id', subcampaign_id);
-        if (in_group !== undefined) query = query.eq('in_group', in_group === 'true');
+
         if (search) {
             // Busca por PARTES do nome, email ou telefone (contains)
-            // Exemplo: "52" encontra "5521..." E "1152..."
             query = query.or(`first_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
         }
         if (search_observation) {
@@ -195,19 +194,70 @@ export const db = {
         const { data, error, count } = await query;
         if (error) throw error;
 
+        // Buscar in_group de todos os leads de uma vez
+        const leadIds = (data || []).map(l => l.id);
+        let campaignGroupsMap = new Map();
+
+        // Buscar quais campanhas têm grupos configurados
+        const campaignIds = [...new Set((data || []).map(l => l.campaign_id).filter(Boolean))];
+        let campaignsWithGroups = new Set();
+
+        if (campaignIds.length > 0) {
+            const { data: campaignGroupsData } = await supabase
+                .from('campaign_groups')
+                .select('campaign_id')
+                .in('campaign_id', campaignIds);
+
+            (campaignGroupsData || []).forEach(cg => {
+                campaignsWithGroups.add(cg.campaign_id);
+            });
+        }
+
+        if (leadIds.length > 0) {
+            const { data: campaignGroups } = await supabase
+                .from('lead_campaign_groups')
+                .select('lead_id, campaign_id, in_group')
+                .in('lead_id', leadIds);
+
+            // Criar mapa: lead_id + campaign_id -> in_group
+            (campaignGroups || []).forEach(cg => {
+                const key = `${cg.lead_id}_${cg.campaign_id}`;
+                campaignGroupsMap.set(key, cg.in_group);
+            });
+        }
+
         // Mapear dados para formato esperado
-        const leads = (data || []).map(l => ({
-            ...l,
-            status_id: l.lead_statuses?.id || l.status_id,
-            status_name: l.lead_statuses?.name,
-            status_color: l.lead_statuses?.color,
-            seller_id: l.seller_id,
-            seller_name: l.users?.name,
-            campaign_name: l.campaigns?.name,
-            subcampaign_id: l.subcampaign_id,
-            subcampaign_name: l.subcampaigns?.name,
-            subcampaign_color: l.subcampaigns?.color
-        }));
+        let leads = (data || []).map(l => {
+            // Buscar in_group específico da campanha do lead
+            const key = `${l.id}_${l.campaign_id}`;
+            let inGroupValue = campaignGroupsMap.has(key) ? campaignGroupsMap.get(key) : false;
+
+            // Se a campanha NÃO tem grupos configurados, forçar in_group = false
+            if (l.campaign_id && !campaignsWithGroups.has(l.campaign_id)) {
+                inGroupValue = false;
+            }
+
+            return {
+                ...l,
+                status_id: l.lead_statuses?.id || l.status_id,
+                status_name: l.lead_statuses?.name,
+                status_color: l.lead_statuses?.color,
+                seller_id: l.seller_id,
+                seller_name: l.users?.name,
+                campaign_name: l.campaigns?.name,
+                subcampaign_id: l.subcampaign_id,
+                subcampaign_name: l.subcampaigns?.name,
+                subcampaign_color: l.subcampaigns?.color,
+                // in_group agora vem da tabela lead_campaign_groups (específico por campanha)
+                in_group: inGroupValue
+            };
+        });
+
+        // Aplicar filtro de in_group após mapeamento
+        if (in_group !== undefined) {
+            const inGroupBool = in_group === 'true';
+            leads = leads.filter(l => l.in_group === inGroupBool);
+        }
 
         return { leads, total: count || 0 };
     },

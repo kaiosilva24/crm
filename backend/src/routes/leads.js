@@ -365,7 +365,16 @@ router.patch('/:uuid/in-group', async (req, res) => {
             return res.status(403).json({ error: 'Sem permissão' });
         }
 
-        await db.updateLead(uuid, { in_group });
+        // Atualizar in_group na tabela lead_campaign_groups (específico por campanha)
+        if (lead.campaign_id) {
+            await db.setLeadCampaignGroup(lead.id, lead.campaign_id, in_group);
+            console.log(`✅ In-group atualizado: Lead ${lead.id}, Campanha ${lead.campaign_id}, in_group=${in_group}`);
+        } else {
+            // Fallback: se não tem campanha, atualizar o campo global (compatibilidade)
+            await db.updateLead(uuid, { in_group });
+            console.log(`⚠️ In-group atualizado (global): Lead ${lead.id}, in_group=${in_group}`);
+        }
+
         res.json({ message: 'Marcação atualizada' });
     } catch (error) {
         console.error('Error updating in_group:', error);
