@@ -1,0 +1,24 @@
+=== TESTE 1: CONEXÃO ===
+✅ Conexão OK
+Page: Hugo Miyazaki | Medicina Chinesa
+
+=== TESTE 2: BUSCAR SUBSCRIBER ===
+⚠️  Não encontrado (status: 400)
+
+=== TESTE 3: CRIAR SUBSCRIBER ===
+
+Teste: Com +
+Payload: {"first_name":"Teste","last_name":"Abandono","email":"teste.abandono@email.com","phone":"+5567981720357","whatsapp_phone":"+5567981720357"}
+❌ Erro 400: {"status":"error","message":"Validation error","details":{"messages":[{"message":"has_opt_in_sms is required if phone is not empty"}]}}
+
+Teste: Sem +
+Payload: {"first_name":"Teste","last_name":"Abandono","email":"teste.abandono@email.com","phone":"5567981720357","whatsapp_phone":"5567981720357"}
+❌ Erro 400: {"status":"error","message":"Validation error","details":{"messages":[{"message":"has_opt_in_sms is required if phone is not empty"}]}}
+
+Teste: Só whatsapp +
+Payload: {"first_name":"Teste","last_name":"Abandono","email":"teste.abandono@email.com","whatsapp_phone":"+5567981720357"}
+❌ Erro 400: {"status":"error","message":"Validation error","details":{"messages":[{"message":"has_opt_in_email is required if email is not empty"}]}}
+
+Teste: Só whatsapp
+Payload: {"first_name":"Teste","last_name":"Abandono","email":"teste.abandono@email.com","whatsapp_phone":"5567981720357"}
+❌ Erro 400: {"status":"error","message":"Validation error","details":{"messages":[{"message":"has_opt_in_email is required if email is not empty"}]}}

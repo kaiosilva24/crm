@@ -1,0 +1,33 @@
+﻿
+­ƒöì VERIFICANDO N├ÜMEROS V├üLIDOS NO BANCO DE DADOS
+
+======================================================================
+
+­ƒôï Verificando: Telefone FIXO (10 d├¡gitos)
+   N├║mero original: 551134840929
+   Procurando varia├º├Áes...
+   ÔØî N├âO ENCONTRADO em nenhuma varia├º├úo
+   ÔÜá´©Å Este n├║mero deveria ter sido importado!
+
+­ƒôï Verificando: Internacional - M├®xico (DDI 52)
+   N├║mero original: 5218123647837
+   Procurando varia├º├Áes...
+   Ô£à ENCONTRADO! (varia├º├úo: 5218123647837)
+   ­ƒôè Total de registros: 1
+
+   1. Lead ID: 17772
+      Phone: 5218123647837
+      Nome: 5218123647837
+      Source: phoneNumber
+      Criado: 03/01/2026, 13:54:54
+
+======================================================================
+
+­ƒôè RESUMO DA VERIFICA├ç├âO:
+
+Total de n├║meros v├ílidos esperados: 2
+Total de n├║meros encontrados: 1
+
+ÔÜá´©Å ATEN├ç├âO: Apenas 1 n├║mero v├ílido foi importado
+Verifique qual n├║mero est├í faltando acima.
+======================================================================

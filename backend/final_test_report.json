@@ -1,0 +1,159 @@
+{
+  "timestamp": "2026-01-20T14:12:56.178Z",
+  "events": [
+    {
+      "event_id": 97,
+      "phone": "5567981720357",
+      "status": "completed",
+      "subscriber_id": "[]",
+      "first_message_sent": false,
+      "second_message_sent": false,
+      "found_in_campaign": false,
+      "created_at": "2026-01-20T14:10:20.778081+00:00",
+      "logs": [
+        {
+          "id": 493,
+          "event_id": 97,
+          "action_type": "webhook_received",
+          "status": "success",
+          "message": "Event created successfully",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:20.843594+00:00"
+        },
+        {
+          "id": 494,
+          "event_id": 97,
+          "action_type": "system_check",
+          "status": "warning",
+          "message": "RELOAD CHECK: Fallback Code Active",
+          "error_message": "If you see this, code is updated",
+          "payload": null,
+          "created_at": "2026-01-20T14:10:20.909052+00:00"
+        },
+        {
+          "id": 495,
+          "event_id": 97,
+          "action_type": "create_subscriber",
+          "status": "error",
+          "message": "Failed to create contact: Request failed with status code 400",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:23.046507+00:00"
+        },
+        {
+          "id": 496,
+          "event_id": 97,
+          "action_type": "first_message",
+          "status": "skipped",
+          "message": "No subscriber resolved",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:23.110666+00:00"
+        },
+        {
+          "id": 497,
+          "event_id": 97,
+          "action_type": "delay_wait",
+          "status": "success",
+          "message": "Waiting 1 minutes",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:23.161734+00:00"
+        },
+        {
+          "id": 502,
+          "event_id": 97,
+          "action_type": "campaign_check",
+          "status": "success",
+          "message": "Contact not found in campaign",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:11:23.410224+00:00"
+        },
+        {
+          "id": 503,
+          "event_id": 97,
+          "action_type": "second_message",
+          "status": "error",
+          "message": "Failed to send flow",
+          "error_message": "{\"status\":\"error\",\"message\":\"Validation error\",\"details\":{\"messages\":[{\"message\":\"Subscriber does not exist\"}]}}",
+          "payload": null,
+          "created_at": "2026-01-20T14:11:27.336043+00:00"
+        }
+      ]
+    },
+    {
+      "event_id": 98,
+      "phone": "5562983160896",
+      "status": "completed",
+      "subscriber_id": "502839738",
+      "first_message_sent": true,
+      "second_message_sent": true,
+      "found_in_campaign": false,
+      "created_at": "2026-01-20T14:10:32.318007+00:00",
+      "logs": [
+        {
+          "id": 498,
+          "event_id": 98,
+          "action_type": "webhook_received",
+          "status": "success",
+          "message": "Event created successfully",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:32.370844+00:00"
+        },
+        {
+          "id": 499,
+          "event_id": 98,
+          "action_type": "system_check",
+          "status": "warning",
+          "message": "RELOAD CHECK: Fallback Code Active",
+          "error_message": "If you see this, code is updated",
+          "payload": null,
+          "created_at": "2026-01-20T14:10:32.424752+00:00"
+        },
+        {
+          "id": 500,
+          "event_id": 98,
+          "action_type": "first_message",
+          "status": "success",
+          "message": "First tag 'abandono_carrinho' added to ID 502839738",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:35.379334+00:00"
+        },
+        {
+          "id": 501,
+          "event_id": 98,
+          "action_type": "delay_wait",
+          "status": "success",
+          "message": "Waiting 1 minutes",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:10:35.426487+00:00"
+        },
+        {
+          "id": 504,
+          "event_id": 98,
+          "action_type": "campaign_check",
+          "status": "success",
+          "message": "Contact not found in campaign",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:11:35.699557+00:00"
+        },
+        {
+          "id": 505,
+          "event_id": 98,
+          "action_type": "second_message",
+          "status": "success",
+          "message": "Second tag 'abandono_carrinho_2' added successfully",
+          "error_message": null,
+          "payload": null,
+          "created_at": "2026-01-20T14:11:37.249709+00:00"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+﻿
+­ƒöä APLICANDO MIGRATION: 009_group_participants.sql
+
+======================================================================
+­ƒôä Arquivo lido com sucesso
+
+SQL a ser executado:
+----------------------------------------------------------------------
+-- Migration: Create cache table for group participants
+-- This allows fast sync and comparison with leads
+
+CREATE TABLE IF NOT EXISTS group_participants_cache (
+    id SERIAL PRIMARY KEY,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    name VARCHAR(255),
+    source VARCHAR(50) DEFAULT 'baileys',
+    groups TEXT[], -- Array of group names this participant belongs to
+    last_synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_gpc_phone ON group_participants_cache(phone);
+CREATE INDEX IF NOT EXISTS idx_gpc_synced ON group_participants_cache(last_synced_at);
+
+COMMENT ON TABLE group_participants_cache IS 'Cached participants from all WhatsApp groups for fast sync';
+COMMENT ON COLUMN group_participants_cache.groups IS 'Array of group names (e.g., {"Vendas 2024", "VIP"})';
+
+----------------------------------------------------------------------
+
+ÔÜÖ´©Å Executando migration...
+ÔÜá´©Å Fun├º├úo exec_sql n├úo dispon├¡vel, tentando execu├º├úo direta...
+Executando: -- Migration: Create cache table for group partici...
+node : ÔØî Erro: {
+No linha:1 caractere:1
++ node 
+apply_migration_009.js 2>&1 
+| Out-File -FilePath 
+resultado_migra ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (ÔØî E  
+  rro: {:String) [], Remo   
+ teException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+  code: 'PGRST202',
+  details: 'Searched for 
+the function public.exec 
+with parameter query or 
+with a single unnamed 
+json/jsonb parameter, but 
+no matches were found in 
+the schema cache.',
+  hint: null,
+  message: 'Could not find 
+the function 
+public.exec(query) in the 
+schema cache'
+}
+ÔØî Erro ao aplicar 
+migration: {
+  code: 'PGRST202',
+  details: 'Searched for 
+the function public.exec 
+with parameter query or 
+with a single unnamed 
+json/jsonb parameter, but 
+no matches were found in 
+the schema cache.',
+  hint: null,
+  message: 'Could not find 
+the function 
+public.exec(query) in the 
+schema cache'
+}
+
+ÔÜá´©Å SOLU├ç├âO ALTERNATIVA:
+Execute o SQL manualmente no Supabase Dashboard:
+1. Acesse https://supabase.com
+2. V├í em SQL Editor
+3. Cole o conte├║do de database/migrations/009_group_participants.sql
+4. Execute

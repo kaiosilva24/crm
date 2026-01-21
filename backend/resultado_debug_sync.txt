@@ -1,0 +1,123 @@
+﻿
+­ƒöì DEBUG: Sincroniza├º├úo de Grupos
+
+======================================================================
+
+­ƒôè CAMPANHAS: 2
+   - DEZ 20 e 21 (ID: 1)
+   - JAN 10 e 11 (ID: 4)
+
+­ƒöì Campanha: DEZ 20 e 21
+   ­ƒôè campaign_groups: 0
+   ÔÜá´©Å Nenhum grupo associado a esta campanha
+
+­ƒöì Campanha: JAN 10 e 11
+   ­ƒôè campaign_groups: 4
+   ­ƒôï Group IDs: 019280ec-2357-4c69-a75b-64649837439f, 7523a25c-ba87-43b8-b22d-cb5350bc5aae, 937be98b-63af-4cb2-8738-83189fe0dc50, 00b01a5d-f3b4-4ee6-819a-94151920fa4d
+   Ô£à Grupos encontrados: 4
+      - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #403 (Connection: 15b86f4e-01dc-40c7-a09e-c2b36f5ab40d)
+      - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #402 (Connection: 15b86f4e-01dc-40c7-a09e-c2b36f5ab40d)
+      - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #400 (Connection: 15b86f4e-01dc-40c7-a09e-c2b36f5ab40d)
+      - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #401 (Connection: 15b86f4e-01dc-40c7-a09e-c2b36f5ab40d)
+
+­ƒôè TODOS OS GRUPOS NO BANCO:
+   Total: 99
+   - Aula de m├║sica particular
+   - IMERS├âO MAIS VIEGENS MAIS DINHEIRO SV #31
+   - ­ƒÜÇ PAGANDO FORTE AGORA	_330
+   - [LS] Rog├®rio - Tr├ífego Pago 
+   - Controle da loja ­ƒÜÇ­ƒÜÇ­ƒÜÇ
+   - IMERS├âO MAIS VIEGENS MAIS DINHEIRO SV #30
+   - Pneus usado
+   - Ubers de Goi├ónia
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #19
+   - Os Ubers GYN­ƒÜÿ­ƒÜù­ƒÆ¿
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #20
+   - Heran├ºas da Mentalidade de Sucesso
+   - Canal de Avisos Programa Avan├ºado - Hugo Miyazaki
+   - AJUDAR O NOSSO IRM├âO!
+   - MUTIR├âO FERRAGISTA
+   - ­ƒÜ¿ ├ÜLTIMAS 2 VAGAS #304
+   - OS ESCOLHIDOS
+   - GRUPO DE ESTUDO MUSICAL
+   - Fam├¡lia.
+   - G2­ƒöÑ
+   - Juntos pela L├®ia ÔØñ´©Å
+   - PESCADORES DO EUROPA
+   - Aula M├║sica J.D. Europa ­ƒçº­ƒçÀ
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI #10
+   - TURMA DO TAMBA ­ƒÄú
+   - Mutir├úo casa ir Ci├ºa­ƒÅá­ƒÅù­ƒæÀÔÇìÔÖé´©Å­ƒÜº­ƒö¿­ƒö¿
+   - UBER 24HRS
+   - AMIGO SECRETO
+   - Anivers├írio surpresa para irm├úo Glenio ­ƒÄé
+   - ­ØÉÄ­ØÉæ­ØÉå­ØÉÇ­ØÉì­ØÉê­ØÉÖ­ØÉÇ­ØÉé­ØÉÇ­ØÉÄ JD EUROPA
+   - M├║sicos Jd Europa­ƒÄ╝ ­ƒÄ╗­ƒÄ║­ƒÄÀ
+   - ­ƒÆ£ INSCRI├ç├òES ABERTAS M├âES SENTINELAS #11
+   - Unidos em Cristo ­ƒÅø´©Å­ƒÖî­ƒÅ╗
+   - IMERS├âO SERVIDOR VIAJANTE
+   - Anivers├írio surpresa para irm├úo Jo├úo Batista ­ƒÑ│­ƒÄé
+   - Surpresa p/ ir Murilo 27/07 ­ƒÑ│­ƒÄé
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #18
+   - ­ƒöÁ VAGAS ABERTAS PROGRAMA AVAN├çADO ­ƒÄë #203
+   - Uber Goi├ónia e An├ípolis
+   - Heran├ºas da Mentalidade de Sucesso
+   - BLACK ALUNOS AVAN├çADOS
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI #1
+   - ­ƒÜ¿ ├ÜTLIMAS 2 VAGAS #303
+   - ­ƒöÁ VAGAS ABERTAS LIBERTA├ç├âO DA TRAVA ENRAIZADAS - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO
+   - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #403
+   - Testes 
+   - AS CONTAS DO M├èS 2026
+   - ALESSANDRO ­ƒÆ░­ƒÆ░
+   - IMERS├âO MAIS VIEGENS MAIS DINHEIRO SV #33
+   - ­ƒöùLinks De Testes ­ƒöù
+   - Imers├úo Heran├ºas da Mentalidade de Sucesso VIP #303
+   - LAN├çAMENTO - HUGO MIYAZAKI
+   - IMERS├âO MAIS VIEGENS MAIS DINHEIRO SV #34
+   - Nota fiscal
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #16
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #15
+   - Miss├úo Fraternal ­ƒ½é­ƒöÑ­ƒöæ
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #10
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #10
+   - CCB Jardim Europa
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #11
+   - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #400
+   - HIPER PERTO OFERTAS­ƒÿü­ƒøÆ
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI #42
+   - UBER PARCEIROS BRASIL­ƒñ£­ƒñø
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #40
+   - Grupo dos amigos 4
+   - ÔôïÔÆ¥ÔôêÔÆ¥ÔôëÔÆÂÔôê  ­ƒàÖ­ƒàÉ­ƒàí­ƒàô­ƒàÿ­ƒà£  ­ƒàö­ƒàñ­ƒàí­ƒà×­ƒàƒ­ƒàÉ ­ƒÅø
+   - Surpresa p/ ir Rodrigo 26/05
+   - ALUNOS AVAN├çADO 2026
+   - Motorista Brasil 3 ­ƒö▒ÔÜá´©Å (UBER, 99) Ô£à
+   - CCB Jardim Europa ÔÇó Miss├Áes
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #13
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #10
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #17
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #10
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI #10
+   - ­ƒÜ¿ ├ÜLTIMAS 2 VAGAS #300
+   - ­ƒÜ¿ ├ÜLTIMAS 2 VAGAS #302
+   - ­ƒÜ¿ ├ÜLTIMAS 2 VAGAS #301
+   - Imers├úo Fotografia Odontol├│gica sem Segredos #11
+   - ALUNOS AVAN├çADO #16
+   - Frisar
+   - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #402
+   - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #401
+   - ­ƒƒá ├ë HOJE ├ÇS 20H BLACK FRIDAY PROGRAMA AVAN├çADO - HUGO MIYAZAKI #41
+   - ­ƒöÁ VAGAS ABERTAS LIBERTA├ç├âO DA TRAVA ENRAIZADAS - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #201
+   - ­ƒöÁ VAGAS ABERTAS LIBERTA├ç├âO DA TRAVA ENRAIZADAS - IMERS├âO HERAN├çAS DA MENTALIDADE DE SUCESSO #202
+   - G16­ƒöÑ
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #12
+   - ­ØùÖ­Øùö­Øùá­Øù£­Øùƒ­Øù£­Øùö ­Øùù­Øùö ­Øùƒ­Øù£­Øùá­Øùú­Øùÿ­Øù¡­Øùö ­Øùû­Øùû­Øùò ­ØùØ­Øùö­ØùÑ­Øùù­Øù£­Øùá ­Øùÿ­Øù¿­ØùÑ­Øùó­Øùú­Øùö­ƒÅø
+   - ­ƒÜ¿ ├ÜLTIMAS 2 VAGAS
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #14
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #1
+   - ­ƒÄü­ƒø½ Servidor Viajante | Presente de Natal #11
+   - ­ƒöÑ *ESTAMOS AO VIVO AGORA!* ­ƒöÑ #43
+   - IMERS├âO MAIS VIEGENS MAIS DINHEIRO SV #32

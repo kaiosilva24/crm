@@ -1,0 +1,42 @@
+[
+  {
+    "id": 413,
+    "event_id": 95,
+    "action_type": "campaign_check",
+    "status": "success",
+    "message": "Contact not found in campaign",
+    "error_message": null,
+    "payload": null,
+    "created_at": "2026-01-21T02:02:14.602635+00:00"
+  },
+  {
+    "id": 412,
+    "event_id": 95,
+    "action_type": "delay_wait",
+    "status": "success",
+    "message": "Waiting 1 minutes",
+    "error_message": null,
+    "payload": null,
+    "created_at": "2026-01-21T02:01:14.376484+00:00"
+  },
+  {
+    "id": 410,
+    "event_id": 95,
+    "action_type": "system_check",
+    "status": "warning",
+    "message": "RELOAD CHECK: Fallback Code Active",
+    "error_message": "If you see this, code is updated",
+    "payload": null,
+    "created_at": "2026-01-21T02:01:09.154089+00:00"
+  },
+  {
+    "id": 409,
+    "event_id": 95,
+    "action_type": "webhook_received",
+    "status": "success",
+    "message": "Event created successfully",
+    "error_message": null,
+    "payload": null,
+    "created_at": "2026-01-21T02:01:09.098717+00:00"
+  }
+]

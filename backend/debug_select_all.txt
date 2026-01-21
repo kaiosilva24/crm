@@ -1,0 +1,51 @@
+
+[2026-01-21T03:50:43.458Z] Batch processing:
+                        CampaignID: 6 (Original: 6)
+                        InGroup Target: false
+                        Leads in Batch: 623
+                        Sample Lead ID: 38283
+                        Fetched Groups: 617
+                        Map Size: 617
+                        Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
+                        Filtered Batch Size: 114 (Original: 623)
+----------------
+[2026-01-21T03:50:50.139Z] Batch processing:
+                        CampaignID: 6 (Original: 6)
+                        InGroup Target: false
+                        Leads in Batch: 623
+                        Sample Lead ID: 38283
+                        Fetched Groups: 617
+                        Map Size: 617
+                        Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
+                        Filtered Batch Size: 114 (Original: 623)
+----------------
+[2026-01-21T03:50:52.876Z] Batch processing:
+                        CampaignID: 6 (Original: 6)
+                        InGroup Target: false
+                        Leads in Batch: 623
+                        Sample Lead ID: 38283
+                        Fetched Groups: 617
+                        Map Size: 617
+                        Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
+                        Filtered Batch Size: 114 (Original: 623)
+----------------
+[2026-01-21T03:51:03.647Z] Batch processing:
+                        CampaignID: 6 (Original: 6)
+                        InGroup Target: true
+                        Leads in Batch: 623
+                        Sample Lead ID: 38283
+                        Fetched Groups: 617
+                        Map Size: 617
+                        Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
+                        Filtered Batch Size: 509 (Original: 623)
+----------------
+[2026-01-21T03:51:08.816Z] Batch processing:
+                        CampaignID: 6 (Original: 6)
+                        InGroup Target: false
+                        Leads in Batch: 623
+                        Sample Lead ID: 38283
+                        Fetched Groups: 617
+                        Map Size: 617
+                        Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
+                        Filtered Batch Size: 114 (Original: 623)
+----------------

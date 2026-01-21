@@ -1,0 +1,65 @@
+{
+  "event_id": 94,
+  "status": "completed",
+  "contact_phone": "5567981720357",
+  "contact_name": "Teste Abandono Carrinho",
+  "contact_email": "teste.abandono@email.com",
+  "manychat_subscriber_id": "[]",
+  "first_message_sent": false,
+  "first_message_sent_at": null,
+  "second_message_sent": false,
+  "second_message_sent_at": null,
+  "found_in_campaign": false,
+  "created_at": "2026-01-20T13:53:17.870337+00:00",
+  "logs": [
+    {
+      "action_type": "webhook_received",
+      "status": "success",
+      "message": "Event created successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T13:53:17.952994+00:00"
+    },
+    {
+      "action_type": "system_check",
+      "status": "warning",
+      "message": "RELOAD CHECK: Fallback Code Active",
+      "error_message": "If you see this, code is updated",
+      "created_at": "2026-01-20T13:53:18.028837+00:00"
+    },
+    {
+      "action_type": "create_subscriber",
+      "status": "error",
+      "message": "Failed to create contact: Request failed with status code 400",
+      "error_message": null,
+      "created_at": "2026-01-20T13:53:20.181693+00:00"
+    },
+    {
+      "action_type": "first_message",
+      "status": "skipped",
+      "message": "No subscriber resolved",
+      "error_message": null,
+      "created_at": "2026-01-20T13:53:20.235845+00:00"
+    },
+    {
+      "action_type": "delay_wait",
+      "status": "success",
+      "message": "Waiting 1 minutes",
+      "error_message": null,
+      "created_at": "2026-01-20T13:53:20.294173+00:00"
+    },
+    {
+      "action_type": "campaign_check",
+      "status": "success",
+      "message": "Contact not found in campaign",
+      "error_message": null,
+      "created_at": "2026-01-20T13:54:20.616171+00:00"
+    },
+    {
+      "action_type": "second_message",
+      "status": "error",
+      "message": "Failed to send flow",
+      "error_message": "{\"status\":\"error\",\"message\":\"Validation error\",\"details\":{\"messages\":[{\"message\":\"Subscriber does not exist\"}]}}",
+      "created_at": "2026-01-20T13:54:23.605976+00:00"
+    }
+  ]
+}

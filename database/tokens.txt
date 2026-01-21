@@ -1,0 +1,32 @@
+﻿ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒöÉ CONFIGURA├ç├âO SUPABASE SELF-HOSTED
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+1´©ÅÔâú  JWT Secret (use no PostgREST):
+   PGRST_JWT_SECRET=gQo+/9UhuSNBp7jnyKqtirCTNyQb0mhoUXk3JMwtUZw=
+
+2´©ÅÔâú  Anon Key (use no backend):
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InBvc3RncmVzdCIsImlhdCI6MTc2ODY3MTYxMiwiZXhwIjoyMDg0MDMxNjEyfQ.lm9o3t7L_Du0OdTSDLqORMpEse3BRwBpV9OlgPa3IjY
+
+3´©ÅÔâú  Service Role Key (admin - opcional):
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoicG9zdGdyZXN0IiwiaWF0IjoxNzY4NjcxNjEyLCJleHAiOjIwODQwMzE2MTJ9.4y1opSKsAD_kmkoxvs66URssnh7rqWn62uyLHbBZD5A
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôï RESUMO DAS VARI├üVEIS DE AMBIENTE
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+­ƒö╣ Para PostgREST no Render:
+   PGRST_JWT_SECRET=gQo+/9UhuSNBp7jnyKqtirCTNyQb0mhoUXk3JMwtUZw=
+   PGRST_DB_URI=postgresql://crm_banco_de_dados_06xu_user:kaknOV5bi88UUIlJY9bMMgv5rydS7WCS@dpg-d5lrs5koud1c738v8upg-a/crm_banco_de_dados_06xu
+   PGRST_DB_SCHEMA=public
+   PGRST_DB_ANON_ROLE=anon
+   PGRST_SERVER_PORT=3000
+
+­ƒö╣ Para Backend (local e Render):
+   SUPABASE_URL=https://crm-postgrest.onrender.com
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InBvc3RncmVzdCIsImlhdCI6MTc2ODY3MTYxMiwiZXhwIjoyMDg0MDMxNjEyfQ.lm9o3t7L_Du0OdTSDLqORMpEse3BRwBpV9OlgPa3IjY
+   JWT_SECRET=super_secret_jwt_key_123456789
+   PORT=3001
+
+Ô£à Tokens gerados com sucesso!
+

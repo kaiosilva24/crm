@@ -1,0 +1,44 @@
+{
+  "event_id": 98,
+  "status": "processing",
+  "contact_phone": "5562983160896",
+  "contact_name": "Contato Teste 2",
+  "contact_email": "contato2.teste@email.com",
+  "manychat_subscriber_id": "502839738",
+  "first_message_sent": true,
+  "first_message_sent_at": "2026-01-20T14:10:35.264+00:00",
+  "second_message_sent": false,
+  "second_message_sent_at": null,
+  "found_in_campaign": false,
+  "created_at": "2026-01-20T14:10:32.318007+00:00",
+  "logs": [
+    {
+      "action_type": "webhook_received",
+      "status": "success",
+      "message": "Event created successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:32.370844+00:00"
+    },
+    {
+      "action_type": "system_check",
+      "status": "warning",
+      "message": "RELOAD CHECK: Fallback Code Active",
+      "error_message": "If you see this, code is updated",
+      "created_at": "2026-01-20T14:10:32.424752+00:00"
+    },
+    {
+      "action_type": "first_message",
+      "status": "success",
+      "message": "First tag 'abandono_carrinho' added to ID 502839738",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:35.379334+00:00"
+    },
+    {
+      "action_type": "delay_wait",
+      "status": "success",
+      "message": "Waiting 1 minutes",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:35.426487+00:00"
+    }
+  ]
+}

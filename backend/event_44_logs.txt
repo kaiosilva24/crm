@@ -1,0 +1,14 @@
+[second_message] error: Failed to send flow
+   ERROR: {"status":"error","message":"Validation error","details":{"messages":[{"message":"Only phone or email can be specified"}]}}
+
+[campaign_check] success: Contact not found in campaign
+
+[delay_wait] success: Waiting 1 minutes
+
+[first_message] error: Failed to send first flow
+   ERROR: {"status":"error","message":"Validation error","details":{"messages":[{"message":"Only phone or email can be specified"}]}}
+
+[system_check] warning: RELOAD CHECK: Fallback Code Active
+   ERROR: If you see this, code is updated
+
+[webhook_received] success: Event created successfully

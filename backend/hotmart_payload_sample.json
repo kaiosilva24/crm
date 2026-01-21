@@ -1,0 +1,108 @@
+{
+  "buyer_name": "Andrea Klein",
+  "buyer_email": "andrea.klein@yahoo.com.br",
+  "created_at": "2026-01-05T11:30:33.085371+00:00",
+  "payload": {
+    "data": {
+      "product": {
+        "support_email": "suporte.hugomiyazaki@gmail.com",
+        "has_co_production": false,
+        "name": "Ingresso Vip - IMERSÃO HMS AO VIVO",
+        "warranty_date": "2026-01-12T00:00:00Z",
+        "is_physical_product": false,
+        "id": 5856112,
+        "ucode": "b33a4418-92f1-4132-a1a2-60e8441dc46b"
+      },
+      "commissions": [
+        {
+          "currency_value": "BRL",
+          "source": "MARKETPLACE",
+          "value": 5.96
+        },
+        {
+          "currency_value": "BRL",
+          "source": "PRODUCER",
+          "value": 60.45
+        }
+      ],
+      "purchase": {
+        "original_offer_price": {
+          "currency_value": "BRL",
+          "value": 67
+        },
+        "subscription_anticipation_purchase": false,
+        "checkout_country": {
+          "iso": "BR",
+          "name": "Brasil"
+        },
+        "origin": {
+          "xcod": "FBhQwK21wXxRADV-DEP.V1 | 1-1-2 | ESCALAR CPA 051225 — Cópia|120239257820540361hQwK21wXxRQUIZ-03— REACT A.4— Cópia — Cópia|120239257820930361hQwK21wXxRREACT-A4 — V2|120239257820960361hQwK21wXxRInstagram_Feed",
+          "sck": "FBhQwK21wXxRADV-DEP.V1 | 1-1-2 | ESCALAR CPA 051225 — Cópia|120239257820540361hQwK21wXxRQUIZ-03— REACT A.4— Cópia — Cópia|120239257820930361hQwK21wXxRREACT-A4 — V2|120239257820960361hQwK21wXxRInstagram_Feed"
+        },
+        "order_bump": {
+          "is_order_bump": false
+        },
+        "approved_date": 1767612620000,
+        "offer": {
+          "code": "ewdlgxnj",
+          "name": "Ingresso Vip - Promo",
+          "description": "Hugo Miyazaki"
+        },
+        "is_funnel": false,
+        "order_date": 1767612617000,
+        "price": {
+          "currency_value": "BRL",
+          "value": 67
+        },
+        "payment": {
+          "installments_number": 1,
+          "type": "CREDIT_CARD"
+        },
+        "full_price": {
+          "currency_value": "BRL",
+          "value": 67
+        },
+        "business_model": "I",
+        "invoice_by": "HOTMART",
+        "transaction": "HP0346983319",
+        "status": "APPROVED"
+      },
+      "affiliates": [
+        {
+          "affiliate_code": "",
+          "name": ""
+        }
+      ],
+      "producer": {
+        "legal_nature": "Pessoa Jurídica",
+        "document": "55907797000105",
+        "name": "H. K. MIYAZAKI LTDA"
+      },
+      "buyer": {
+        "checkout_phone_code": "51",
+        "address": {
+          "zipcode": "93310-330",
+          "country": "Brasil",
+          "number": "916",
+          "address": "Rua Pedro Álvares Cabral",
+          "city": "Novo Hamburgo",
+          "state": "RS",
+          "neighborhood": "Vila Rosa",
+          "complement": "2001",
+          "country_iso": "BR"
+        },
+        "document": "48733610010",
+        "name": "Andrea Klein",
+        "last_name": "Klein",
+        "checkout_phone": "51984064055",
+        "first_name": "Andrea",
+        "email": "andrea.klein@yahoo.com.br",
+        "document_type": "CPF"
+      }
+    },
+    "id": "397f4e42-ba0c-4deb-b5d6-19ccbda5edbc",
+    "creation_date": 1767612631901,
+    "event": "PURCHASE_APPROVED",
+    "version": "2.0.0"
+  }
+}

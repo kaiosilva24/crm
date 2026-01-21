@@ -1,0 +1,2 @@
+
+[2026-01-21T04:03:24.635Z] Error updating lead 10249796-2e97-44ed-8d12-1229db2c7220: {"code":"23505","details":"Key (phone, campaign_id)=(5579998535621, 6) already exists.","hint":null,"message":"duplicate key value violates unique constraint \"leads_phone_campaign_key\""}

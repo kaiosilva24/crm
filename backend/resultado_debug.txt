@@ -1,0 +1,71 @@
+﻿
+­ƒöì DEBUG: Compara├º├úo de N├║meros
+
+======================================================================
+
+­ƒôè LEADS (primeiros 10):
+1. Thais Santos da Silva Lubachesqui
+   Phone original: 5569984070808
+   Phone formatado: 5569984070808
+
+2. L├¬dda Braga Eloy de Andrade
+   Phone original: 5524999935056
+   Phone formatado: 5524999935056
+
+3. Rosemara dos santos Fran├ºa
+   Phone original: 5519992482672
+   Phone formatado: 5519992482672
+
+4. Rosemeire Aparecida da Fonseca
+   Phone original: 5511999552062
+   Phone formatado: 5511999552062
+
+5. Selma moraes da silva
+   Phone original: 5511996049710
+   Phone formatado: 5511996049710
+
+6. Daiene Bobato
+   Phone original: 5541996912342
+   Phone formatado: 5541996912342
+
+7. Aline Galhardi
+   Phone original: 5543999784040
+   Phone formatado: 5543999784040
+
+8. Roberto De Oliveira Tito
+   Phone original: 5511994285023
+   Phone formatado: 5511994285023
+
+9. FERNANDA AQUIDAUANA ESPINDOLA
+   Phone original: 5548920036473
+   Phone formatado: 5548920036473
+
+10. Edson de Oliveira
+   Phone original: 5565992466507
+   Phone formatado: 5565992466507
+
+node : ÔØî Erro: {
+No linha:1 caractere:1
++ node 
+debug_phone_comparison.js 
+2>&1 | Out-File -FilePath 
+resultado_de ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (ÔØî E  
+  rro: {:String) [], Remo   
+ teException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+  code: 'PGRST205',
+  details: null,
+  hint: "Perhaps you meant 
+the table 'public.group_part
+icipants_cache'",
+  message: "Could not find 
+the table 'public.group_cont
+acts_cache' in the schema 
+cache"
+}

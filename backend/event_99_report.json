@@ -1,0 +1,51 @@
+{
+  "event_id": 99,
+  "status": "processing",
+  "contact_phone": "5567981720357",
+  "contact_name": "Teste WhatsApp Only",
+  "contact_email": "teste.whatsapp@email.com",
+  "manychat_subscriber_id": null,
+  "first_message_sent": false,
+  "first_message_sent_at": null,
+  "second_message_sent": false,
+  "second_message_sent_at": null,
+  "found_in_campaign": false,
+  "created_at": "2026-01-20T14:16:18.299352+00:00",
+  "logs": [
+    {
+      "action_type": "webhook_received",
+      "status": "success",
+      "message": "Event created successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T14:16:18.444058+00:00"
+    },
+    {
+      "action_type": "system_check",
+      "status": "warning",
+      "message": "RELOAD CHECK: Fallback Code Active",
+      "error_message": "If you see this, code is updated",
+      "created_at": "2026-01-20T14:16:18.554651+00:00"
+    },
+    {
+      "action_type": "create_subscriber",
+      "status": "error",
+      "message": "Failed to create contact: Request failed with status code 400",
+      "error_message": null,
+      "created_at": "2026-01-20T14:16:20.852307+00:00"
+    },
+    {
+      "action_type": "first_message",
+      "status": "skipped",
+      "message": "No subscriber resolved",
+      "error_message": null,
+      "created_at": "2026-01-20T14:16:20.95258+00:00"
+    },
+    {
+      "action_type": "delay_wait",
+      "status": "success",
+      "message": "Waiting 1 minutes",
+      "error_message": null,
+      "created_at": "2026-01-20T14:16:21.030415+00:00"
+    }
+  ]
+}

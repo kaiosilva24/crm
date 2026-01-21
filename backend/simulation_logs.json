@@ -1,0 +1,32 @@
+[
+  {
+    "id": 387,
+    "event_id": 88,
+    "action_type": "delay_wait",
+    "status": "success",
+    "message": "Waiting 1 minutes",
+    "error_message": null,
+    "payload": null,
+    "created_at": "2026-01-21T01:38:09.399441+00:00"
+  },
+  {
+    "id": 386,
+    "event_id": 88,
+    "action_type": "system_check",
+    "status": "warning",
+    "message": "RELOAD CHECK: Fallback Code Active",
+    "error_message": "If you see this, code is updated",
+    "payload": null,
+    "created_at": "2026-01-21T01:38:03.853683+00:00"
+  },
+  {
+    "id": 385,
+    "event_id": 88,
+    "action_type": "webhook_received",
+    "status": "success",
+    "message": "Event created successfully",
+    "error_message": null,
+    "payload": null,
+    "created_at": "2026-01-21T01:38:03.781731+00:00"
+  }
+]

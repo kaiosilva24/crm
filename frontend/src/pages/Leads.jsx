@@ -1,0 +1,1590 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { api } from '../api';
+import { useAuth } from '../AuthContext';
+import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown } from 'lucide-react';
+
+export default function Leads() {
+    const { isAdmin, user } = useAuth();
+    const [leads, setLeads] = useState([]);
+    const [statuses, setStatuses] = useState([]);
+    const [campaigns, setCampaigns] = useState([]);
+    const [subcampaigns, setSubcampaigns] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [searchByObservation, setSearchByObservation] = useState(false); // Toggle para pesquisa por observação
+    const [statusFilter, setStatusFilter] = useState('');
+    const [campaignFilter, setCampaignFilter] = useState('');
+    const [subcampaignFilter, setSubcampaignFilter] = useState('');
+    const [inGroupFilter, setInGroupFilter] = useState('');
+    const [selectedLead, setSelectedLead] = useState(null);
+    const [observation, setObservation] = useState('');
+    const [sellers, setSellers] = useState([]);
+    const [sellerFilter, setSellerFilter] = useState('');
+
+    // WhatsApp templates
+    const [whatsappTemplates, setWhatsappTemplates] = useState([]);
+    const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+    const [whatsappLead, setWhatsappLead] = useState(null);
+
+    // Agendamento
+    const [scheduleDate, setScheduleDate] = useState('');
+    const [scheduleTime, setScheduleTime] = useState('');
+    const [leadSchedules, setLeadSchedules] = useState([]);
+
+
+    const [scheduleObservation, setScheduleObservation] = useState('');
+
+    // Paginação
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState({ total: 0, pages: 1 });
+    const LIMIT = 50;
+
+    // Seleção múltipla
+    const [selectedUuids, setSelectedUuids] = useState(new Set());
+    const [selectAll, setSelectAll] = useState(false);
+    const [totalSelected, setTotalSelected] = useState(0);
+
+    // Sincronização de grupo
+    const [syncing, setSyncing] = useState(false);
+
+    // Exportação
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [exporting, setExporting] = useState(false);
+
+    // Auto-refresh desativado
+
+    // Refs para manter valores atualizados no interval
+    const filtersRef = useRef({ search, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page });
+
+    // vCard Options Modal
+    const [showVCardOptions, setShowVCardOptions] = useState(false);
+    const [vCardConfig, setVCardConfig] = useState({
+        customText: '',
+        addSequence: false,
+        source: null // 'selected' or 'filtered'
+    });
+
+    // Reassign Modal
+    const [showReassignModal, setShowReassignModal] = useState(false);
+    const [reassignTarget, setReassignTarget] = useState('');
+    const [reassigning, setReassigning] = useState(false);
+
+    // Edit Lead Details
+    const [editMode, setEditMode] = useState(false);
+    const [editedName, setEditedName] = useState('');
+    const [editedEmail, setEditedEmail] = useState('');
+    const [editedPhone, setEditedPhone] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    // Atualizar ref quando filtros mudam
+    useEffect(() => {
+        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page };
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page]);
+
+    const loadLeads = useCallback(async () => {
+        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page } = filtersRef.current;
+        const params = { page, limit: LIMIT };
+        if (search) {
+            if (searchByObservation) {
+                params.search_observation = search;
+            } else {
+                params.search = search;
+            }
+        }
+        if (statusFilter) params.status = statusFilter;
+        if (campaignFilter) params.campaign_id = campaignFilter;
+        if (subcampaignFilter) params.subcampaign_id = subcampaignFilter;
+        if (inGroupFilter) params.in_group = inGroupFilter;
+        if (sellerFilter) params.seller_id = sellerFilter;
+        try {
+            const data = await api.getLeads(params);
+            setLeads(data.leads);
+            setPagination(data.pagination || { total: data.leads.length, pages: 1 });
+        } catch (e) {
+            console.error('Erro ao carregar leads:', e);
+        }
+        setLoading(false);
+    }, []);
+
+    // Sincronizar status de grupo dos leads
+    const syncGroupStatus = async (showFeedback = false) => {
+        if (showFeedback) setSyncing(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/group-sync/sync-group-status`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Status de grupo sincronizado:', data);
+
+                // Debug: Mostrar informações detalhadas
+                if (data.debug) {
+                    console.log('🔍 DEBUG - Exemplos de números DOS GRUPOS:', data.debug.groupSamples);
+                    console.log('🔍 DEBUG - Exemplos de números DOS LEADS:', data.debug.leadSamples);
+                    console.log(`🔍 DEBUG - Total de leads: ${data.total}`);
+                    console.log(`🔍 DEBUG - Leads com telefone: ${data.totalWithPhone || 'N/A'}`);
+                    console.log(`🔍 DEBUG - Números únicos nos grupos: ${data.uniqueNumbers}`);
+                    console.log(`🔍 DEBUG - Matches encontrados: ${data.inGroup}`);
+                }
+
+                if (showFeedback) {
+                    const msg = `✅ Sincronização concluída! ${data.duration ? `(${data.duration})` : ''}\n\n📊 Total de leads: ${data.total}\n${data.totalWithPhone ? `📊 Leads com telefone: ${data.totalWithPhone}\n` : ''}✅ No grupo: ${data.inGroup}\n❌ Fora do grupo: ${data.notInGroup}\n📱 Grupos processados: ${data.groupsProcessed}\n🔢 Números únicos nos grupos: ${data.uniqueNumbers}`;
+                    alert(msg);
+                }
+
+                // Recarregar leads após sincronização
+                loadLeads();
+            } else {
+                throw new Error('Erro ao sincronizar');
+            }
+        } catch (error) {
+            console.error('Erro ao sincronizar status de grupo:', error);
+            if (showFeedback) {
+                alert('❌ Erro ao sincronizar status de grupo. Verifique se há grupos conectados.');
+            }
+        } finally {
+            if (showFeedback) setSyncing(false);
+        }
+    };
+
+    // Função para gerar vCard
+    // Função para gerar vCard
+    // Função para gerar vCard
+    const generateVCard = (lead, index, config = {}) => {
+        let nameParts = [];
+
+        // 1. Texto personalizado (Prefixo)
+        if (config.customText) {
+            nameParts.push(config.customText);
+        }
+
+        // 2. Numeração sequencial
+        if (config.addSequence) {
+            nameParts.push(String(index + 1).padStart(2, '0'));
+        }
+
+        // 3. Nome original
+        nameParts.push(lead.first_name || 'Contato');
+
+        const finalName = nameParts.join(' ');
+        const phone = lead.phone || '';
+
+        return `BEGIN:VCARD\nVERSION:3.0\nFN:${finalName}\nTEL;TYPE=CELL:${phone}\nEND:VCARD`;
+    };
+
+    // Exportar leads selecionados
+    const exportSelected = async (format) => {
+        if (selectedUuids.size === 0) {
+            alert('Selecione pelo menos um lead para exportar');
+            return;
+        }
+
+        // Se for vCard, abrir modal de opções primeiro
+        if (format === 'vcard') {
+            setVCardConfig({ customText: '', addSequence: false, source: 'selected' });
+            setShowVCardOptions(true); // Abre modal e interrompe fluxo
+            setShowExportMenu(false);
+            return;
+        }
+
+        setExporting(true);
+        setShowExportMenu(false);
+
+        try {
+            // Buscar todos os leads selecionados do backend (não apenas da página atual)
+            const uuidsArray = Array.from(selectedUuids);
+
+            // Fazer requisição ao backend para buscar os leads pelos UUIDs
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/leads/by-uuids`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ uuids: uuidsArray })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao buscar leads');
+            }
+
+            const data = await response.json();
+            const selectedLeads = data.leads || [];
+
+            if (selectedLeads.length === 0) {
+                alert('Nenhum lead encontrado para exportar');
+                return;
+            }
+
+            if (format === 'vcard') {
+                // OBS: Este bloco 'vcard' dentro de exportSelected agora é só fallback para CSV ou uso direto
+                // A exportação vCard agora passa pelo modal e confirmVCardExport
+                const vcards = selectedLeads.map(lead => generateVCard(lead)).join('\n');
+                const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `leads_selecionados_${selectedLeads.length}.vcf`;
+                a.click();
+                alert(`✅ ${selectedLeads.length} leads exportados em formato vCard!`);
+            } else if (format === 'csv') {
+                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status'];
+                const rows = selectedLeads.map(l => [
+                    l.first_name || '',
+                    l.email || '',
+                    l.phone || '',
+                    l.product || '',
+                    l.campaign_name || '',
+                    l.status_name || ''
+                ]);
+                const csv = [headers, ...rows].map(row => row.join(';')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `leads_selecionados_${selectedLeads.length}.csv`;
+                a.click();
+                alert(`✅ ${selectedLeads.length} leads exportados em formato CSV!`);
+            }
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+            alert('❌ Erro ao exportar leads: ' + error.message);
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    // Exportar todos os leads filtrados
+    const exportFiltered = async (format) => {
+        setExporting(true);
+        setShowExportMenu(false);
+
+        try {
+            const params = { limit: 10000 };
+            if (search) params.search = search;
+            if (statusFilter) params.status_id = statusFilter;
+            if (campaignFilter) params.campaign_id = campaignFilter;
+            if (subcampaignFilter) params.subcampaign_id = subcampaignFilter;
+            if (sellerFilter) params.seller_id = sellerFilter;
+            if (inGroupFilter) params.in_group = inGroupFilter;
+
+            const data = await api.exportLeads(params);
+            const allLeads = data.leads || [];
+
+            if (allLeads.length === 0) {
+                alert('Nenhum lead encontrado para exportar');
+                return;
+            }
+
+            if (format === 'vcard') {
+                const vcards = allLeads.map(lead => generateVCard(lead)).join('\n');
+                const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `leads_filtrados_${allLeads.length}.vcf`;
+                a.click();
+                alert(`✅ ${allLeads.length} leads exportados em formato vCard!`);
+            } else if (format === 'csv') {
+                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status'];
+                const rows = allLeads.map(l => [
+                    l.first_name || '',
+                    l.email || '',
+                    l.phone || '',
+                    l.product || '',
+                    l.campaign_name || '',
+                    l.status_name || ''
+                ]);
+                const csv = [headers, ...rows].map(row => row.join(';')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `leads_filtrados_${allLeads.length}.csv`;
+                a.click();
+                alert(`✅ ${allLeads.length} leads exportados em formato CSV!`);
+            }
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+            alert('❌ Erro ao exportar leads');
+        } finally {
+            setExporting(false);
+        }
+    }
+
+    // Processar exportação vCard após confirmação do modal
+    const confirmVCardExport = async () => {
+        setShowVCardOptions(false);
+        setExporting(true);
+
+        try {
+            let leadsToExport = [];
+
+            if (vCardConfig.source === 'selected') {
+                // Lógica de exportSelected
+                const uuidsArray = Array.from(selectedUuids);
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/leads/by-uuids`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uuids: uuidsArray })
+                });
+                if (!response.ok) throw new Error('Erro ao buscar leads');
+                const data = await response.json();
+                leadsToExport = data.leads || [];
+            } else if (vCardConfig.source === 'filtered') {
+                // Lógica de exportFiltered
+                const params = { limit: 10000 };
+                if (search) params.search = search;
+                if (statusFilter) params.status_id = statusFilter;
+                if (campaignFilter) params.campaign_id = campaignFilter;
+                if (subcampaignFilter) params.subcampaign_id = subcampaignFilter;
+                if (sellerFilter) params.seller_id = sellerFilter;
+                if (inGroupFilter) params.in_group = inGroupFilter;
+
+                const data = await api.exportLeads(params);
+                leadsToExport = data.leads || [];
+            }
+
+            if (leadsToExport.length === 0) {
+                alert('Nenhum lead encontrado para exportar');
+                return;
+            }
+
+            // Gerar vCards com as opções
+            const vcards = leadsToExport.map((lead, index) => generateVCard(lead, index, vCardConfig)).join('\n');
+            const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leads_export_${vCardConfig.source}_${leadsToExport.length}.vcf`;
+            a.click();
+            alert(`✅ ${leadsToExport.length} leads exportados em formato vCard!`);
+
+        } catch (error) {
+            console.error('Erro ao exportar vCard:', error);
+            alert('❌ Erro ao exportar: ' + error.message);
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    // Bulk Reassign
+    const handleBulkReassign = async () => {
+        if (!reassignTarget && reassignTarget !== '') return; // Allow empty string to unassign if needed, though usually we want a target
+        if (selectedUuids.size === 0) return;
+
+        setReassigning(true);
+        try {
+            const uuidsArray = Array.from(selectedUuids);
+            // Se reassignTarget for string vazia, passamos null? Ou o backend trata string vazia?
+            // O backend espera seller_id (int) ou null.
+            const targetId = reassignTarget ? parseInt(reassignTarget) : null;
+
+            await api.bulkReassignLeads(uuidsArray, targetId);
+
+            alert(`✅ ${uuidsArray.length} leads reatribuídos com sucesso!`);
+            setShowReassignModal(false);
+            setReassignTarget('');
+            setSelectedUuids(new Set());
+            setSelectAll(false);
+            loadLeads();
+        } catch (error) {
+            console.error('Erro ao reatribuir:', error);
+            alert('❌ Erro ao reatribuir leads: ' + error.message);
+        } finally {
+            setReassigning(false);
+        }
+    };
+
+    // Carregamento inicial
+    useEffect(() => {
+        api.getStatuses().then(d => setStatuses(d.statuses));
+        api.getWhatsAppTemplates().then(d => setWhatsappTemplates(d.templates || [])).catch(() => { });
+        // Vendedoras e admin carregam campanhas e subcampanhas
+        api.getCampaigns({ active_only: true }).then(d => setCampaigns(d.campaigns));
+        api.getSubcampaigns({ active_only: true }).then(d => setSubcampaigns(d.subcampaigns || [])).catch(() => { });
+        if (isAdmin) {
+            api.getSellers().then(d => setSellers(d.sellers || []));
+        }
+        loadLeads();
+
+        // Sincronização removida - agora apenas manual via botão "Sincronizar Grupo"
+        // Isso preserva as marcações manuais de in_group
+    }, [loadLeads, isAdmin]);
+
+    // Recarregar quando filtros ou página mudam (SEM DEBOUNCE - filtro instantâneo)
+    useEffect(() => {
+        loadLeads();
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page, loadLeads]);
+
+    // Reset página quando filtros mudam
+    useEffect(() => {
+        setPage(1);
+        setSelectedUuids(new Set());
+        setSelectAll(false);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter]);
+
+    // Fechar dropdown de exportação ao clicar fora
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (showExportMenu && !e.target.closest('.export-dropdown')) {
+                setShowExportMenu(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [showExportMenu]);
+
+    // Auto-refresh removido
+
+    const updateStatus = async (uuid, status_id) => {
+        await api.updateLeadStatus(uuid, status_id || null); // Permite limpar status
+        loadLeads();
+        if (selectedLead?.uuid === uuid) setSelectedLead({ ...selectedLead, status_id });
+    };
+
+    const toggleInGroup = async (uuid, current) => {
+        await api.updateLeadInGroup(uuid, !current);
+        loadLeads();
+        if (selectedLead?.uuid === uuid) setSelectedLead({ ...selectedLead, in_group: !current });
+    };
+
+    const toggleChecking = async (uuid, current) => {
+        await api.updateLeadChecking(uuid, !current);
+        loadLeads();
+        if (selectedLead?.uuid === uuid) setSelectedLead({ ...selectedLead, checking: !current });
+    };
+
+    const toggleSaleCompleted = async (uuid, current) => {
+        await api.updateLeadSaleCompleted(uuid, !current);
+        loadLeads();
+        if (selectedLead?.uuid === uuid) setSelectedLead({ ...selectedLead, sale_completed: !current });
+    };
+
+    const addObs = async () => {
+        if (!observation.trim()) return;
+        const result = await api.addObservation(selectedLead.uuid, observation);
+        setSelectedLead({ ...selectedLead, observations: result.observations });
+        setObservation('');
+        loadLeads();
+    };
+
+    // WhatsApp functions
+    const openWhatsappModal = (lead) => {
+        // Copiar número para área de transferência
+        if (lead?.phone) {
+            const phone = lead.phone.replace(/\D/g, '');
+            navigator.clipboard.writeText(phone);
+        }
+        setWhatsappLead(lead);
+        setShowWhatsappModal(true);
+    };
+
+    const sendWhatsappMessage = (template) => {
+        if (!whatsappLead?.phone) return;
+        const phone = whatsappLead.phone.replace(/\D/g, '');
+        let message = template.message
+            .replace(/{nome}/gi, whatsappLead.first_name || '')
+            .replace(/{produto}/gi, whatsappLead.product_name || '');
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+        setShowWhatsappModal(false);
+    };
+
+    const copyMessage = (template) => {
+        let message = template.message
+            .replace(/{nome}/gi, whatsappLead?.first_name || '')
+            .replace(/{produto}/gi, whatsappLead?.product_name || '');
+        navigator.clipboard.writeText(message);
+        // Feedback visual rápido (poderia adicionar um toast, mas vamos manter simples)
+    };
+
+    const sendWhatsappDirect = () => {
+        if (!whatsappLead?.phone) return;
+        const phone = whatsappLead.phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${phone}`, '_blank');
+        setShowWhatsappModal(false);
+    };
+
+    // Funções de Agendamento
+    const openScheduleModal = (lead) => {
+        setScheduleLead(lead);
+        setScheduleDate('');
+        setScheduleTime('');
+        setScheduleObservation('');
+        setShowScheduleModal(true);
+    };
+
+    const createSchedule = async () => {
+        if (!scheduleLead || !scheduleDate || !scheduleTime) return;
+        const scheduledAt = `${scheduleDate}T${scheduleTime}:00`;
+        try {
+            await api.createSchedule({
+                lead_id: scheduleLead.id,
+                scheduled_at: scheduledAt,
+                observation: scheduleObservation || null
+            });
+            setShowScheduleModal(false);
+            loadLeads();
+        } catch (e) {
+            console.error('Erro ao criar agendamento:', e);
+        }
+    };
+
+    // Funções de Edição de Lead
+    const startEdit = () => {
+        setEditedName(selectedLead.first_name || '');
+        setEditedEmail(selectedLead.email || '');
+        setEditedPhone(selectedLead.phone || '');
+        setEditMode(true);
+    };
+
+    const cancelEdit = () => {
+        setEditMode(false);
+        setEditedName('');
+        setEditedEmail('');
+        setEditedPhone('');
+    };
+
+    const saveLeadDetails = async () => {
+        if (!editedName.trim()) {
+            alert('Nome é obrigatório');
+            return;
+        }
+
+        // Validação de email
+        if (editedEmail && editedEmail.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(editedEmail.trim())) {
+                alert('Formato de email inválido');
+                return;
+            }
+        }
+
+        setSaving(true);
+        try {
+            const result = await api.updateLeadDetails(selectedLead.uuid, {
+                first_name: editedName.trim(),
+                email: editedEmail.trim() || null,
+                phone: editedPhone.trim() || null
+            });
+
+            // Atualizar o lead selecionado com os novos dados
+            setSelectedLead(result.lead);
+            setEditMode(false);
+
+            // Recarregar a lista de leads
+            loadLeads();
+
+            alert('✅ Lead atualizado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+            alert('❌ Erro ao atualizar lead: ' + (error.message || 'Tente novamente'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+
+    // Verificar se lead tem observação (ícone verde)
+    const hasNote = (lead) => {
+        return lead.observations && lead.observations.length > 0;
+    };
+
+    // Seleção individual
+    const toggleSelect = (uuid) => {
+        const newSet = new Set(selectedUuids);
+        if (newSet.has(uuid)) {
+            newSet.delete(uuid);
+            setSelectAll(false);
+        } else {
+            newSet.add(uuid);
+        }
+        setSelectedUuids(newSet);
+        setTotalSelected(newSet.size);
+    };
+
+    // Selecionar TODOS os leads (busca todos os UUIDs do servidor)
+    const toggleSelectAll = async () => {
+        if (selectAll) {
+            setSelectedUuids(new Set());
+            setSelectAll(false);
+            setTotalSelected(0);
+        } else {
+            // Buscar TODOS os UUIDs do servidor (não só da página)
+            const params = {};
+            if (search) params.search = search;
+            if (statusFilter) params.status = statusFilter;
+            if (campaignFilter) params.campaign_id = campaignFilter;
+            if (inGroupFilter) params.in_group = inGroupFilter;
+            if (sellerFilter) params.seller_id = sellerFilter;
+
+            const data = await api.getAllLeadUuids(params);
+            setSelectedUuids(new Set(data.uuids));
+            setSelectAll(true);
+            setTotalSelected(data.total);
+        }
+    };
+
+    const deleteSelected = async () => {
+        if (selectedUuids.size === 0) return;
+        if (!confirm(`Tem certeza que deseja excluir ${selectedUuids.size} lead(s)?`)) return;
+
+        await api.deleteLeadsBulk(Array.from(selectedUuids));
+        setSelectedUuids(new Set());
+        setSelectAll(false);
+        setTotalSelected(0);
+        loadLeads();
+    };
+
+    const formatPhone = (phone) => phone?.replace(/\D/g, '') || '';
+    const formatDate = (d) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    return (
+        <div className="fade-in">
+            <div className="page-header">
+                <h1 className="page-title">Leads</h1>
+            </div>
+
+            {/* Filtros */}
+            <div className="card" style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ flex: 1, minWidth: 200, position: 'relative', display: 'flex', gap: 8 }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                            <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                            <input
+                                className="form-input"
+                                style={{
+                                    paddingLeft: 40,
+                                    opacity: isAdmin ? 1 : 0.7,
+                                    background: isAdmin ? undefined : 'rgba(255,255,255,0.05)',
+                                    borderColor: searchByObservation ? '#f59e0b' : undefined
+                                }}
+                                placeholder={searchByObservation ? "Buscar nas observações..." : "Buscar por nome, email ou telefone..."}
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            onClick={() => setSearchByObservation(!searchByObservation)}
+                            title={searchByObservation ? "Pesquisar por nome/email/telefone" : "Pesquisar nas observações"}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 8,
+                                border: searchByObservation ? '2px solid #f59e0b' : '1px solid var(--border)',
+                                background: searchByObservation ? 'rgba(245, 158, 11, 0.2)' : 'var(--bg-secondary)',
+                                color: searchByObservation ? '#f59e0b' : 'var(--text-secondary)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontWeight: searchByObservation ? 600 : 400
+                            }}
+                        >
+                            <FileText size={16} />
+                            OBS
+                        </button>
+                    </div>
+                    <select className="form-select" style={{ width: 130 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                        <option value="">Status</option>
+                        <option value="null" style={{ color: '#f59e0b' }}>⚠ Sem status</option>
+                        {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    {campaigns.length > 0 && (
+                        <select className="form-select" style={{ width: 150, opacity: isAdmin ? 1 : 0.7 }} value={campaignFilter} onChange={e => { setCampaignFilter(e.target.value); setSubcampaignFilter(''); }}>
+                            <option value="">Campanhas</option>
+                            {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    )}
+                    {subcampaigns.length > 0 && (
+                        <select className="form-select" style={{ width: 150, opacity: isAdmin ? 1 : 0.7 }} value={subcampaignFilter} onChange={e => setSubcampaignFilter(e.target.value)}>
+                            <option value="">Subcampanhas</option>
+                            {subcampaigns
+                                .filter(sc => !campaignFilter || sc.campaign_id === parseInt(campaignFilter))
+                                .map(sc => (
+                                    <option key={sc.id} value={sc.id} style={{ color: sc.color }}>
+                                        ● {sc.name}
+                                    </option>
+                                ))}
+                        </select>
+                    )}
+                    {isAdmin && sellers.length > 0 && (
+                        <select className="form-select" style={{ width: 150 }} value={sellerFilter} onChange={e => setSellerFilter(e.target.value)}>
+                            <option value="">Vendedora</option>
+                            <option value="null" style={{ color: '#f59e0b' }}>⚠ Sem vendedora</option>
+                            {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    )}
+                    <select className="form-select" style={{ width: 130 }} value={inGroupFilter} onChange={e => setInGroupFilter(e.target.value)}>
+                        <option value="">Grupo</option>
+                        <option value="true">No grupo</option>
+                        <option value="false">Fora</option>
+                    </select>
+                    {isAdmin && (
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => syncGroupStatus(true)}
+                            disabled={syncing}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '8px 16px',
+                                whiteSpace: 'nowrap'
+                            }}
+                            title="Sincronizar status de grupo dos leads com participantes dos grupos WhatsApp"
+                        >
+                            <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
+                            {syncing ? 'Sincronizando...' : 'Sincronizar Grupo'}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Barra de ações em massa */}
+            {/* Barra de ações em massa */}
+            <div className="card" style={{ marginBottom: 16, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16, background: selectedUuids.size > 0 ? (isAdmin ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)') : undefined }}>
+                <button className="btn btn-ghost btn-sm" onClick={toggleSelectAll}>
+                    {selectAll ? <CheckSquare size={16} /> : <Square size={16} />}
+                    {selectAll ? ` Desmarcar todos (${totalSelected})` : ` Selecionar todos (${pagination.total})`}
+                </button>
+
+                {selectedUuids.size > 0 && (
+                    <>
+                        {isAdmin ? (
+                            <span style={{ color: '#ef4444', fontSize: '0.875rem', fontWeight: 600 }}>
+                                {selectedUuids.size} selecionado(s)
+                            </span>
+                        ) : (
+                            <span style={{ color: '#3b82f6', fontSize: '0.875rem', fontWeight: 600 }}>
+                                {selectedUuids.size} selecionado(s)
+                            </span>
+                        )}
+
+                        {isAdmin && (
+                            <button className="btn btn-danger btn-sm" onClick={deleteSelected}>
+                                <Trash2 size={14} /> Excluir {selectedUuids.size}
+                            </button>
+                        )}
+
+                        {isAdmin && (
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowReassignModal(true)}
+                                style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }}
+                            >
+                                <UserCheck size={14} /> Reatribuir {selectedUuids.size}
+                            </button>
+                        )}
+
+                        {/* Botão de Exportação */}
+                        <div className="export-dropdown" style={{ position: 'relative' }}>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                disabled={exporting}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6
+                                }}
+                            >
+                                <Download size={14} />
+                                {exporting ? 'Exportando...' : `Exportar ${selectedUuids.size}`}
+                                <ChevronDown size={12} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {showExportMenu && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: 0,
+                                        marginTop: 4,
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: 8,
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                        zIndex: 1000,
+                                        minWidth: 180,
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <div style={{ padding: '4px 0' }}>
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={() => exportSelected('vcard')}
+                                            style={{
+                                                width: '100%',
+                                                justifyContent: 'flex-start',
+                                                padding: '8px 12px',
+                                                fontSize: '0.8rem'
+                                            }}
+                                        >
+                                            📇 vCard (Contatos)
+                                        </button>
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={() => exportSelected('csv')}
+                                            style={{
+                                                width: '100%',
+                                                justifyContent: 'flex-start',
+                                                padding: '8px 12px',
+                                                fontSize: '0.8rem'
+                                            }}
+                                        >
+                                            📊 CSV (Planilha)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                    Total: {pagination.total} leads
+                </span>
+            </div>
+
+            {/* Modal de Opções vCard */}
+            {showVCardOptions && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div className="card" style={{ width: 400, maxWidth: '90%' }}>
+                        <h3 style={{ marginBottom: 16 }}>Opções de Exportação vCard</h3>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <label className="form-label">Texto Personalizado (Prefixo)</label>
+                            <input
+                                className="form-input"
+                                placeholder="Ex: LP, Cliente..."
+                                value={vCardConfig.customText}
+                                onChange={e => setVCardConfig({ ...vCardConfig, customText: e.target.value })}
+                            />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                Será adicionado antes do nome. Ex: "<strong>{vCardConfig.customText || 'LP'}</strong> João"
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: 24 }}>
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={vCardConfig.addSequence}
+                                    onChange={e => setVCardConfig({ ...vCardConfig, addSequence: e.target.checked })}
+                                />
+                                Adicionar numeração sequencial (01, 02, 03...)
+                            </label>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4, marginLeft: 24 }}>
+                                Ex: "{vCardConfig.customText || 'LP'} <strong>01</strong> João"
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button className="btn btn-ghost" onClick={() => setShowVCardOptions(false)}>Cancelar</button>
+                            <button className="btn btn-primary" onClick={confirmVCardExport}>Baixar vCard</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Reatribuição em Massa */}
+            {showReassignModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div className="card" style={{ width: 400, maxWidth: '90%' }}>
+                        <h3 style={{ marginBottom: 16 }}>Reatribuir Leads</h3>
+                        <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
+                            Selecione a vendedora para quem você deseja mover os <strong>{selectedUuids.size}</strong> leads selecionados.
+                        </p>
+
+                        <div style={{ marginBottom: 24 }}>
+                            <label className="form-label">Nova Vendedora</label>
+                            <select
+                                className="form-select"
+                                style={{ width: '100%' }}
+                                value={reassignTarget}
+                                onChange={e => setReassignTarget(e.target.value)}
+                            >
+                                <option value="">Selecione uma vendedora...</option>
+                                {sellers.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                            <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: 8 }}>
+                                ⚠ Esta ação moverá os leads selecionados imediatamente.
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => setShowReassignModal(false)}
+                                disabled={reassigning}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleBulkReassign}
+                                disabled={reassigning || !reassignTarget}
+                                style={{ background: '#f59e0b', borderColor: '#f59e0b' }}
+                            >
+                                {reassigning ? 'Salvando...' : 'Confirmar Transferência'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tabela */}
+            < div className="card" >
+                {loading ? <p>Carregando...</p> : leads.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>Nenhum lead encontrado</p> : (
+                    <div className="table-container" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                        <table style={{ position: 'relative' }}>
+                            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-secondary)' }}><tr>
+                                <th style={{ width: 40, background: 'var(--bg-secondary)' }}></th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Nome</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Telefone</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Vendedora</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Status</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Checking</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Venda</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Grupo</th>
+                                {isAdmin && <th style={{ background: 'var(--bg-secondary)' }}>Campanha</th>}
+                                <th style={{ background: 'var(--bg-secondary)' }}>Data</th>
+                                <th style={{ background: 'var(--bg-secondary)' }}>Ações</th>
+                            </tr></thead>
+                            <tbody>
+                                {leads.map((lead, idx) => {
+                                    // Vendedora só pode editar seus próprios leads
+                                    const isOwner = isAdmin || lead.seller_id === user?.id;
+                                    const rowOpacity = isOwner ? 1 : 0.6;
+
+                                    return (
+                                        <tr key={lead.uuid} style={{ background: selectedUuids.has(lead.uuid) ? 'rgba(99, 102, 241, 0.1)' : undefined, opacity: rowOpacity }}>
+                                            <td>
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    onClick={() => toggleSelect(lead.uuid)}
+                                                    style={{ padding: 4 }}
+                                                >
+                                                    {selectedUuids.has(lead.uuid) ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} />}
+                                                </button>
+                                            </td>
+                                            <td>
+                                                {lead.subcampaign_color && (
+                                                    <span
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            width: 8,
+                                                            height: 8,
+                                                            borderRadius: '50%',
+                                                            background: lead.subcampaign_color,
+                                                            marginRight: 6,
+                                                            verticalAlign: 'middle'
+                                                        }}
+                                                        title={lead.subcampaign_name || 'Subcampanha'}
+                                                    />
+                                                )}
+                                                <strong>{lead.first_name || lead.email || 'Sem nome'}</strong>
+                                            </td>
+                                            <td>
+                                                {lead.phone ? (
+                                                    (isOwner || lead.seller_id === null) ? (
+                                                        <button
+                                                            onClick={() => openWhatsappModal(lead)}
+                                                            className="whatsapp-btn"
+                                                            style={{ fontSize: '0.75rem', padding: '4px 8px', cursor: 'pointer', border: 'none', background: '#25D366', color: '#000', fontWeight: 500 }}
+                                                        >
+                                                            <Phone size={12} /> {formatPhone(lead.phone)}
+                                                        </button>
+                                                    ) : (
+                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                            {formatPhone(lead.phone)}
+                                                        </span>
+                                                    )
+                                                ) : '-'}
+                                            </td>
+                                            <td style={{ fontSize: '0.75rem' }}>
+                                                {!isAdmin && lead.seller_id === null ? (
+                                                    <select
+                                                        className="form-select"
+                                                        style={{
+                                                            width: 'auto',
+                                                            padding: '4px 8px',
+                                                            fontSize: '0.75rem',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        value=""
+                                                        onChange={async (e) => {
+                                                            if (e.target.value) {
+                                                                try {
+                                                                    await api.selfAssignLead(lead.uuid);
+                                                                    loadLeads();
+                                                                } catch (error) {
+                                                                    alert('Erro ao atribuir lead');
+                                                                }
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">- Selecione -</option>
+                                                        <option value={user?.id}>{user?.name}</option>
+                                                    </select>
+                                                ) : (
+                                                    lead.seller_name || '-'
+                                                )}
+                                            </td>
+                                            <td>
+                                                {lead.status_id ? (
+                                                    <select
+                                                        className="form-select"
+                                                        style={{
+                                                            width: 'auto',
+                                                            padding: '4px 8px',
+                                                            fontSize: '0.75rem',
+                                                            background: lead.status_color || '#6b7280',
+                                                            color: '#fff',
+                                                            border: 'none',
+                                                            borderRadius: 4,
+                                                            fontWeight: 500,
+                                                            cursor: isOwner ? 'pointer' : 'not-allowed'
+                                                        }}
+                                                        value={lead.status_id}
+                                                        onChange={e => isOwner && updateStatus(lead.uuid, e.target.value ? parseInt(e.target.value) : null)}
+                                                        disabled={!isOwner}
+                                                    >
+                                                        <option value="" style={{ background: '#1e293b', color: '#fff' }}>- Selecione -</option>
+                                                        {statuses.map(s => <option key={s.id} value={s.id} style={{ background: '#1e293b', color: '#fff' }}>{s.name}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <select
+                                                        className="form-select"
+                                                        style={{ width: 'auto', padding: '4px 8px', fontSize: '0.75rem', cursor: isOwner ? 'pointer' : 'not-allowed' }}
+                                                        value=""
+                                                        onChange={e => isOwner && updateStatus(lead.uuid, parseInt(e.target.value))}
+                                                        disabled={!isOwner}
+                                                    >
+                                                        <option value="">- Selecione -</option>
+                                                        {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                    </select>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    onClick={() => isOwner && toggleChecking(lead.uuid, lead.checking)}
+                                                    style={{ padding: 4, cursor: isOwner ? 'pointer' : 'not-allowed' }}
+                                                    disabled={!isOwner}
+                                                >
+                                                    {lead.checking ? <CheckSquare size={18} color="#10b981" /> : <Square size={18} color="#6b7280" />}
+                                                </button>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    onClick={() => isOwner && toggleSaleCompleted(lead.uuid, lead.sale_completed)}
+                                                    style={{ padding: 4, cursor: isOwner ? 'pointer' : 'not-allowed' }}
+                                                    disabled={!isOwner}
+                                                >
+                                                    {lead.sale_completed ? <CheckSquare size={18} color="#6366f1" /> : <Square size={18} color="#6b7280" />}
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    className="badge"
+                                                    style={{
+                                                        background: lead.in_group ? '#10b98122' : '#f59e0b22',
+                                                        color: lead.in_group ? '#10b981' : '#f59e0b',
+                                                        padding: '4px 8px',
+                                                        fontSize: '0.75rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 4
+                                                    }}
+                                                >
+                                                    {lead.in_group ? <UserCheck size={12} /> : <UserX size={12} />}
+                                                    {lead.in_group ? ' Sim' : ' Não'}
+                                                </span>
+                                            </td>
+                                            {isAdmin && (
+                                                <td style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                                    {lead.campaign_name || '-'}
+                                                </td>
+                                            )}
+                                            <td style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{formatDate(lead.created_at)}</td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    style={{ padding: 4, color: hasNote(lead) ? '#10b981' : undefined }}
+                                                    onClick={async () => {
+                                                        setSelectedLead(lead);
+                                                        setObservation('');
+                                                        setScheduleDate('');
+                                                        setScheduleTime('');
+                                                        // Carregar agendamentos do lead
+                                                        try {
+                                                            const data = await api.getLeadSchedules(lead.id);
+                                                            setLeadSchedules(data.schedules || []);
+                                                        } catch (e) {
+                                                            setLeadSchedules([]);
+                                                        }
+                                                    }}
+                                                    title={hasNote(lead) ? "Tem observações" : "Observações e Agendamento"}
+                                                >
+                                                    <MessageSquare size={14} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* Paginação */}
+                {
+                    pagination.pages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                style={{ opacity: page === 1 ? 0.5 : 1 }}
+                            >
+                                <ChevronLeft size={16} /> Anterior
+                            </button>
+
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                                    let pageNum;
+                                    if (pagination.pages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (page <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (page >= pagination.pages - 2) {
+                                        pageNum = pagination.pages - 4 + i;
+                                    } else {
+                                        pageNum = page - 2 + i;
+                                    }
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            className="btn btn-sm"
+                                            onClick={() => setPage(pageNum)}
+                                            style={{
+                                                background: page === pageNum ? 'var(--accent)' : 'var(--bg-hover)',
+                                                color: page === pageNum ? 'white' : 'var(--text-secondary)',
+                                                minWidth: 36,
+                                                padding: '6px 10px'
+                                            }}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                {pagination.pages > 5 && page < pagination.pages - 2 && (
+                                    <>
+                                        <span style={{ color: 'var(--text-secondary)' }}>...</span>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setPage(pagination.pages)} style={{ minWidth: 36 }}>
+                                            {pagination.pages}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+                                disabled={page === pagination.pages}
+                                style={{ opacity: page === pagination.pages ? 0.5 : 1 }}
+                            >
+                                Próximo <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )
+                }
+            </div >
+
+            {/* Modal do Lead */}
+            {
+                selectedLead && (
+                    <div className="modal-overlay" onClick={() => setSelectedLead(null)}>
+                        <div className="modal slide-up" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+                            <div className="modal-header">
+                                <h3>{editMode ? 'Editar Lead' : selectedLead.first_name}</h3>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    {!editMode && (
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            onClick={startEdit}
+                                            style={{ fontSize: '0.875rem' }}
+                                        >
+                                            ✏️ Editar
+                                        </button>
+                                    )}
+                                    <button className="btn btn-ghost btn-sm" onClick={() => { setSelectedLead(null); setEditMode(false); }}><X size={18} /></button>
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                {/* Nome */}
+                                <div style={{ marginBottom: 12 }}>
+                                    <strong>Nome:</strong>
+                                    {editMode ? (
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={editedName}
+                                            onChange={e => setEditedName(e.target.value)}
+                                            placeholder="Nome do lead"
+                                            style={{ marginTop: 4, width: '100%' }}
+                                        />
+                                    ) : (
+                                        <span style={{ marginLeft: 8 }}>{selectedLead.first_name || '-'}</span>
+                                    )}
+                                </div>
+
+                                {/* Email */}
+                                <div style={{ marginBottom: 12 }}>
+                                    <strong>Email:</strong>
+                                    {editMode ? (
+                                        <input
+                                            type="email"
+                                            className="form-input"
+                                            value={editedEmail}
+                                            onChange={e => setEditedEmail(e.target.value)}
+                                            placeholder="email@exemplo.com"
+                                            style={{ marginTop: 4, width: '100%' }}
+                                        />
+                                    ) : (
+                                        <span style={{ marginLeft: 8 }}>{selectedLead.email || '-'}</span>
+                                    )}
+                                </div>
+
+                                {/* Telefone */}
+                                <div style={{ marginBottom: 12 }}>
+                                    <strong>Telefone:</strong>
+                                    {editMode ? (
+                                        <input
+                                            type="tel"
+                                            className="form-input"
+                                            value={editedPhone}
+                                            onChange={e => setEditedPhone(e.target.value)}
+                                            placeholder="(00) 00000-0000"
+                                            style={{ marginTop: 4, width: '100%' }}
+                                        />
+                                    ) : (
+                                        <span style={{ marginLeft: 8 }}>{selectedLead.phone || '-'}</span>
+                                    )}
+                                </div>
+
+                                {/* Botões de Salvar/Cancelar */}
+                                {editMode && (
+                                    <div style={{ display: 'flex', gap: 8, marginTop: 16, marginBottom: 16 }}>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={saveLeadDetails}
+                                            disabled={saving}
+                                            style={{ flex: 1 }}
+                                        >
+                                            {saving ? '💾 Salvando...' : '💾 Salvar'}
+                                        </button>
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={cancelEdit}
+                                            disabled={saving}
+                                            style={{ flex: 1 }}
+                                        >
+                                            ❌ Cancelar
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Informações não editáveis */}
+                                <p><strong>Produto:</strong> {selectedLead.product_name}</p>
+                                <p><strong>Entrou no grupo:</strong>
+                                    <span style={{ marginLeft: 8, color: selectedLead.in_group ? '#10b981' : '#f59e0b' }}>
+                                        {selectedLead.in_group ? 'Sim ✓' : 'Não ✗'}
+                                    </span>
+                                </p>
+                                {selectedLead.campaign_name && <p><strong>Campanha:</strong> {selectedLead.campaign_name}</p>}
+                                {selectedLead.phone && !editMode && <a href={`https://wa.me/${formatPhone(selectedLead.phone)}`} target="_blank" rel="noopener" className="whatsapp-btn" style={{ marginTop: 12 }}><Phone size={14} /> Abrir WhatsApp</a>}
+                            </div>
+
+                            {/* Seção de Agendamento */}
+                            <div className="form-group" style={{
+                                background: 'rgba(99, 102, 241, 0.1)',
+                                padding: 16,
+                                borderRadius: 8,
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                marginBottom: 16
+                            }}>
+                                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Calendar size={16} color="#6366f1" /> Agendar Contato
+                                </label>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                                    <input
+                                        type="date"
+                                        className="form-input"
+                                        style={{
+                                            flex: '1 1 130px',
+                                            minWidth: 130,
+                                            colorScheme: 'dark'
+                                        }}
+                                        value={scheduleDate}
+                                        onChange={e => setScheduleDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                    />
+                                    <input
+                                        type="time"
+                                        className="form-input"
+                                        style={{
+                                            flex: '0 0 110px',
+                                            minWidth: 110,
+                                            colorScheme: 'dark'
+                                        }}
+                                        value={scheduleTime}
+                                        onChange={e => setScheduleTime(e.target.value)}
+                                    />
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={async () => {
+                                            if (!scheduleDate || !scheduleTime) {
+                                                alert('Selecione data e hora');
+                                                return;
+                                            }
+                                            try {
+                                                const scheduledAt = `${scheduleDate}T${scheduleTime}:00`;
+                                                await api.createSchedule({
+                                                    lead_id: selectedLead.id,
+                                                    scheduled_at: scheduledAt,
+                                                    observation: observation || null
+                                                });
+                                                alert('Agendamento criado!');
+                                                setScheduleDate('');
+                                                setScheduleTime('');
+                                                // Recarregar agendamentos do lead
+                                                const data = await api.getLeadSchedules(selectedLead.id);
+                                                setLeadSchedules(data.schedules || []);
+                                                loadLeads();
+                                            } catch (err) {
+                                                console.error('Erro ao agendar:', err);
+                                                alert('Erro ao criar agendamento: ' + (err.message || 'Tente novamente'));
+                                            }
+                                        }}
+                                        disabled={!scheduleDate || !scheduleTime}
+                                        style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
+                                    >
+                                        <Calendar size={16} /> Agendar
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Agendamentos do Lead */}
+                            {leadSchedules.length > 0 && (
+                                <div className="form-group">
+                                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Calendar size={14} color="#6366f1" /> Agendamentos ({leadSchedules.length})
+                                    </label>
+                                    <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: 12, borderRadius: 8, maxHeight: 120, overflow: 'auto' }}>
+                                        {leadSchedules.map((sch, i) => (
+                                            <div key={sch.uuid || i} style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '6px 0',
+                                                borderBottom: i < leadSchedules.length - 1 ? '1px solid var(--border)' : 'none'
+                                            }}>
+                                                <span style={{
+                                                    fontSize: '0.8rem',
+                                                    color: new Date(sch.scheduled_at) < new Date() ? '#ef4444' : '#6366f1',
+                                                    fontWeight: 600
+                                                }}>
+                                                    📅 {new Date(sch.scheduled_at).toLocaleDateString('pt-BR')} às {new Date(sch.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                {sch.observation && (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                        {sch.observation}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label className="form-label">Histórico de Observações</label>
+                                <div style={{ background: 'var(--bg-primary)', padding: 12, borderRadius: 8, maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                    {selectedLead.observations || 'Nenhuma observação ainda'}
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Adicionar Observação</label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <textarea className="form-textarea" style={{ minHeight: 60 }} value={observation} onChange={e => setObservation(e.target.value)} placeholder="Digite sua observação..." />
+                                    <button className="btn btn-primary" onClick={addObs} disabled={!observation.trim()}><Send size={16} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* WhatsApp Template Modal */}
+            {
+                showWhatsappModal && whatsappLead && (
+                    <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowWhatsappModal(false); }}>
+                        <div className="modal slide-up" style={{ maxWidth: 420, padding: 0 }}>
+                            {/* Header Verde */}
+                            <div style={{
+                                background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                                padding: '20px 24px',
+                                borderRadius: '12px 12px 0 0',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <h3 style={{ color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.1rem' }}>
+                                    <MessageCircle size={22} /> Enviar WhatsApp
+                                </h3>
+                                <button
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => setShowWhatsappModal(false)}
+                                    style={{ color: 'white', opacity: 0.9 }}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div style={{ padding: 24 }}>
+                                <div style={{
+                                    marginBottom: 20,
+                                    padding: 12,
+                                    background: 'var(--bg-primary)',
+                                    borderRadius: 8,
+                                    borderLeft: '4px solid #25D366'
+                                }}>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+                                        Enviando para: <strong style={{ color: 'var(--text-primary)' }}>{whatsappLead.first_name}</strong>
+                                    </p>
+                                    {whatsappLead.product_name && (
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '4px 0 0' }}>
+                                            Produto: {whatsappLead.product_name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {whatsappTemplates.length > 0 ? (
+                                    <>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12, fontWeight: 500 }}>
+                                            Selecione um template:
+                                        </p>
+                                        <div style={{ display: 'grid', gap: 10, marginBottom: 20, maxHeight: 250, overflowY: 'auto' }}>
+                                            {whatsappTemplates.map(t => (
+                                                <div
+                                                    key={t.uuid}
+                                                    style={{
+                                                        background: 'var(--bg-primary)',
+                                                        border: '1px solid var(--border)',
+                                                        borderRadius: 10,
+                                                        padding: '14px 16px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 10
+                                                    }}
+                                                >
+                                                    <button
+                                                        onClick={() => sendWhatsappMessage(t)}
+                                                        style={{
+                                                            flex: 1,
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            textAlign: 'left',
+                                                            cursor: 'pointer',
+                                                            padding: 0
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                                            <MessageCircle size={16} color="#25D366" />
+                                                            <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{t.name}</strong>
+                                                        </div>
+                                                        <p style={{
+                                                            fontSize: '0.8rem',
+                                                            color: 'var(--text-secondary)',
+                                                            margin: 0,
+                                                            lineHeight: 1.4,
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient: 'vertical',
+                                                            overflow: 'hidden'
+                                                        }}>
+                                                            {t.message.substring(0, 80)}...
+                                                        </p>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); copyMessage(t); }}
+                                                        title="Copiar mensagem"
+                                                        style={{
+                                                            background: 'var(--bg-secondary)',
+                                                            border: '1px solid var(--border)',
+                                                            borderRadius: 6,
+                                                            padding: '8px',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        <Copy size={14} color="var(--text-secondary)" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--text-secondary)' }}>
+                                        <MessageCircle size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
+                                        <p style={{ fontSize: '0.9rem', margin: 0 }}>Nenhum template criado</p>
+                                        <p style={{ fontSize: '0.8rem', margin: '4px 0 0' }}>Crie templates em Configurações → WhatsApp</p>
+                                    </div>
+                                )}
+
+                                {/* Dica para o usuário */}
+                                <div style={{
+                                    textAlign: 'center',
+                                    padding: '12px',
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-secondary)',
+                                    borderTop: '1px solid var(--border)',
+                                    marginTop: 8
+                                }}>
+                                    📋 Número copiado para a área de transferência
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
+    );
+}

@@ -1,0 +1,58 @@
+{
+  "event_id": 96,
+  "status": "completed",
+  "contact_phone": "5511999887766",
+  "contact_name": "Teste Final Abandono",
+  "contact_email": "teste.final@email.com",
+  "manychat_subscriber_id": "209431056",
+  "first_message_sent": true,
+  "first_message_sent_at": "2026-01-20T14:05:20.454+00:00",
+  "second_message_sent": true,
+  "second_message_sent_at": "2026-01-20T14:06:22.444+00:00",
+  "found_in_campaign": false,
+  "created_at": "2026-01-20T14:05:15.214463+00:00",
+  "logs": [
+    {
+      "action_type": "webhook_received",
+      "status": "success",
+      "message": "Event created successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T14:05:15.284246+00:00"
+    },
+    {
+      "action_type": "system_check",
+      "status": "warning",
+      "message": "RELOAD CHECK: Fallback Code Active",
+      "error_message": "If you see this, code is updated",
+      "created_at": "2026-01-20T14:05:15.360284+00:00"
+    },
+    {
+      "action_type": "first_message",
+      "status": "success",
+      "message": "First tag 'abandono_carrinho' added to ID 209431056",
+      "error_message": null,
+      "created_at": "2026-01-20T14:05:20.637994+00:00"
+    },
+    {
+      "action_type": "delay_wait",
+      "status": "success",
+      "message": "Waiting 1 minutes",
+      "error_message": null,
+      "created_at": "2026-01-20T14:05:20.699948+00:00"
+    },
+    {
+      "action_type": "campaign_check",
+      "status": "success",
+      "message": "Contact not found in campaign",
+      "error_message": null,
+      "created_at": "2026-01-20T14:06:21.023327+00:00"
+    },
+    {
+      "action_type": "second_message",
+      "status": "success",
+      "message": "Second tag 'abandono_carrinho_2' added successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T14:06:22.587662+00:00"
+    }
+  ]
+}

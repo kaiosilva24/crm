@@ -1,0 +1,51 @@
+{
+  "event_id": 97,
+  "status": "processing",
+  "contact_phone": "5567981720357",
+  "contact_name": "Contato Teste 1",
+  "contact_email": "contato1.teste@email.com",
+  "manychat_subscriber_id": null,
+  "first_message_sent": false,
+  "first_message_sent_at": null,
+  "second_message_sent": false,
+  "second_message_sent_at": null,
+  "found_in_campaign": false,
+  "created_at": "2026-01-20T14:10:20.778081+00:00",
+  "logs": [
+    {
+      "action_type": "webhook_received",
+      "status": "success",
+      "message": "Event created successfully",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:20.843594+00:00"
+    },
+    {
+      "action_type": "system_check",
+      "status": "warning",
+      "message": "RELOAD CHECK: Fallback Code Active",
+      "error_message": "If you see this, code is updated",
+      "created_at": "2026-01-20T14:10:20.909052+00:00"
+    },
+    {
+      "action_type": "create_subscriber",
+      "status": "error",
+      "message": "Failed to create contact: Request failed with status code 400",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:23.046507+00:00"
+    },
+    {
+      "action_type": "first_message",
+      "status": "skipped",
+      "message": "No subscriber resolved",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:23.110666+00:00"
+    },
+    {
+      "action_type": "delay_wait",
+      "status": "success",
+      "message": "Waiting 1 minutes",
+      "error_message": null,
+      "created_at": "2026-01-20T14:10:23.161734+00:00"
+    }
+  ]
+}

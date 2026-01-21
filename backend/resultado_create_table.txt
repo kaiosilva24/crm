@@ -1,0 +1,5 @@
+﻿
+­ƒöä CRIANDO TABELA: group_participants
+
+======================================================================
+ÔØî Erro: Could not find the table 'public.group_participants' in the schema cache

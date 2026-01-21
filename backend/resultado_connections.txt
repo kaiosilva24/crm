@@ -1,0 +1,14 @@
+﻿
+­ƒöì VERIFICANDO CONEX├òES WHATSAPP
+
+======================================================================
+­ƒôè Total de conex├Áes: 1
+
+ID: 15b86f4e-01dc-40c7-a09e-c2b36f5ab40d
+Nome: 01
+Status: connected
+Provider: baileys
+Phone: 556299981718
+----------------------------------------------------------------------
+
+Ô£à Conex├Áes ativas: 1

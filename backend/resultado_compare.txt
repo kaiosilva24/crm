@@ -1,0 +1,36 @@
+﻿
+­ƒôè CACHE (group_contacts_cache):
+
+­ƒôè LEADS:
+  Original: 5511976746451
+  Formatado: 5511976746451
+
+  Original: 5574999253555
+  Formatado: 5574999253555
+
+  Original: 5565992466507
+  Formatado: 5565992466507
+
+  Original: 5547997803888
+  Formatado: 5547997803888
+
+  Original: 5542999403359
+  Formatado: 5542999403359
+
+
+­ƒöì TENTANDO MATCH:
+Lead 5511976746451 -> 5511976746451
+  Match: ÔØî N├âO
+
+Lead 5574999253555 -> 5574999253555
+  Match: ÔØî N├âO
+
+Lead 5565992466507 -> 5565992466507
+  Match: ÔØî N├âO
+
+Lead 5547997803888 -> 5547997803888
+  Match: ÔØî N├âO
+
+Lead 5542999403359 -> 5542999403359
+  Match: ÔØî N├âO
+

@@ -1,0 +1,31 @@
+{
+  "error_response": {
+    "status": 400,
+    "data": {
+      "status": "error",
+      "message": "Validation error",
+      "details": {
+        "messages": {
+          "wa_id": {
+            "message": [
+              "This WhatsApp ID already exists: 5567981720357"
+            ]
+          },
+          "warning": {
+            "message": "Permission denied to import phone. Please contact support to enable this feature"
+          }
+        }
+      }
+    },
+    "headers": {
+      "date": "Tue, 20 Jan 2026 21:55:12 GMT",
+      "content-type": "application/json; charset=UTF-8",
+      "transfer-encoding": "chunked",
+      "connection": "keep-alive",
+      "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+      "cache-control": "no-store, no-cache, must-revalidate",
+      "pragma": "no-cache",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+﻿
+­ƒº¬ TESTE DO VALIDADOR - Telefone Fixo
+
+======================================================================
+N├║mero: 551134840929
+======================================================================
+
+­ƒôè An├ílise:
+Tamanho: 12 d├¡gitos
+DDI: 55 (Brasil)
+DDD: 11 (S├úo Paulo)
+N├║mero: 34840929 (8 d├¡gitos)
+Tipo: FIXO (10 d├¡gitos)
+
+­ƒö¼ Testando valida├º├úo...
+
+­ƒô× Telefone fixo detectado: 551134840929
+======================================================================
+Ô£à RESULTADO: N├║mero V├üLIDO
+
+O validador est├í funcionando corretamente.
+O n├║mero fixo deveria ter sido importado.
+
+POSS├ìVEL CAUSA:
+- O n├║mero n├úo existe no grupo que voc├¬ sincronizou
+- Ou foi importado com normaliza├º├úo diferente
+======================================================================
