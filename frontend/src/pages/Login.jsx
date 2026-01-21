@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Download } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -10,6 +11,26 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const [installPrompt, setInstallPrompt] = useState(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            console.log('👋 PWA: Evento beforeinstallprompt disparado!');
+            e.preventDefault();
+            setInstallPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        console.log('👂 PWA: Ouvindo evento beforeinstallprompt...');
+
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        setInstallPrompt(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -45,6 +66,17 @@ export default function Login() {
                     <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
                         {loading ? 'Entrando...' : 'Entrar'}
                     </button>
+                    {installPrompt && (
+                        <button
+                            type="button"
+                            className="btn btn-ghost"
+                            style={{ width: '100%', marginTop: 12, border: '1px dashed var(--accent)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            onClick={handleInstallClick}
+                        >
+                            <Download size={16} style={{ marginRight: 8 }} />
+                            Instalar App no Dispositivo
+                        </button>
+                    )}
                 </form>
             </div>
         </div>

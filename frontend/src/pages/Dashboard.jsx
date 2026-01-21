@@ -154,7 +154,7 @@ export default function Dashboard() {
             </div>
 
             {/* Main Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
                 {/* Group Status Card */}
                 <div className="card" style={{ padding: 24 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -165,7 +165,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Circular Progress */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+                    <div className="chart-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
                         <div style={{ position: 'relative', width: 120, height: 120 }}>
                             <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
                                 {/* Background circle */}
@@ -262,7 +262,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Circular Progress */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+                    <div className="chart-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
                         <div style={{ position: 'relative', width: 120, height: 120 }}>
                             <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
                                 {/* Background circle */}
@@ -352,22 +352,26 @@ export default function Dashboard() {
                 {data.sellerPerformance && data.sellerPerformance.length > 0 && (
                     <div className="card">
                         <h3 style={{ marginBottom: 20 }}>📊 Performance das Vendedoras</h3>
-                        <table><thead><tr><th>Vendedora</th><th>Leads</th><th>Conversões</th><th>Taxa</th></tr></thead><tbody>
-                            {data.sellerPerformance.map(s => (
-                                <tr key={s.id}><td>{s.name}</td><td>{s.total_leads}</td><td>{s.conversions}</td><td>{s.total_leads > 0 ? ((s.conversions / s.total_leads) * 100).toFixed(1) : 0}%</td></tr>
-                            ))}
-                        </tbody></table>
+                        <div className="table-container">
+                            <table><thead><tr><th>Vendedora</th><th>Leads</th><th>Conversões</th><th>Taxa</th></tr></thead><tbody>
+                                {data.sellerPerformance.map(s => (
+                                    <tr key={s.id}><td>{s.name}</td><td>{s.total_leads}</td><td>{s.conversions}</td><td>{s.total_leads > 0 ? ((s.conversions / s.total_leads) * 100).toFixed(1) : 0}%</td></tr>
+                                ))}
+                            </tbody></table>
+                        </div>
                     </div>
                 )}
 
                 <div className="card">
                     <h3 style={{ marginBottom: 20 }}><MessageSquare size={18} style={{ marginRight: 8 }} />Leads Recentes</h3>
                     {data.recentLeads?.length > 0 ? (
-                        <table><thead><tr><th>Nome</th><th>Produto</th><th>Status</th></tr></thead><tbody>
-                            {data.recentLeads.map(l => (
-                                <tr key={l.uuid}><td>{l.first_name}</td><td>{l.product_name}</td><td><span className="badge" style={{ background: l.status_color + '22', color: l.status_color }}>{l.status_name}</span></td></tr>
-                            ))}
-                        </tbody></table>
+                        <div className="table-container">
+                            <table><thead><tr><th>Nome</th><th>Produto</th><th>Status</th></tr></thead><tbody>
+                                {data.recentLeads.map(l => (
+                                    <tr key={l.uuid}><td>{l.first_name}</td><td>{l.product_name}</td><td><span className="badge" style={{ background: l.status_color + '22', color: l.status_color }}>{l.status_name}</span></td></tr>
+                                ))}
+                            </tbody></table>
+                        </div>
                     ) : <p style={{ color: 'var(--text-secondary)' }}>Nenhum lead ainda</p>}
                 </div>
 

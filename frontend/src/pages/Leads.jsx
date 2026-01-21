@@ -752,7 +752,7 @@ export default function Leads() {
 
             {/* Barra de ações em massa */}
             {/* Barra de ações em massa */}
-            <div className="card" style={{ marginBottom: 16, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16, background: selectedUuids.size > 0 ? (isAdmin ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)') : undefined }}>
+            <div className="card" style={{ marginBottom: 16, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', background: selectedUuids.size > 0 ? (isAdmin ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)') : undefined }}>
                 <button className="btn btn-ghost btn-sm" onClick={toggleSelectAll}>
                     {selectAll ? <CheckSquare size={16} /> : <Square size={16} />}
                     {selectAll ? ` Desmarcar todos (${totalSelected})` : ` Selecionar todos (${pagination.total})`}
@@ -1163,7 +1163,7 @@ export default function Leads() {
                 {/* Paginação */}
                 {
                     pagination.pages > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                             <button
                                 className="btn btn-ghost btn-sm"
                                 onClick={() => setPage(p => Math.max(1, p - 1))}

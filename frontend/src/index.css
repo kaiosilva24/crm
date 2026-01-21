@@ -51,6 +51,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent), #a855f7);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 40px;
@@ -124,6 +125,7 @@ body {
   font-size: 2rem;
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent), #a855f7);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -468,6 +470,104 @@ input[type="datetime-local"] {
   }
 }
 
-.spinning {
-  animation: spin 1s linear infinite;
+
+/* Responsive Design */
+
+/* Mobile Menu Button - hidden by default on desktop */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 90;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 80;
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-content {
+    padding: 16px;
+    width: 100%;
+    padding-top: 60px;
+    /* Space for the button area if needed, though button is top-right */
+  }
+
+  .app {
+    display: block;
+    /* Stack vertically if needed, but flex with fixed sidebar works too */
+  }
+
+  /* Adjust Cards and Grids for Mobile */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    /* Stack cards */
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  /* Adjust Login Card */
+  .login-card {
+    margin: 16px;
+    padding: 24px;
+  }
+
+  /* Adjust Modal */
+  .modal {
+    width: 90%;
+    max-height: 80vh;
+    padding: 16px;
+  }
+
+  /* Responsive Chart Content */
+  .chart-content {
+    flex-direction: column;
+    text-align: center;
+  }
 }

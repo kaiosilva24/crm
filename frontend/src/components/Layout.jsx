@@ -1,43 +1,52 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { LayoutDashboard, Users, FileText, LogOut, Settings, FolderOpen, DownloadCloud } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Settings, FolderOpen, DownloadCloud, Menu, X } from 'lucide-react';
 
 export default function Layout({ children }) {
     const { user, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const handleLogout = () => { logout(); navigate('/login'); };
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     return (
         <div className="app">
-            <aside className="sidebar">
+            <button className="mobile-menu-btn" onClick={toggleSidebar}>
+                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />}
+
+            <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
                 <div className="logo">🚀 Recovery CRM</div>
                 <nav>
-                    <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                         <LayoutDashboard size={20} /> Dashboard
                     </NavLink>
-                    <NavLink to="/leads" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/leads" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                         <FileText size={20} /> Leads
                     </NavLink>
                     {isAdmin && (
                         <>
-                            <NavLink to="/users" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                            <NavLink to="/users" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <Users size={20} /> Vendedoras
                             </NavLink>
-                            <NavLink to="/campaigns" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                            <NavLink to="/campaigns" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <FolderOpen size={20} /> Campanhas
                             </NavLink>
-                            <NavLink to="/groups" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                            <NavLink to="/groups" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <Users size={20} /> Grupos
                             </NavLink>
 
-                            <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                            <NavLink to="/settings" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <Settings size={20} /> Configurações
                             </NavLink>
                         </>
                     )}
                     {!isAdmin && (
-                        <NavLink to="/my-settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        <NavLink to="/my-settings" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                             <Settings size={20} /> Configurações
                         </NavLink>
                     )}
