@@ -61,6 +61,11 @@ app.use(cors({
             return callback(null, true);
         }
 
+        // Permitir IPs locais (192.168.x.x, 10.x.x.x, 172.x.x.x) para teste mobile
+        if (origin.match(/^http:\/\/192\.168\./) || origin.match(/^http:\/\/10\./) || origin.match(/^http:\/\/172\./)) {
+            return callback(null, true);
+        }
+
         console.log('❌ CORS bloqueado para:', origin);
         callback(new Error('Not allowed by CORS'));
     },
