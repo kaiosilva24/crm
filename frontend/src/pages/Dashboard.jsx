@@ -9,7 +9,7 @@ export default function Dashboard() {
     const [campaigns, setCampaigns] = useState([]);
     const [subcampaigns, setSubcampaigns] = useState([]);
     const [schedules, setSchedules] = useState([]);
-    const [campaignFilter, setCampaignFilter] = useState('');
+    const [campaignFilter, setCampaignFilter] = useState(localStorage.getItem('dashboard_campaign_filter') || '');
     const [subcampaignFilter, setSubcampaignFilter] = useState('');
     const { isAdmin } = useAuth();
 
@@ -26,7 +26,7 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        loadDashboard();
+        // loadDashboard(); // Removed to avoid double fetch, the other useEffect handles it
         loadSchedules();
         // Carregar campanhas para admin e vendedoras
         api.getCampaigns({ active_only: false }).then(d => setCampaigns(d.campaigns || []));
@@ -58,7 +58,12 @@ export default function Dashboard() {
                             className="form-select"
                             style={{ minWidth: 180 }}
                             value={campaignFilter}
-                            onChange={e => { setCampaignFilter(e.target.value); setSubcampaignFilter(''); }}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setCampaignFilter(val);
+                                localStorage.setItem('dashboard_campaign_filter', val);
+                                setSubcampaignFilter('');
+                            }}
                         >
                             <option value="">Todas as Campanhas</option>
                             {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -208,9 +213,11 @@ export default function Dashboard() {
                             <div style={{ marginBottom: 16 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No Grupo</span>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
-                                        {data.summary.inGroup || 0}
-                                    </span>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981', display: 'block' }}>
+                                            {data.summary.inGroup || 0}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div style={{
                                     height: 6,
@@ -247,6 +254,10 @@ export default function Dashboard() {
                                         transition: 'width 0.6s ease'
                                     }} />
                                 </div>
+                            </div>
+
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                Total: {data.summary.totalLeads}
                             </div>
                         </div>
                     </div>
@@ -344,6 +355,214 @@ export default function Dashboard() {
                                         transition: 'width 0.6s ease'
                                     }} />
                                 </div>
+                            </div>
+
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                Total: {data.summary.totalLeads}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* DAILY STATS CARDS ================================================= */}
+
+                {/* Group Status Card (Today) */}
+                <div className="card" style={{ padding: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                        <div style={{ background: 'rgba(16,185,129,0.2)', padding: 10, borderRadius: 10 }}>
+                            <UserCheck size={20} color="#10b981" />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Status do Grupo (Hoje)</h3>
+                    </div>
+
+                    {/* Circular Progress */}
+                    <div className="chart-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+                        <div style={{ position: 'relative', width: 120, height: 120 }}>
+                            <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+                                {/* Background circle */}
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    fill="none"
+                                    stroke="var(--border)"
+                                    strokeWidth="10"
+                                />
+                                {/* Progress circle */}
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    fill="none"
+                                    stroke="#10b981"
+                                    strokeWidth="10"
+                                    strokeDasharray={`${((data.summary.inGroupToday / (data.summary.today || 1)) * 314)} 314`}
+                                    strokeLinecap="round"
+                                    style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                                />
+                            </svg>
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#10b981' }}>
+                                    {data.summary.today > 0 ? Math.round((data.summary.inGroupToday / data.summary.today) * 100) : 0}%
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>No Grupo</div>
+                            </div>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No Grupo</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
+                                        {data.summary.inGroupToday || 0}
+                                    </span>
+                                </div>
+                                <div style={{
+                                    height: 6,
+                                    background: 'var(--border)',
+                                    borderRadius: 3,
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${data.summary.today > 0 ? (data.summary.inGroupToday / data.summary.today) * 100 : 0}%`,
+                                        background: 'linear-gradient(90deg, #10b981, #059669)',
+                                        transition: 'width 0.6s ease'
+                                    }} />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Fora do Grupo</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f59e0b' }}>
+                                        {data.summary.outGroupToday || 0}
+                                    </span>
+                                </div>
+                                <div style={{
+                                    height: 6,
+                                    background: 'var(--border)',
+                                    borderRadius: 3,
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${data.summary.today > 0 ? (data.summary.outGroupToday / data.summary.today) * 100 : 0}%`,
+                                        background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                                        transition: 'width 0.6s ease'
+                                    }} />
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                Total: {data.summary.today}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Check-in Status Card (Today) */}
+                <div className="card" style={{ padding: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                        <div style={{ background: 'rgba(99,102,241,0.2)', padding: 10, borderRadius: 10 }}>
+                            <CheckSquare size={20} color="#6366f1" />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Status do Check-in (Hoje)</h3>
+                    </div>
+
+                    {/* Circular Progress */}
+                    <div className="chart-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+                        <div style={{ position: 'relative', width: 120, height: 120 }}>
+                            <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+                                {/* Background circle */}
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    fill="none"
+                                    stroke="var(--border)"
+                                    strokeWidth="10"
+                                />
+                                {/* Progress circle */}
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    fill="none"
+                                    stroke="#6366f1"
+                                    strokeWidth="10"
+                                    strokeDasharray={`${((data.summary.checkInCompletedToday / (data.summary.today || 1)) * 314)} 314`}
+                                    strokeLinecap="round"
+                                    style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                                />
+                            </svg>
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+                                    {data.summary.today > 0 ? Math.round((data.summary.checkInCompletedToday / data.summary.today) * 100) : 0}%
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Completo</div>
+                            </div>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Check-in Completo</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6366f1' }}>
+                                        {data.summary.checkInCompletedToday || 0}
+                                    </span>
+                                </div>
+                                <div style={{
+                                    height: 6,
+                                    background: 'var(--border)',
+                                    borderRadius: 3,
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${data.summary.today > 0 ? (data.summary.checkInCompletedToday / data.summary.today) * 100 : 0}%`,
+                                        background: 'linear-gradient(90deg, #6366f1, #4f46e5)',
+                                        transition: 'width 0.6s ease'
+                                    }} />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Check-in Pendente</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>
+                                        {data.summary.checkInPendingToday || 0}
+                                    </span>
+                                </div>
+                                <div style={{
+                                    height: 6,
+                                    background: 'var(--border)',
+                                    borderRadius: 3,
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${data.summary.today > 0 ? (data.summary.checkInPendingToday / data.summary.today) * 100 : 0}%`,
+                                        background: 'linear-gradient(90deg, #64748b, #475569)',
+                                        transition: 'width 0.6s ease'
+                                    }} />
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                Total: {data.summary.today}
                             </div>
                         </div>
                     </div>

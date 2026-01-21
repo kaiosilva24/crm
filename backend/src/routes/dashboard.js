@@ -47,6 +47,8 @@ router.get('/', async (req, res) => {
             outGroupResult,
             checkInCompletedResult,
             checkInPendingResult,
+            inGroupTodayResult,
+            checkInCompletedTodayResult,
             recentResult,
             sellersResult,
             ...statusCounts
@@ -155,6 +157,62 @@ router.get('/', async (req, res) => {
             // Check-in pending (false or null)
             applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).or('checking.eq.false,checking.is.null')),
 
+            // DAILY STATS -----------------------------------------------------------------------
+
+            // In Group (Today)
+            (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayStr = today.toISOString();
+
+                if (campaign_id) {
+                    if (subcampaign_id) {
+                        let query = supabase
+                            .from('leads')
+                            .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
+                            .eq('campaign_id', parseInt(campaign_id))
+                            .eq('subcampaign_id', parseInt(subcampaign_id))
+                            .eq('lead_campaign_groups.in_group', true)
+                            .gte('created_at', todayStr);
+                        if (sellerId) query = query.eq('seller_id', sellerId);
+                        return query;
+                    } else {
+                        if (sellerId) {
+                            return supabase
+                                .from('leads')
+                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
+                                .eq('campaign_id', parseInt(campaign_id))
+                                .eq('seller_id', sellerId)
+                                .eq('lead_campaign_groups.in_group', true)
+                                .gte('created_at', todayStr);
+                        } else {
+                            // Filter by leads created today that are in group
+                            return supabase
+                                .from('leads')
+                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
+                                .eq('campaign_id', parseInt(campaign_id))
+                                .eq('lead_campaign_groups.in_group', true)
+                                .gte('created_at', todayStr);
+                        }
+                    }
+                } else {
+                    let query = supabase
+                        .from('leads')
+                        .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
+                        .eq('lead_campaign_groups.in_group', true)
+                        .gte('created_at', todayStr);
+                    if (sellerId) query = query.eq('seller_id', sellerId);
+                    return query;
+                }
+            })(),
+
+            // Check-in completed (Today)
+            applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).eq('checking', true).gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())),
+
+            // Removed explicit outGroupToday and checkInPendingToday queries
+
+            // -----------------------------------------------------------------------------------
+
             // Recent leads
             (() => {
                 let q = supabase.from('leads').select('uuid, first_name, product_name, lead_statuses(name, color)').order('created_at', { ascending: false }).limit(5);
@@ -180,6 +238,17 @@ router.get('/', async (req, res) => {
         const outGroup = outGroupResult.count || 0;
         const checkInCompleted = checkInCompletedResult.count || 0;
         const checkInPending = checkInPendingResult.count || 0;
+
+        // New Daily Stats Variables (Calculated)
+        const inGroupToday = inGroupTodayResult.count || 0;
+        const checkInCompletedToday = checkInCompletedTodayResult.count || 0;
+
+        // Calculate missing daily components to ensure sum matches todayLeads
+        const outGroupToday = Math.max(0, todayLeads - inGroupToday);
+        const checkInPendingToday = Math.max(0, todayLeads - checkInCompletedToday);
+
+
+
         const recentLeads = recentResult.data || [];
         const sellers = sellersResult.data || [];
 
@@ -280,7 +349,12 @@ router.get('/', async (req, res) => {
                 inGroup,
                 outGroup,
                 checkInCompleted,
-                checkInPending
+                checkInPending,
+                // Add daily stats to response
+                inGroupToday,
+                outGroupToday,
+                checkInCompletedToday,
+                checkInPendingToday
             },
             byStatus,
             recentLeads: recentLeadsFormatted,

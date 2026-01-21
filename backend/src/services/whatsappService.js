@@ -298,6 +298,71 @@ export async function initializeWhatsAppConnection(connectionId, usePairingCode 
         // Event: Salvar credenciais
         sock.ev.on('creds.update', saveCreds);
 
+        // --- AUTO-SYNC: Sincronização automática de grupos (Anti-Rate Limit) ---
+
+        // 1. Novos grupos ou grupos atualizados (UPSERT)
+        sock.ev.on('groups.upsert', async (groups) => {
+            console.log('🔄 Groups Upsert detected:', groups.length);
+            for (const group of groups) {
+                // Só salva se tiver nome (subject)
+                if (group.subject) {
+                    await supabase.from('whatsapp_groups').upsert({
+                        connection_id: connectionId,
+                        group_id: group.id,
+                        group_name: group.subject,
+                        participant_count: group.participants?.length || 0,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'connection_id,group_id' });
+                }
+            }
+        });
+
+        // 2. Mudança de nome/metadados (UPDATE)
+        sock.ev.on('groups.update', async (updates) => {
+            console.log('🔄 Groups Update detected:', updates.length);
+            for (const update of updates) {
+                if (update.subject) {
+                    await supabase.from('whatsapp_groups')
+                        .update({ group_name: update.subject, updated_at: new Date().toISOString() })
+                        .eq('connection_id', connectionId)
+                        .eq('group_id', update.id);
+                }
+            }
+        });
+
+        // 3. Mudança de participantes (Entrou/Saiu)
+        sock.ev.on('group-participants.update', async (event) => {
+            // event: { id: string, participants: string[], action: 'add' | 'remove' | 'promote' | 'demote' }
+            console.log(`👥 Participant update in ${event.id}: ${event.action} (${event.participants.length})`);
+
+            if (event.action === 'add' || event.action === 'remove') {
+                try {
+                    // Buscar contagem atual no banco para não ter que consultar o WhatsApp (Rate Limit Safe)
+                    const { data: currentGroup } = await supabase
+                        .from('whatsapp_groups')
+                        .select('participant_count')
+                        .eq('connection_id', connectionId)
+                        .eq('group_id', event.id)
+                        .single();
+
+                    if (currentGroup) {
+                        let newCount = currentGroup.participant_count || 0;
+                        if (event.action === 'add') newCount += event.participants.length;
+                        if (event.action === 'remove') newCount = Math.max(0, newCount - event.participants.length);
+
+                        await supabase.from('whatsapp_groups')
+                            .update({ participant_count: newCount, updated_at: new Date().toISOString() })
+                            .eq('connection_id', connectionId)
+                            .eq('group_id', event.id);
+
+                        console.log(`✅ Participant count updated for ${event.id}: ${newCount}`);
+                    }
+                } catch (err) {
+                    console.error('Erro ao atualizar contagem de participantes:', err);
+                }
+            }
+        });
+
         return sock;
     } catch (error) {
         console.error('❌ Erro ao inicializar WhatsApp:', error);
