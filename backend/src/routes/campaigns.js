@@ -52,7 +52,8 @@ router.post('/', authorize('admin'), async (req, res) => {
             name,
             description: description || null,
             is_active: true,
-            mirror_campaign_id: req.body.mirror_campaign_id || null
+            mirror_campaign_id: req.body.mirror_campaign_id || null, // Existing field (seller mirror)
+            mirror_sales_source_id: req.body.mirror_sales_source_id || null // NEW field (sales mirror)
         });
 
         res.json({ message: 'Campanha criada', campaign });
@@ -70,11 +71,14 @@ router.patch('/:uuid', authorize('admin'), async (req, res) => {
         const { uuid } = req.params;
         const { name, description, is_active } = req.body;
 
+        console.log(`📝 更新 Campanha ${uuid} com body:`, JSON.stringify(req.body));
+
         const updateData = {};
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (typeof is_active === 'boolean') updateData.is_active = is_active;
         if (req.body.mirror_campaign_id !== undefined) updateData.mirror_campaign_id = req.body.mirror_campaign_id;
+        if (req.body.mirror_sales_source_id !== undefined) updateData.mirror_sales_source_id = req.body.mirror_sales_source_id;
 
         await db.updateCampaign(uuid, updateData);
         res.json({ message: 'Campanha atualizada' });

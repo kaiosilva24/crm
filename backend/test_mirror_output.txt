@@ -1,0 +1,111 @@
+﻿­ƒº¬ TESTANDO MIRROR BUYERS COM LEAD REAL
+
+­ƒôº Testando com: simalmeida2108@gmail.com
+
+1´©ÅÔâú Verificando em ALUNOS AVAN├çADO (ID: 7)...
+
+Ô£à Lead encontrado em ALUNOS AVAN├çADO:
+   UUID: 72c7161a-7faf-46ef-99b0-ebeb358fbd35
+   Nome: Simone Alves ze Almeida
+   Email: simalmeida2108@gmail.com
+   Telefone: 5511982024390
+   Criado em: 26/01/2026, 14:47:17
+
+2´©ÅÔâú Verificando em LP 06 JAN SUPER INTERESSADOS (ID: 10)...
+
+Ô£à Lead encontrado em LP 06 JAN SUPER INTERESSADOS:
+   UUID: 6b6a3b91-4ff3-4999-aa29-6e7919bed317
+   Nome: Simone Almeida
+   Email: simalmeida2108@gmail.com
+   Telefone: 5511982024390
+   Vendido: ÔØî N├âO
+   Criado em: 24/01/2026, 17:08:05
+   Observa├º├Áes:
+[Origem: GreatPages]
+Payload: {"NOME":"Simone Almeida","EMAIL":"simalmeida2108@gmail.com","TELEFONE":"11982024390","Referral_Source":"Acesso direto","Dispositivo":"Desktop","URL":"https://herancas.pages.net.br/cadastro-super-interessados","IP_do_usuario":"45.235.21.144","Data_da_conversao":"2026-01-24 20:08:02","Id_do_formulario":"3367667_1_176047234505020028","Pais_do_usuario":"BR","Regiao_do_usuario":"S├úo Paulo","Cidade_do_usuario":"Embu das Artes","Id_da_pagina":3367667}
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+3´©ÅÔâú Procurando leads que existem em AMBAS as campanhas...
+
+­ƒôè Total de leads em LP06: 100
+
+   ­ƒôº ademaricittadini@gmail.com
+      Nome: Ademari Cittadini Stanfoca
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 09:25:15)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº lucianacomercial18@gmail.com
+      Nome: Luciana 
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:31:53)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº gleissypaz@gmail.com
+      Nome: Gleissany Paz
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:30:52)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº andreiaregina353@gmail.com
+      Nome: andreia
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 09:03:24)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº gmk220318@gmail.com
+      Nome: Edson Massanao Kamiji 
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 08:27:14)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº dbgouveia@yahoo.com.br
+      Nome: Daniela Bernardes Gouveia 
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:32:06)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº tati.fischer@gmail.com
+      Nome: Tatiana Fischer
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:37:09)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº adriano.calmon.nogueira@gmail.com
+      Nome: Adriano Calmon Nogueira
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:43:48)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº cdsprojetosculturais@gmail.com
+      Nome: Concei├º]ao Donizete dos santos
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:48:16)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº luavioleta.art@gmail.com
+      Nome: Maria de F├ítima Silva e Sousa 
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:32:18)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº oliviamorais7@gmail.com
+      Nome: Olivia Morais da Silva Pereira
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:32:00)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº fabiana@origem7.com.br
+      Nome: Fabiana
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:31:50)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº lucianappribeiro@gmail.com
+      Nome: Luciana Ribeiro
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 09:19:20)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+   ­ƒôº heloizamancuzo@yahoo.com
+      Nome: Heloiza de Souza Mancuso 
+      Existe em ALUNOS AVAN├çADO: Ô£à Sim (criado em 26/01/2026, 07:31:54)
+      Marcado como VENDIDO em LP06: Ô£à SIM
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôè RESUMO:
+   Total em LP06: 100
+   Existem em ambas: 14
+   Marcados como vendidos: 14
+   Deveriam estar marcados: 14
+
+   Ô£à Todos os leads que deveriam estar marcados EST├âO marcados!
+   O Mirror Buyers est├í funcionando corretamente.
+

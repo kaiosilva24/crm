@@ -27,8 +27,8 @@ export default function Campaigns() {
 
     useEffect(() => { loadCampaigns(); loadSubcampaigns(); }, [showArchived]);
 
-    const openNew = () => { setEditCampaign(null); setForm({ name: '', description: '', mirror_campaign_id: '' }); setShowModal(true); };
-    const openEdit = (c) => { setEditCampaign(c); setForm({ name: c.name, description: c.description || '', mirror_campaign_id: c.mirror_campaign_id || '' }); setShowModal(true); };
+    const openNew = () => { setEditCampaign(null); setForm({ name: '', description: '', mirror_campaign_id: '', mirror_sales_source_id: '' }); setShowModal(true); };
+    const openEdit = (c) => { setEditCampaign(c); setForm({ name: c.name, description: c.description || '', mirror_campaign_id: c.mirror_campaign_id || '', mirror_sales_source_id: c.mirror_sales_source_id || '' }); setShowModal(true); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -283,6 +283,31 @@ export default function Campaigns() {
                                 </select>
                                 <small style={{ display: 'block', marginTop: 4, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
                                     Se um lead já existir na campanha selecionada, ele será atribuído à mesma vendedora automaticamente.
+                                </small>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">💰 [NOVO] Espelhar Compradores de...</label>
+                                <select
+                                    className="form-select"
+                                    value={form.mirror_sales_source_id || ''}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setForm({ ...form, mirror_sales_source_id: val ? parseInt(val) : null })
+                                    }}
+                                >
+                                    <option value="">-- Não espelhar (Padrão) --</option>
+                                    {campaigns
+                                        .filter(c => !editCampaign || c.id !== editCampaign.id) // Não mostrar a própria campanha
+                                        .map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name} {c.is_active ? '(Ativa)' : '(Arquivada)'}
+                                            </option>
+                                        ))
+                                    }
+                                </select>
+                                <small style={{ display: 'block', marginTop: 4, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                                    Quando uma venda ocorrer na campanha selecionada acima, se o lead existir NESTA campanha, ele será marcado como VENDIDO aqui também.
                                 </small>
                             </div>
 

@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, supabase } from '../database/supabase.js';
 import { normalizePhone } from '../utils/phoneNormalizer.js';
+import { processSalesMirroring } from '../services/mirrorService.js';
 import fs from 'fs';
 
 const router = Router();
@@ -95,6 +96,20 @@ router.post('/hotmart', async (req, res) => {
 
         // Criar lead
         const lead = await db.createLead(leadData);
+
+        // 🚀 TRIGGER MIRRORING PROCESS
+        // Usar campaign_id se estiver disponível no payload ou query, mas aqui é difícil saber qual campanha ID
+        // Porem, se a gente nao tem campaign_id, o mirroring service ignora.
+        // Tentar inferir campaign_id... Se não tiver, não faz mirroring aqui por enquanto.
+        // MAS o usuario disse que "selecionando campanhas desejada"... O webhook genérico NAO TEM campanha associada obrigatoriamente
+        // A MENOS QUE venha no query param ou body.
+
+        // No código acima, nao vi campaign_id sendo extraido explicitamente alem do createLead.
+        // O createLead não recebe campaign_id neste endpoint (linha 52 cria leadData sem campaign_id se não estiver no body)
+        // Linha 52: leadData não tem campaign_id default.
+        // O usuario configura espelhamento NA CAMPANHA.
+        // Se este webhook cria lead SEM campanha, então não tem como espelhar DE uma campanha.
+        // Pulei este passo para o endpoint genérico /hotmart, mas vou adicionar para /greatpages que tem campaign_id.
 
         res.json({
             success: true,

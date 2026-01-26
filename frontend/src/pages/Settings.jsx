@@ -1653,7 +1653,7 @@ function ImportLeads() {
     const [showMapping, setShowMapping] = useState(false);
     const [parsedData, setParsedData] = useState([]);
     const [columns, setColumns] = useState([]);
-    const [mapping, setMapping] = useState({ nome: '', email: '', telefone: '', produto: '', status: '' });
+    const [mapping, setMapping] = useState({ nome: '', email: '', telefone: '', produto: '', status: '', vendas: '' });
 
     useEffect(() => {
         api.getSellers().then(d => setSellers(d.sellers));
@@ -1701,13 +1701,14 @@ function ImportLeads() {
 
     // Auto-detectar mapeamento
     const autoDetectMapping = (cols) => {
-        const m = { nome: '', email: '', telefone: '', produto: '' };
+        const m = { nome: '', email: '', telefone: '', produto: '', vendas: '' };
         cols.forEach(col => {
             const lower = col.toLowerCase();
             if (!m.nome && (lower.includes('nome') || lower.includes('name') || lower === 'first_name')) m.nome = col;
             if (!m.email && (lower.includes('email') || lower.includes('e-mail'))) m.email = col;
             if (!m.telefone && (lower.includes('telefone') || lower.includes('phone') || lower.includes('whatsapp') || lower.includes('celular'))) m.telefone = col;
             if (!m.produto && (lower.includes('produto') || lower.includes('product') || lower.includes('curso'))) m.produto = col;
+            if (!m.vendas && (lower.includes('vendas') || lower.includes('vendido') || lower.includes('sales') || lower.includes('sold'))) m.vendas = col;
         });
         return m;
     };
@@ -1757,7 +1758,8 @@ function ImportLeads() {
                 email: mapping.email ? row[mapping.email] : '',
                 telefone: mapping.telefone ? row[mapping.telefone] : '',
                 produto: mapping.produto ? row[mapping.produto] : '',
-                status_name: mapping.status ? row[mapping.status] : ''
+                status_name: mapping.status ? row[mapping.status] : '',
+                sale_completed: mapping.vendas ? row[mapping.vendas] : ''
             }));
 
             let data = {
@@ -1947,6 +1949,17 @@ function ImportLeads() {
                                     Use nomes como: Novo, Onboarding, Respondeu, etc.
                                 </small>
                             </div>
+
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">💰 Coluna VENDAS</label>
+                                <select className="form-select" value={mapping.vendas} onChange={e => setMapping({ ...mapping, vendas: e.target.value })}>
+                                    <option value="">-- Não importar --</option>
+                                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <small style={{ color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
+                                    Valores: "Sim", "Yes", "1", "Vendido" marcam como venda realizada.
+                                </small>
+                            </div>
                         </div>
 
                         {/* Preview */}
@@ -1961,6 +1974,7 @@ function ImportLeads() {
                                             <th style={{ color: '#6366f1' }}>Telefone</th>
                                             <th style={{ color: '#6366f1' }}>Produto</th>
                                             <th style={{ color: '#6366f1' }}>Status</th>
+                                            <th style={{ color: '#6366f1' }}>Vendas</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1971,6 +1985,7 @@ function ImportLeads() {
                                                 <td>{mapping.telefone ? row[mapping.telefone] : '-'}</td>
                                                 <td>{mapping.produto ? row[mapping.produto] : '-'}</td>
                                                 <td>{mapping.status ? row[mapping.status] : '-'}</td>
+                                                <td>{mapping.vendas ? row[mapping.vendas] : '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -1,0 +1,79 @@
+﻿­ƒöì VERIFICANDO CONFIGURA├ç├âO DE MIRROR BUYERS
+
+­ƒôè Total de campanhas: 8
+
+­ƒ¬× Campanhas com Mirror Buyers configurado: 1
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: ALUNOS AVAN├çADO
+   ID: 7
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 241
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: ALUNOS TRAVAS ENRRAIZADAS
+   ID: 8
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 24
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: DEZ 20 e 21
+   ID: 1
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 0
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: LP 05 JAN SUPER INTERESSADOS
+   ID: 5
+   Ativa: Ô£à Sim
+   ­ƒöä Espelha VENDEDORA de: LP-05 JAN26
+   ­ƒæÑ Total de leads: 420
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: LP 06 JAN SUPER INTERESSADOS
+   ID: 10
+   Ativa: Ô£à Sim
+   ­ƒöä Espelha VENDEDORA de: LP06-JAN26
+   ­ƒÆ░ Espelha COMPRADORES de: ALUNOS AVAN├çADO
+   ÔÜÖ´©Å Quando um lead entrar em "ALUNOS AVAN├çADO",
+      se ele existir em "LP 06 JAN SUPER INTERESSADOS", ser├í marcado como VENDIDO.
+   ­ƒæÑ Total de leads: 179
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: LP-05 JAN26
+   ID: 4
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 1542
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: LP-07 FEV26
+   ID: 9
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 54
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôü Campanha: LP06-JAN26
+   ID: 6
+   Ativa: Ô£à Sim
+   ­ƒæÑ Total de leads: 677
+
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒöº VERIFICA├ç├âO DE SCHEMA
+
+Colunas encontradas na tabela campaigns:
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôû COMO FUNCIONA:
+
+1. Na campanha "Alunos Avan├ºado", configure:
+   ­ƒÆ░ Espelhar Compradores de: "LP06 Jan Super Interessado"
+
+2. Quando um lead ENTRAR na campanha "LP06 Jan Super Interessado",
+   o sistema vai:
+   a) Buscar esse lead na campanha "Alunos Avan├ºado" (por email/telefone)
+   b) Se encontrar, marcar como VENDIDO automaticamente
+
+ÔÜá´©Å IMPORTANTE: O lead precisa J├ü EXISTIR em "Alunos Avan├ºado"
+   antes de entrar em "LP06 Jan Super Interessado"!
+

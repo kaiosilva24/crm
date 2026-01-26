@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, supabase } from '../database/supabase.js';
 import { wappiService } from '../services/wappiService.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { processSalesMirroring } from '../services/mirrorService.js';
 
 const router = Router();
 
@@ -651,6 +652,14 @@ router.post('/import/leads', async (req, res) => {
                 const leadProduto = lead.produto || lead.product_name || lead.product || lead.Produto || '';
                 const leadStatusName = (lead.status_name || lead.status || lead.Status || '').trim().toLowerCase();
 
+                // Normalizar sale_completed (aceita: true, "true", "sim", "yes", "1", "vendido")
+                let leadSaleCompleted = lead.sale_completed || lead.sale || lead.vendas || lead.Vendas || false;
+                if (typeof leadSaleCompleted === 'string') {
+                    const lowerSale = leadSaleCompleted.trim().toLowerCase();
+                    leadSaleCompleted = ['true', 'sim', 'yes', '1', 'vendido', 's'].includes(lowerSale);
+                }
+                leadSaleCompleted = !!leadSaleCompleted; // Garantir booleano
+
                 // Buscar status_id pelo nome
                 let leadStatusId = status_id || null;
                 if (leadStatusName && statusMap[leadStatusName]) {
@@ -829,7 +838,18 @@ router.post('/import/leads', async (req, res) => {
                             // Sempre limpa status e checking
                             updateData.status_id = null;
                             updateData.checking = false;
+                            // Sempre limpa status e checking
+                            updateData.status_id = null;
+                            updateData.checking = false;
                             console.log(`   ↳ Salvando previous: status=${existing.status_id}, checking=${existing.checking}`);
+                        }
+
+                        // Atualizar sale_completed se for true (ou se veio no CSV explicitamente)
+                        // Lógica: se o CSV diz que é venda, marcamos. Se não diz nada, mantemos o que estava (padrão)
+                        // Se quisermos que o CSV possa DESMARCAR vendas, teríamos que saber se a coluna existia no CSV.
+                        // Assumindo aqui que se vier true, atualiza.
+                        if (leadSaleCompleted) {
+                            updateData.sale_completed = true;
                         }
 
                         // LOG DE ESPELHAMENTO NA OBSERVAÇÃO
@@ -844,6 +864,14 @@ router.post('/import/leads', async (req, res) => {
 
                         await db.updateLeadById(existing.id, updateData);
                         console.log(`✅ Lead ${existing.id} atualizado com sucesso!`);
+
+                        // 🚀 TRIGGER MIRRORING (Sempre que atualizar na campanha)
+                        // User request: "so de entrar o contato lá... na outra campnha marque como vendido"
+                        // Se o lead existe e tem campanha, tenta espelhar
+                        if (existing.campaign_id) {
+                            processSalesMirroring(existing.campaign_id, { email: existing.email, phone: existing.phone }, existing.uuid);
+                        }
+
                         updated++;
                         continue; // Importante: pular para o próximo lead
                     } else {
@@ -931,10 +959,19 @@ router.post('/import/leads', async (req, res) => {
                     campaign_id,
                     subcampaign_id,
                     in_group,
+                    subcampaign_id,
+                    in_group,
+                    sale_completed: leadSaleCompleted,
                     import_batch_id: batch.id,
                     observations: obs
                 });
                 console.log(`   ↳ Lead criado: id=${newLead?.id || 'N/A'}`);
+
+                // 🚀 TRIGGER MIRRORING (Sempre que criar na campanha)
+                if (campaign_id) {
+                    processSalesMirroring(campaign_id, { email: newLead.email, phone: newLead.phone }, newLead.uuid);
+                }
+
                 imported++;
             } catch (err) {
                 console.error('❌ Error importing lead:', err.message || err);

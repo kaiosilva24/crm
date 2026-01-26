@@ -7,6 +7,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../database/supabase.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { processSalesMirroring } from '../services/mirrorService.js';
 
 const router = Router();
 
@@ -191,6 +192,9 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             leadData.product,
             config.id // Add webhook config ID to log
         );
+
+        // 🚀 TRIGGER MIRRORING PROCESS
+        processSalesMirroring(config.campaign_id, { email: leadData.email, phone: leadData.phone }, leadUuid);
 
         res.status(200).json({
             message: 'Webhook processed successfully',

@@ -829,6 +829,8 @@ export const db = {
             .select()
             .single();
         if (error) throw error;
+        cache.del('campaigns_true');
+        cache.del('campaigns_false');
         return data;
     },
 
@@ -849,6 +851,8 @@ export const db = {
             .delete()
             .eq('uuid', uuid);
         if (error) throw error;
+        cache.del('campaigns_true');
+        cache.del('campaigns_false');
     },
 
     async deactivateAllCampaigns() {
@@ -857,6 +861,8 @@ export const db = {
             .update({ is_active: false })
             .neq('id', 0); // Update all
         if (error) throw error;
+        cache.del('campaigns_true');
+        cache.del('campaigns_false');
     },
 
     // ==================== IMPORT BATCHES ====================

@@ -1,0 +1,24 @@
+﻿­ƒöº EXECUTANDO MIRROR MANUALMENTE PARA SIMONE
+
+­ƒôº Email: simalmeida2108@gmail.com
+­ƒô× Telefone: 5511982024390
+­ƒåö UUID: 72c7161a-7faf-46ef-99b0-ebeb358fbd35
+­ƒôü Campanha Origem: 7 (ALUNOS AVAN├çADO)
+
+­ƒÜÇ Chamando processSalesMirroring...
+
+­ƒ¬× Encontradas 1 campanhas espelhando a campanha 7
+   Ô×í´©Å Processando espelhamento para campanha: LP 06 JAN SUPER INTERESSADOS (10)
+      ­ƒÄ» Lead encontrado: Simone Almeida (6b6a3b91-4ff3-4999-aa29-6e7919bed317)
+      Ôä╣´©Å Lead j├í estava marcado como vendido.
+
+Ô£à Processo conclu├¡do!
+
+­ƒöì Verificando resultado...
+
+Vendido: Ô£à SIM
+
+Observa├º├Áes:
+[Origem: GreatPages]
+Payload: {"NOME":"Simone Almeida","EMAIL":"simalmeida2108@gmail.com","TELEFONE":"11982024390","Referral_Source":"Acesso direto","Dispositivo":"Desktop","URL":"https://herancas.pages.net.br/cadastro-super-interessados","IP_do_usuario":"45.235.21.144","Data_da_conversao":"2026-01-24 20:08:02","Id_do_formulario":"3367667_1_176047234505020028","Pais_do_usuario":"BR","Regiao_do_usuario":"S├úo Paulo","Cidade_do_usuario":"Embu das Artes","Id_da_pagina":3367667}
+[AUTO] Venda espelhada da campanha 7 (Lead origem: 72c7161a-7faf-46ef-99b0-ebeb358fbd35) em 26/01/2026, 15:25:26

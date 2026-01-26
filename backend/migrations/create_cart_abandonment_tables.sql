@@ -21,7 +21,7 @@ INSERT INTO cart_abandonment_settings (id, is_enabled, delay_minutes)
 VALUES (1, false, 60)
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Tabela de Eventos de Abandono de Carrinho
+-- 2. Tab ela de Eventos de Abandono de Carrinho
 CREATE TABLE IF NOT EXISTS cart_abandonment_events (
     id SERIAL PRIMARY KEY,
     contact_name TEXT,

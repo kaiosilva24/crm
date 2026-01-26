@@ -1,0 +1,34 @@
+﻿On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   backend/migrations/create_cart_abandonment_tables.sql
+	modified:   backend/src/database/supabase.js
+	modified:   backend/src/routes/campaigns.js
+	modified:   backend/src/routes/hotmart.js
+	modified:   backend/src/routes/settings.js
+	modified:   backend/src/routes/webhook.js
+	modified:   frontend/src/pages/Campaigns.jsx
+	modified:   frontend/src/pages/Settings.jsx
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backend/apply_001_migration.js
+	backend/check_db_column.js
+	backend/debug_hotmart_mirror.js
+	backend/debug_hotmart_output.txt
+	backend/debug_mirror_config.js
+	backend/debug_mirror_output.txt
+	backend/fix_mirror_config.js
+	backend/fix_mirror_config.sql
+	backend/manual_mirror_output.txt
+	backend/manual_mirror_simone.js
+	backend/src/services/mirrorService.js
+	backend/test_mirror_output.txt
+	backend/test_mirror_real.js
+	database/migrations/001_add_mirror_sales_source.sql
+	git_status.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

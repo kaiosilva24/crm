@@ -1,0 +1,95 @@
+﻿­ƒöì INVESTIGANDO WEBHOOK HOTMART ÔåÆ ALUNOS AVAN├çADO
+
+1´©ÅÔâú Verificando configura├º├Áes de webhook Hotmart...
+
+­ƒôè Total de webhooks configurados: 3
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒöù Webhook #1
+   Habilitado: Ô£à Sim
+   Round-Robin: Ô£à Sim
+   ­ƒôü Campanha: LP-07 FEV26 (ID: 9)
+   ­ƒîÉ URL: /api/hotmart/webhook1
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒöù Webhook #2
+   Habilitado: Ô£à Sim
+   Round-Robin: ÔØî N├úo
+   ­ƒôü Campanha: ALUNOS TRAVAS ENRRAIZADAS (ID: 8)
+   ­ƒîÉ URL: /api/hotmart/webhook2
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒöù Webhook #3
+   Habilitado: Ô£à Sim
+   Round-Robin: ÔØî N├úo
+   ­ƒôü Campanha: ALUNOS AVAN├çADO (ID: 7)
+   ­ƒîÉ URL: /api/hotmart/webhook3
+
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+2´©ÅÔâú Procurando webhook que aponta para ALUNOS AVAN├çADO...
+
+Ô£à ENCONTRADO!
+   Webhook #3
+   Habilitado: Ô£à Sim
+   URL: /api/hotmart/webhook3
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+3´©ÅÔâú Verificando logs recentes de webhook Hotmart...
+
+­ƒôè ├Ültimos 5 eventos:
+
+   ­ƒôà 26/01/2026, 15:08:44
+   ­ƒôº evandrocbe@hotmail.com
+   ­ƒæñ Evandro C├ñnto
+   ­ƒôª Ingresso Vip - IMERS├âO HMS AO VIVO
+   Ô£à Status: success
+   ­ƒåö Lead UUID: e8a94f94-eb46-4c9f-8623-a181515e3b2c
+
+   ­ƒôà 26/01/2026, 14:47:17
+   ­ƒôº simalmeida2108@gmail.com
+   ­ƒæñ Simone Alves ze Almeida
+   ­ƒôª Programa de Acompanhamento Avan├ºado
+   Ô£à Status: success
+   ­ƒåö Lead UUID: 72c7161a-7faf-46ef-99b0-ebeb358fbd35
+
+   ­ƒôà 26/01/2026, 14:29:29
+   ­ƒôº taisc.santos1@gmail.com
+   ­ƒæñ Ta├¡s Cardoso
+   ­ƒôª Ingresso Vip - IMERS├âO HMS AO VIVO
+   Ô£à Status: success
+   ­ƒåö Lead UUID: 151d06e9-1c0e-4524-acf9-c2f8fdbc40c4
+
+   ­ƒôà 26/01/2026, 14:08:26
+   ­ƒôº araujomarianojoelma@gmail.com
+   ­ƒæñ Joelma Mariano De Souza Araujo
+   ­ƒôª Ingresso Vip - IMERS├âO HMS AO VIVO
+   Ô£à Status: success
+   ­ƒåö Lead UUID: 9f184737-efa9-472d-9b01-0ac61ed557c9
+
+   ­ƒôà 26/01/2026, 13:17:14
+   ­ƒôº cristiano.saul@gmail.com
+   ­ƒæñ CRISTIANO SAUL
+   ­ƒôª Ingresso Vip - IMERS├âO HMS AO VIVO
+   Ô£à Status: success
+   ­ƒåö Lead UUID: ed5bd1f0-fee3-4653-9afc-a5ff775697fe
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+4´©ÅÔâú Campanhas que espelham compradores:
+
+   ­ƒôü LP 06 JAN SUPER INTERESSADOS
+      ­ƒÆ░ Espelha de: ALUNOS AVAN├çADO
+
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+­ƒôï DIAGN├ôSTICO:
+
+Ô£à Webhook configurado para ALUNOS AVAN├çADO
+Ô£à LP 06 JAN SUPER INTERESSADOS configurada para espelhar de ALUNOS AVAN├çADO
+
+­ƒÆí Para funcionar, voc├¬ precisa:
+   1. Webhook Hotmart apontando para ALUNOS AVAN├çADO (ID: 7)
+   2. LP 06 JAN SUPER INTERESSADOS com mirror_sales_source_id = 7
+   3. Quando webhook criar lead em ALUNOS AVAN├çADO, o mirrorService ser├í chamado
+   4. O mirrorService vai buscar campanhas que espelham a campanha 7
+   5. Vai encontrar LP 06 e marcar o lead como vendido l├í
+
