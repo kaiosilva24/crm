@@ -102,7 +102,7 @@ export const db = {
                 .order('name');
             if (error) throw error;
             return data || [];
-        }, 600); // 10 minutes cache
+        }, 10); // 10 seconds cache
     },
 
     async getActiveSellersInDistribution() {
@@ -117,7 +117,7 @@ export const db = {
                 .order('id');
             if (error) throw error;
             return data || [];
-        }, 300); // 5 minutes cache
+        }, 10); // 10 seconds cache
     },
 
     async createUser(userData) {
@@ -530,7 +530,11 @@ export const db = {
             if (!filters.show_inactive) {
                 query = query.or('is_active.eq.true,is_active.is.null');
             }
-            if (filters.status) query = query.eq('status_id', filters.status);
+            if (filters.status === 'null') {
+                query = query.is('status_id', null);
+            } else if (filters.status) {
+                query = query.eq('status_id', filters.status);
+            }
             if (filters.campaign_id) query = query.eq('campaign_id', filters.campaign_id);
 
             // Se tiver campaign_id E in_group, não filtra no banco (filtramos na memória usando lead_campaign_groups)

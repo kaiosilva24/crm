@@ -49,3 +49,13 @@
                         Sample Map Entry: {"lead_id":38183,"in_group":true,"campaign_id":6}
                         Filtered Batch Size: 114 (Original: 623)
 ----------------
+[2026-02-03T20:40:23.214Z] Batch processing:
+                        CampaignID: 9 (Original: 9)
+                        InGroup Target: false
+                        Leads in Batch: 343
+                        Sample Lead ID: 40337
+                        Fetched Groups: 342
+                        Map Size: 342
+                        Sample Map Entry: {"lead_id":39884,"in_group":true,"campaign_id":9}
+                        Filtered Batch Size: 90 (Original: 343)
+----------------
