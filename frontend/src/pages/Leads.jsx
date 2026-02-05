@@ -61,6 +61,7 @@ export default function Leads() {
     const [vCardConfig, setVCardConfig] = useState({
         customText: '',
         addSequence: false,
+        splitCount: 1,
         source: null // 'selected' or 'filtered'
     });
 
@@ -188,7 +189,7 @@ export default function Leads() {
 
         // Se for vCard, abrir modal de opções primeiro
         if (format === 'vcard') {
-            setVCardConfig({ customText: '', addSequence: false, source: 'selected' });
+            setVCardConfig({ customText: '', addSequence: false, splitCount: 1, source: 'selected' });
             setShowVCardOptions(true); // Abre modal e interrompe fluxo
             setShowExportMenu(false);
             return;
@@ -359,15 +360,50 @@ export default function Leads() {
                 return;
             }
 
-            // Gerar vCards com as opções
-            const vcards = leadsToExport.map((lead, index) => generateVCard(lead, index, vCardConfig)).join('\n');
-            const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `leads_export_${vCardConfig.source}_${leadsToExport.length}.vcf`;
-            a.click();
-            alert(`✅ ${leadsToExport.length} leads exportados em formato vCard!`);
+            // Verificar divisão
+            const totalLeads = leadsToExport.length;
+            const splitCount = vCardConfig.splitCount || 1;
+
+            if (splitCount > 1) {
+                // Dividir em múltiplos arquivos
+                const chunkSize = Math.ceil(totalLeads / splitCount);
+
+                for (let i = 0; i < splitCount; i++) {
+                    const start = i * chunkSize;
+                    const end = start + chunkSize;
+                    const chunk = leadsToExport.slice(start, end);
+
+                    if (chunk.length === 0) break;
+
+                    const vcards = chunk.map((lead, idx) => generateVCard(lead, start + idx, vCardConfig)).join('\n');
+                    const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+
+                    // Pequeno delay para garantir que o navegador processe múltiplos downloads
+                    setTimeout(() => {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        // Nome do arquivo: leads_parte1_de_2_(63leads).vcf
+                        a.download = `leads_parte${i + 1}_de_${splitCount}_(${chunk.length}leads).vcf`;
+                        a.click();
+                    }, i * 500);
+                }
+
+                setTimeout(() => {
+                    alert(`✅ ${totalLeads} leads exportados e divididos em ${splitCount} arquivos!`);
+                }, splitCount * 500 + 100);
+
+            } else {
+                // Comportamento padrão (1 arquivo)
+                const vcards = leadsToExport.map((lead, index) => generateVCard(lead, index, vCardConfig)).join('\n');
+                const blob = new Blob([vcards], { type: 'text/vcard;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `leads_export_${vCardConfig.source}_${totalLeads}.vcf`;
+                a.click();
+                alert(`✅ ${totalLeads} leads exportados em formato vCard!`);
+            }
 
         } catch (error) {
             console.error('Erro ao exportar vCard:', error);
@@ -891,6 +927,20 @@ export default function Leads() {
                             </label>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4, marginLeft: 24 }}>
                                 Ex: "{vCardConfig.customText || 'LP'} <strong>01</strong> João"
+                            </p>
+                        </div>
+
+                        <div style={{ marginBottom: 24 }}>
+                            <label className="form-label">Dividir em arquivos (Opcional)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                className="form-input"
+                                value={vCardConfig.splitCount}
+                                onChange={e => setVCardConfig({ ...vCardConfig, splitCount: Math.max(1, parseInt(e.target.value) || 1) })}
+                            />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                Ex: Ao dividir 125 leads por 2, serão gerados 2 arquivos (~63 leads cada).
                             </p>
                         </div>
 

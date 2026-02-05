@@ -59,3 +59,33 @@
                         Sample Map Entry: {"lead_id":39884,"in_group":true,"campaign_id":9}
                         Filtered Batch Size: 90 (Original: 343)
 ----------------
+[2026-02-04T12:24:41.432Z] Batch processing:
+                        CampaignID: 9 (Original: 9)
+                        InGroup Target: false
+                        Leads in Batch: 572
+                        Sample Lead ID: 40337
+                        Fetched Groups: 571
+                        Map Size: 571
+                        Sample Map Entry: {"lead_id":39873,"in_group":false,"campaign_id":9}
+                        Filtered Batch Size: 126 (Original: 572)
+----------------
+[2026-02-04T12:49:42.190Z] Batch processing:
+                        CampaignID: 9 (Original: 9)
+                        InGroup Target: false
+                        Leads in Batch: 575
+                        Sample Lead ID: 40337
+                        Fetched Groups: 575
+                        Map Size: 575
+                        Sample Map Entry: {"lead_id":39873,"in_group":false,"campaign_id":9}
+                        Filtered Batch Size: 125 (Original: 575)
+----------------
+[2026-02-05T23:27:37.412Z] Batch processing:
+                        CampaignID: 9 (Original: 9)
+                        InGroup Target: false
+                        Leads in Batch: 663
+                        Sample Lead ID: 40425
+                        Fetched Groups: 663
+                        Map Size: 663
+                        Sample Map Entry: {"lead_id":39873,"in_group":false,"campaign_id":9}
+                        Filtered Batch Size: 127 (Original: 663)
+----------------
