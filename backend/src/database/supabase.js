@@ -750,28 +750,22 @@ export const db = {
     },
 
     async getCampaignsForSeller(sellerId, { active_only = false } = {}) {
-        // Buscar campanhas onde o seller tem leads
+        // Buscar TODAS as campanhas (não apenas onde tem leads)
+        // Isso permite que vendedoras vejam campanhas novas nos filtros
         let query = supabase
-            .from('leads')
-            .select('campaign_id, campaigns!campaign_id(id, uuid, name, description, is_active, created_at, updated_at, mirror_campaign_id)')
-            .eq('seller_id', sellerId)
-            .not('campaign_id', 'is', null);
+            .from('campaigns')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (active_only) {
+            query = query.eq('is_active', true);
+        }
 
         const { data, error } = await query;
         if (error) throw error;
 
-        // Extrair campanhas únicas
-        const campaignsMap = new Map();
-        (data || []).forEach(item => {
-            if (item.campaigns && (!active_only || item.campaigns.is_active)) {
-                campaignsMap.set(item.campaigns.id, item.campaigns);
-            }
-        });
-
-        const uniqueCampaigns = Array.from(campaignsMap.values());
-
         // Para cada campanha, buscar contagem de leads DO SELLER
-        const campaignsWithCounts = await Promise.all(uniqueCampaigns.map(async (campaign) => {
+        const campaignsWithCounts = await Promise.all((data || []).map(async (campaign) => {
             const { count: totalLeads } = await supabase
                 .from('leads')
                 .select('*', { count: 'exact', head: true })
@@ -792,8 +786,7 @@ export const db = {
             };
         }));
 
-        // Ordenar por data de criação (mais recente primeiro)
-        return campaignsWithCounts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return campaignsWithCounts;
     },
 
     async getCampaignById(uuidOrId) {
