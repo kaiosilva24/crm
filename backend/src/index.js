@@ -105,8 +105,13 @@ app.listen(PORT, () => {
 
     // Restaurar sessões do WhatsApp com delay (evita rate-limit no startup)
     console.log('⏰ Aguardando 10 segundos antes de restaurar sessões...');
-    setTimeout(() => {
-        console.log('🔄 Iniciando restauração de sessões WhatsApp...');
+    setTimeout(async () => { // Added 'async' here
+        console.log('🔄 Iniciando restauração de sessões WhatsApp e sincronização automática...'); // Updated log message
+        // Restaurar sessões ativas
         restoreSessions();
-    }, 10000); // 10 segundos de delay
+
+        // Inicializar sincronização automática de grupos
+        const { initAutoSync } = await import('./services/autoSyncService.js');
+        initAutoSync();
+    }, 10000); // Aguardar 10 segundos para garantir que o servidor está pronto
 });

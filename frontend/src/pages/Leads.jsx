@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown } from 'lucide-react';
+import { useGroupSync } from '../hooks/useGroupSync';
 
 export default function Leads() {
     const { isAdmin, user } = useAuth();
+    const { lastSync, formatRelativeTime } = useGroupSync();
     const [leads, setLeads] = useState([]);
     const [statuses, setStatuses] = useState([]);
     const [campaigns, setCampaigns] = useState([]);
@@ -766,22 +768,33 @@ export default function Leads() {
                         <option value="false">Fora</option>
                     </select>
                     {isAdmin && (
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => syncGroupStatus(true)}
-                            disabled={syncing}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '8px 16px',
-                                whiteSpace: 'nowrap'
-                            }}
-                            title="Sincronizar status de grupo dos leads com participantes dos grupos WhatsApp"
-                        >
-                            <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
-                            {syncing ? 'Sincronizando...' : 'Sincronizar Grupo'}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => syncGroupStatus(true)}
+                                disabled={syncing}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '8px 16px',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                title="Sincronizar status de grupo dos leads com participantes dos grupos WhatsApp"
+                            >
+                                <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
+                                {syncing ? 'Sincronizando...' : 'Sincronizar Grupo'}
+                            </button>
+                            {lastSync && (
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    color: '#666',
+                                    fontStyle: 'italic'
+                                }}>
+                                    Última: {formatRelativeTime(lastSync.timestamp, lastSync.connectionError)}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { TrendingUp, Users, CheckCircle, Clock, MessageSquare, CheckSquare, DollarSign, UserCheck, UserX, Filter, Calendar, Phone } from 'lucide-react';
+import { useGroupSync } from '../hooks/useGroupSync';
 
 export default function Dashboard() {
     const [data, setData] = useState(null);
@@ -12,6 +13,7 @@ export default function Dashboard() {
     const [campaignFilter, setCampaignFilter] = useState(localStorage.getItem('dashboard_campaign_filter') || '');
     const [subcampaignFilter, setSubcampaignFilter] = useState('');
     const { isAdmin } = useAuth();
+    const { lastSync, formatRelativeTime } = useGroupSync();
 
     const loadDashboard = (campaign_id, subcampaign_id) => {
         setLoading(true);
@@ -84,6 +86,15 @@ export default function Dashboard() {
                             </select>
                         )}
                     </div>
+                )}
+                {lastSync && (
+                    <span style={{
+                        fontSize: '0.85rem',
+                        color: '#666',
+                        fontStyle: 'italic'
+                    }}>
+                        Última sincronização: {formatRelativeTime(lastSync.timestamp, lastSync.connectionError)}
+                    </span>
                 )}
             </div>
 

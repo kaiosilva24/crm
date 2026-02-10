@@ -70,12 +70,29 @@ function normalizeForComparison(phone) {
  * Verifica quais leads estão em grupos do WhatsApp
  */
 router.post('/sync-group-status', async (req, res) => {
+    let syncHistoryId = null;
+
     try {
         console.log('\n' + '='.repeat(70));
         console.log('🚀 SINCRONIZAÇÃO DE STATUS DE GRUPO (OTIMIZADA)');
         console.log('='.repeat(70));
 
         const startTime = Date.now();
+
+        // Registrar início da sincronização
+        const { data: syncRecord, error: syncError } = await supabase
+            .from('group_sync_history')
+            .insert({
+                started_at: new Date().toISOString(),
+                status: 'running'
+            })
+            .select()
+            .single();
+
+        if (!syncError && syncRecord) {
+            syncHistoryId = syncRecord.id;
+            console.log(`📝 Histórico de sincronização criado: ID ${syncHistoryId}`);
+        }
 
         // 2. Buscar todas as campanhas ATIVAS que têm grupos sincronizados
         const { data: campaignGroups, error: cgError } = await supabase
@@ -123,15 +140,33 @@ router.post('/sync-group-status', async (req, res) => {
             if (groups.length === 0) continue;
 
             const groupParticipants = new Set();
+            let activeConnectionsCount = 0;
+            let inactiveConnectionsCount = 0;
+            const inactiveConnections = [];
 
             // Buscar participantes dos grupos desta campanha
             await Promise.all(groups.map(async (group) => {
                 try {
                     const sock = getActiveConnection(group.connection_id);
-                    if (!sock) return;
+
+                    // 🔍 DIAGNÓSTICO: Verificar se conexão está ativa
+                    if (!sock) {
+                        console.warn(`⚠️ Conexão inativa: ${group.connection_id} (Grupo: ${group.group_name})`);
+                        inactiveConnectionsCount++;
+                        inactiveConnections.push({
+                            connection_id: group.connection_id,
+                            group_name: group.group_name
+                        });
+                        return;
+                    }
+
+                    activeConnectionsCount++;
+                    console.log(`✅ Conexão ativa: ${group.connection_id} - Buscando participantes do grupo ${group.group_name}`);
 
                     const metadata = await sock.groupMetadata(group.group_id);
                     const participants = metadata.participants || [];
+
+                    console.log(`   📊 Grupo "${group.group_name}": ${participants.length} participantes encontrados`);
 
                     participants.forEach(p => {
                         let phone = null;
@@ -144,11 +179,42 @@ router.post('/sync-group-status', async (req, res) => {
                         }
                     });
                 } catch (e) {
-                    console.error(`❌ Erro grupo ${group.group_name}: ${e.message}`);
+                    console.error(`❌ Erro ao buscar grupo ${group.group_name}: ${e.message}`);
                 }
             }));
 
             totalUniqueNumbers += groupParticipants.size;
+
+            // 🔍 DIAGNÓSTICO: Resumo de conexões
+            console.log(`\n📊 Status de Conexões da Campanha ${campaignId}:`);
+            console.log(`   ✅ Conexões ativas: ${activeConnectionsCount}`);
+            console.log(`   ❌ Conexões inativas: ${inactiveConnectionsCount}`);
+            console.log(`   👥 Total de participantes únicos encontrados: ${groupParticipants.size}`);
+
+            if (inactiveConnections.length > 0) {
+                console.warn(`\n⚠️ ATENÇÃO: ${inactiveConnections.length} conexão(ões) inativa(s) detectada(s):`);
+                inactiveConnections.forEach(conn => {
+                    console.warn(`   - Conexão ID: ${conn.connection_id} (Grupo: ${conn.group_name})`);
+                });
+                console.warn(`\n💡 SOLUÇÃO: Verifique se as conexões do WhatsApp estão conectadas em /api/whatsapp/connections`);
+            }
+
+            // 🛡️ VERIFICAÇÃO DE SEGURANÇA CRÍTICA
+            if (activeConnectionsCount === 0 && groups.length > 0) {
+                const errorMsg = `Nenhuma conexão WhatsApp ativa encontrada para a campanha ${campaignId}. Conecte pelo menos uma conexão antes de sincronizar.`;
+                console.error('\n' + '='.repeat(70));
+                console.error(`❌ SINCRONIZAÇÃO ABORTADA: ${errorMsg}`);
+                console.error('💡 Os dados anteriores serão mantidos sem alteração');
+                console.error('='.repeat(70));
+
+                return res.status(400).json({
+                    success: false,
+                    error: errorMsg,
+                    activeConnections: activeConnectionsCount,
+                    totalGroups: groups.length,
+                    connectionError: true // Flag para indicar erro de conexão
+                });
+            }
 
             // Buscar leads desta campanha com paginação para garantir que pegue todos
             let leads = [];
@@ -278,8 +344,15 @@ router.post('/sync-group-status', async (req, res) => {
 
         console.log('='.repeat(70));
         console.log(`✅ SINCRONIZAÇÃO OTIMIZADA CONCLUÍDA EM ${duration}s!`);
-        console.log(`🔄 Total processado: ${totalProcessed}`);
+        console.log(`📊 Campanhas processadas: ${campaignMap.size}`);
+        console.log(`📊 Grupos processados: ${totalGroupsProcessed}`);
+        console.log(`👥 Números únicos encontrados: ${totalUniqueNumbers}`);
+        console.log(`🔄 Total de leads processados: ${totalProcessed}`);
+        console.log(`✅ Leads marcados "no grupo": ${totalUpdatedTrue}`);
+        console.log(`❌ Leads marcados "fora do grupo": ${totalUpdatedFalse}`);
         console.log(`🔄 Total alterado: ${totalUpdatedTrue + totalUpdatedFalse}`);
+        console.log(`📈 Total no grupo: ${totalInGroup}`);
+        console.log(`📉 Total fora do grupo: ${totalNotInGroup}`);
         console.log('='.repeat(70));
 
         res.json({
@@ -301,8 +374,156 @@ router.post('/sync-group-status', async (req, res) => {
                 total: totalUpdatedTrue + totalUpdatedFalse
             }
         });
+
+        // Atualizar histórico com sucesso
+        if (syncHistoryId) {
+            await supabase
+                .from('group_sync_history')
+                .update({
+                    completed_at: new Date().toISOString(),
+                    status: 'completed',
+                    campaigns_processed: campaignMap.size,
+                    groups_processed: totalGroupsProcessed,
+                    leads_in_group: totalInGroup,
+                    leads_not_in_group: totalNotInGroup,
+                    leads_updated: totalUpdatedTrue + totalUpdatedFalse,
+                    duration_seconds: parseFloat(duration)
+                })
+                .eq('id', syncHistoryId);
+        }
     } catch (error) {
         console.error('❌ Erro na sincronização rápida:', error);
+
+        // Atualizar histórico com erro
+        if (syncHistoryId) {
+            await supabase
+                .from('group_sync_history')
+                .update({
+                    completed_at: new Date().toISOString(),
+                    status: 'failed',
+                    error_message: error.message
+                })
+                .eq('id', syncHistoryId);
+        }
+
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Obter última sincronização
+ */
+router.get('/last-sync', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('group_sync_history')
+            .select('*')
+            .eq('status', 'completed')
+            .order('completed_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error) {
+            // Se não houver histórico ainda
+            if (error.code === 'PGRST116') {
+                return res.json({
+                    success: true,
+                    lastSync: null,
+                    message: 'Nenhuma sincronização encontrada'
+                });
+            }
+            throw error;
+        }
+
+        res.json({
+            success: true,
+            lastSync: {
+                timestamp: data.completed_at,
+                duration: data.duration_seconds,
+                stats: {
+                    campaignsProcessed: data.campaigns_processed,
+                    groupsProcessed: data.groups_processed,
+                    leadsInGroup: data.leads_in_group,
+                    leadsNotInGroup: data.leads_not_in_group,
+                    leadsUpdated: data.leads_updated
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao buscar última sincronização:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Verificar status das conexões (diagnóstico)
+ */
+router.get('/connection-status', async (req, res) => {
+    try {
+        // Buscar todas as conexões do banco
+        const { data: allConnections, error: connError } = await supabase
+            .from('whatsapp_connections')
+            .select('id, name, status, phone_number');
+
+        if (connError) throw connError;
+
+        // Buscar quais grupos estão vinculados a campanhas
+        const { data: campaignGroups, error: cgError } = await supabase
+            .from('campaign_groups')
+            .select(`
+                campaign_id,
+                whatsapp_groups (
+                    id,
+                    group_name,
+                    connection_id
+                )
+            `);
+
+        if (cgError) throw cgError;
+
+        // Mapear conexões necessárias
+        const neededConnections = new Set();
+        campaignGroups.forEach(cg => {
+            if (cg.whatsapp_groups) {
+                neededConnections.add(cg.whatsapp_groups.connection_id);
+            }
+        });
+
+        // Verificar quais estão ativas na memória
+        const { getActiveConnection } = await import('../services/whatsappService.js');
+
+        const connectionStatus = allConnections.map(conn => {
+            const isNeeded = neededConnections.has(conn.id);
+            const isActive = !!getActiveConnection(conn.id);
+
+            return {
+                id: conn.id,
+                name: conn.name,
+                phone_number: conn.phone_number,
+                db_status: conn.status,
+                is_needed_for_sync: isNeeded,
+                is_active_in_memory: isActive,
+                ready_for_sync: isNeeded && isActive
+            };
+        });
+
+        const summary = {
+            total_connections: allConnections.length,
+            needed_for_sync: Array.from(neededConnections).length,
+            active_in_memory: connectionStatus.filter(c => c.is_active_in_memory).length,
+            ready_for_sync: connectionStatus.filter(c => c.ready_for_sync).length,
+            missing_connections: connectionStatus.filter(c => c.is_needed_for_sync && !c.is_active_in_memory)
+        };
+
+        res.json({
+            success: true,
+            summary,
+            connections: connectionStatus
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao verificar status de conexões:', error);
         res.status(500).json({ error: error.message });
     }
 });

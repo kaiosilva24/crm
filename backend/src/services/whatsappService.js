@@ -440,6 +440,13 @@ export function getActiveConnection(connectionId) {
 }
 
 /**
+ * Listar todas as conexões ativas (para diagnóstico)
+ */
+export function listActiveConnections() {
+    return Array.from(activeConnections.keys());
+}
+
+/**
  * Desconectar WhatsApp
  */
 export async function disconnectWhatsApp(connectionId) {

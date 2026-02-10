@@ -37,6 +37,21 @@ router.get('/', async (req, res) => {
         // Buscar statuses primeiro (precisamos para várias queries)
         const { data: statuses } = await supabase.from('lead_statuses').select('*').order('display_order');
 
+        // Helper para início do dia em Brasília (UTC-3)
+        const getBrasiliaStartOfDay = () => {
+            const now = new Date();
+            const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' };
+            const formatter = new Intl.DateTimeFormat('en-US', options);
+            const parts = formatter.formatToParts(now);
+            const year = parts.find(p => p.type === 'year').value;
+            const month = parts.find(p => p.type === 'month').value;
+            const day = parts.find(p => p.type === 'day').value;
+            // Criar Data ISO com offset UTC-3 (Padrão Brasília sem horário de verão)
+            return new Date(`${year}-${month}-${day}T00:00:00.000-03:00`).toISOString();
+        };
+
+        const todayStart = getBrasiliaStartOfDay();
+
         // Executar TODAS as queries em paralelo
         const [
             totalResult,
@@ -56,12 +71,9 @@ router.get('/', async (req, res) => {
             // Total de leads
             applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true })),
 
-            // Leads de hoje
-            (() => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()));
-            })(),
+            // Leads de hoje (Brasília)
+            applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).gte('created_at', todayStart)),
+
 
             // Checking
             applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).eq('checking', true)),
@@ -161,10 +173,6 @@ router.get('/', async (req, res) => {
 
             // In Group (Today)
             (() => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayStr = today.toISOString();
-
                 if (campaign_id) {
                     if (subcampaign_id) {
                         let query = supabase
@@ -173,7 +181,7 @@ router.get('/', async (req, res) => {
                             .eq('campaign_id', parseInt(campaign_id))
                             .eq('subcampaign_id', parseInt(subcampaign_id))
                             .eq('lead_campaign_groups.in_group', true)
-                            .gte('created_at', todayStr);
+                            .gte('created_at', todayStart);
                         if (sellerId) query = query.eq('seller_id', sellerId);
                         return query;
                     } else {
@@ -184,7 +192,7 @@ router.get('/', async (req, res) => {
                                 .eq('campaign_id', parseInt(campaign_id))
                                 .eq('seller_id', sellerId)
                                 .eq('lead_campaign_groups.in_group', true)
-                                .gte('created_at', todayStr);
+                                .gte('created_at', todayStart);
                         } else {
                             // Filter by leads created today that are in group
                             return supabase
@@ -192,7 +200,7 @@ router.get('/', async (req, res) => {
                                 .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
                                 .eq('campaign_id', parseInt(campaign_id))
                                 .eq('lead_campaign_groups.in_group', true)
-                                .gte('created_at', todayStr);
+                                .gte('created_at', todayStart);
                         }
                     }
                 } else {
@@ -200,14 +208,14 @@ router.get('/', async (req, res) => {
                         .from('leads')
                         .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
                         .eq('lead_campaign_groups.in_group', true)
-                        .gte('created_at', todayStr);
+                        .gte('created_at', todayStart);
                     if (sellerId) query = query.eq('seller_id', sellerId);
                     return query;
                 }
             })(),
 
             // Check-in completed (Today)
-            applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).eq('checking', true).gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())),
+            applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).eq('checking', true).gte('created_at', todayStart)),
 
             // Removed explicit outGroupToday and checkInPendingToday queries
 
