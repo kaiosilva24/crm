@@ -107,6 +107,13 @@ export function initAutoSync() {
     });
 
     console.log('✅ Serviço de auto-sync inicializado');
+
+    // Executar uma sincronização inicial após 1 minuto para verificar funcionamento imediato
+    console.log('⏳ Agendando sincronização inicial para daqui a 1 minuto...');
+    setTimeout(() => {
+        console.log('🚀 Executando sincronização inicial pós-inicialização...');
+        runSync();
+    }, 60000);
 }
 
 /**
