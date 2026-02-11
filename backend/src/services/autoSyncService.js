@@ -4,7 +4,7 @@
  */
 
 import cron from 'node-cron';
-import fetch from 'node-fetch';
+
 
 const AUTO_SYNC_ENABLED = process.env.AUTO_SYNC_ENABLED === 'true';
 const AUTO_SYNC_INTERVAL = parseInt(process.env.AUTO_SYNC_INTERVAL || '30'); // minutos
