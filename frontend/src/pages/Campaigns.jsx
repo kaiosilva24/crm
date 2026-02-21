@@ -32,13 +32,18 @@ export default function Campaigns() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editCampaign) {
-            await api.updateCampaign(editCampaign.uuid, form);
-        } else {
-            await api.createCampaign(form);
+        try {
+            if (editCampaign) {
+                await api.updateCampaign(editCampaign.uuid, form);
+            } else {
+                await api.createCampaign(form);
+            }
+            setShowModal(false);
+            loadCampaigns();
+        } catch (error) {
+            console.error('Erro ao salvar campanha:', error);
+            alert(`Erro ao salvar campanha: ${error.message}`);
         }
-        setShowModal(false);
-        loadCampaigns();
     };
 
     const handleArchive = async (uuid) => {

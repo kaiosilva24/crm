@@ -832,13 +832,18 @@ export const db = {
     },
 
     async updateCampaign(uuid, campaignData) {
+        console.log('🔧 updateCampaign called with:', { uuid, campaignData });
         const { data, error } = await supabase
             .from('campaigns')
             .update({ ...campaignData, updated_at: new Date().toISOString() })
             .eq('uuid', uuid)
             .select()
             .single();
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Supabase updateCampaign error:', JSON.stringify(error, null, 2));
+            throw error;
+        }
+        console.log('✅ Campaign updated successfully:', data);
         return data;
     },
 

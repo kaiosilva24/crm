@@ -173,21 +173,41 @@ router.post('/by-uuids', async (req, res) => {
  */
 router.patch('/bulk/reassign', authorize('admin'), async (req, res) => {
     try {
-        const { lead_uuids, seller_id } = req.body;
+        const { lead_uuids, seller_id, seller_ids } = req.body;
 
         if (!Array.isArray(lead_uuids) || lead_uuids.length === 0) {
-            return res.status(400).json({ error: 'lead_uuids deve ser um array' });
+            return res.status(400).json({ error: 'lead_uuids deve ser um array não vazio' });
         }
 
-        if (seller_id) {
-            const seller = await db.getUserById(seller_id);
-            if (!seller || seller.role !== 'seller' || !seller.is_active) {
-                return res.status(400).json({ error: 'Vendedora não encontrada ou inativa' });
+        // Determinar a lista de vendedoras alvo
+        let targetSellers = [];
+        if (seller_ids && Array.isArray(seller_ids) && seller_ids.length > 0) {
+            targetSellers = seller_ids;
+        } else if (seller_id) {
+            targetSellers = [seller_id];
+        }
+
+        // Validação de vendedoras
+        if (targetSellers.length > 0) {
+            for (const s_id of targetSellers) {
+                const seller = await db.getUserById(s_id);
+                if (!seller || seller.role !== 'seller' || !seller.is_active) {
+                    return res.status(400).json({ error: `Vendedora (ID: ${s_id}) não encontrada ou inativa` });
+                }
             }
         }
 
-        for (const uuid of lead_uuids) {
-            await db.updateLead(uuid, { seller_id: seller_id || null });
+        // Atribuir leads
+        for (let i = 0; i < lead_uuids.length; i++) {
+            const uuid = lead_uuids[i];
+
+            let assignedSellerId = null;
+            if (targetSellers.length > 0) {
+                // Round-robin distribution
+                assignedSellerId = targetSellers[i % targetSellers.length];
+            }
+
+            await db.updateLead(uuid, { seller_id: assignedSellerId });
         }
 
         res.json({ message: `${lead_uuids.length} leads reatribuídos` });

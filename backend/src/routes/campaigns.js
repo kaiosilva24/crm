@@ -67,6 +67,9 @@ router.post('/', authorize('admin'), async (req, res) => {
  * PATCH /api/campaigns/:uuid - Apenas admin
  */
 router.patch('/:uuid', authorize('admin'), async (req, res) => {
+    console.log(`🔵 PATCH /campaigns/${req.params.uuid} - Request received`);
+    console.log(`📦 Body:`, JSON.stringify(req.body, null, 2));
+
     try {
         const { uuid } = req.params;
         const { name, description, is_active } = req.body;
@@ -77,8 +80,14 @@ router.patch('/:uuid', authorize('admin'), async (req, res) => {
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (typeof is_active === 'boolean') updateData.is_active = is_active;
-        if (req.body.mirror_campaign_id !== undefined) updateData.mirror_campaign_id = req.body.mirror_campaign_id;
-        if (req.body.mirror_sales_source_id !== undefined) updateData.mirror_sales_source_id = req.body.mirror_sales_source_id;
+
+        // Convert empty strings to null for integer fields
+        if (req.body.mirror_campaign_id !== undefined) {
+            updateData.mirror_campaign_id = req.body.mirror_campaign_id === '' ? null : req.body.mirror_campaign_id;
+        }
+        if (req.body.mirror_sales_source_id !== undefined) {
+            updateData.mirror_sales_source_id = req.body.mirror_sales_source_id === '' ? null : req.body.mirror_sales_source_id;
+        }
 
         await db.updateCampaign(uuid, updateData);
         res.json({ message: 'Campanha atualizada' });

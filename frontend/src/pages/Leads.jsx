@@ -69,7 +69,7 @@ export default function Leads() {
 
     // Reassign Modal
     const [showReassignModal, setShowReassignModal] = useState(false);
-    const [reassignTarget, setReassignTarget] = useState('');
+    const [reassignTargets, setReassignTargets] = useState([]);
     const [reassigning, setReassigning] = useState(false);
 
     // Edit Lead Details
@@ -417,21 +417,21 @@ export default function Leads() {
 
     // Bulk Reassign
     const handleBulkReassign = async () => {
-        if (!reassignTarget && reassignTarget !== '') return; // Allow empty string to unassign if needed, though usually we want a target
+        if (reassignTargets.length === 0) return;
         if (selectedUuids.size === 0) return;
 
         setReassigning(true);
         try {
             const uuidsArray = Array.from(selectedUuids);
-            // Se reassignTarget for string vazia, passamos null? Ou o backend trata string vazia?
-            // O backend espera seller_id (int) ou null.
-            const targetId = reassignTarget ? parseInt(reassignTarget) : null;
 
-            await api.bulkReassignLeads(uuidsArray, targetId);
+            // Reatribuir para as vendedoras selecionadas
+            const targetIds = reassignTargets.map(id => parseInt(id));
+
+            await api.bulkReassignLeads(uuidsArray, targetIds);
 
             alert(`✅ ${uuidsArray.length} leads reatribuídos com sucesso!`);
             setShowReassignModal(false);
-            setReassignTarget('');
+            setReassignTargets([]);
             setSelectedUuids(new Set());
             setSelectAll(false);
             loadLeads();
@@ -975,22 +975,33 @@ export default function Leads() {
                     <div className="card" style={{ width: 400, maxWidth: '90%' }}>
                         <h3 style={{ marginBottom: 16 }}>Reatribuir Leads</h3>
                         <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
-                            Selecione a vendedora para quem você deseja mover os <strong>{selectedUuids.size}</strong> leads selecionados.
+                            Selecione as vendedoras para quem você deseja distribuir os <strong>{selectedUuids.size}</strong> leads selecionados. Os leads serão divididos igualmente entre elas.
                         </p>
 
                         <div style={{ marginBottom: 24 }}>
-                            <label className="form-label">Nova Vendedora</label>
-                            <select
-                                className="form-select"
-                                style={{ width: '100%' }}
-                                value={reassignTarget}
-                                onChange={e => setReassignTarget(e.target.value)}
-                            >
-                                <option value="">Selecione uma vendedora...</option>
+                            <label className="form-label">Vendedoras</label>
+                            <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 8, background: 'var(--bg-secondary)' }}>
                                 {sellers.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                    <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={reassignTargets.includes(String(s.id))}
+                                            onChange={(e) => {
+                                                const idStr = String(s.id);
+                                                if (e.target.checked) {
+                                                    setReassignTargets([...reassignTargets, idStr]);
+                                                } else {
+                                                    setReassignTargets(reassignTargets.filter(id => id !== idStr));
+                                                }
+                                            }}
+                                        />
+                                        <span>{s.name}</span>
+                                    </label>
                                 ))}
-                            </select>
+                                {sellers.length === 0 && (
+                                    <div style={{ padding: 8, color: 'var(--text-secondary)', textAlign: 'center' }}>Nenhuma vendedora disponivel</div>
+                                )}
+                            </div>
                             <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: 8 }}>
                                 ⚠ Esta ação moverá os leads selecionados imediatamente.
                             </p>
@@ -1007,7 +1018,7 @@ export default function Leads() {
                             <button
                                 className="btn btn-primary"
                                 onClick={handleBulkReassign}
-                                disabled={reassigning || !reassignTarget}
+                                disabled={reassigning || reassignTargets.length === 0}
                                 style={{ background: '#f59e0b', borderColor: '#f59e0b' }}
                             >
                                 {reassigning ? 'Salvando...' : 'Confirmar Transferência'}
