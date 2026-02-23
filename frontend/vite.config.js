@@ -36,7 +36,7 @@ export default defineConfig({
     ],
     server: {
         host: true, // Enable network access
-        port: 5173,
+        port: 5174,
         proxy: {
             '/api': 'http://localhost:3001'
         }

@@ -42,6 +42,7 @@ const app = express();
 // Configurar CORS para permitir Vercel
 const allowedOrigins = [
     'http://localhost:5173',
+    'http://localhost:5174',
     'https://crm-recovery.vercel.app',
     'https://crmsales-recovery-crm-api.onrender.com'
 ];

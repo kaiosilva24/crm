@@ -244,14 +244,17 @@ export default function Leads() {
                 a.click();
                 alert(`✅ ${selectedLeads.length} leads exportados em formato vCard!`);
             } else if (format === 'csv') {
-                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status'];
+                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
                 const rows = selectedLeads.map(l => [
                     l.first_name || '',
                     l.email || '',
                     l.phone || '',
                     l.product || '',
                     l.campaign_name || '',
-                    l.status_name || ''
+                    l.status_name || '',
+                    l.seller_name || '',
+                    l.checking ? 'Sim' : 'Não',
+                    l.sale_completed ? 'Sim' : 'Não'
                 ]);
                 const csv = [headers, ...rows].map(row => row.join(';')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -302,14 +305,17 @@ export default function Leads() {
                 a.click();
                 alert(`✅ ${allLeads.length} leads exportados em formato vCard!`);
             } else if (format === 'csv') {
-                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status'];
+                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
                 const rows = allLeads.map(l => [
                     l.first_name || '',
                     l.email || '',
                     l.phone || '',
                     l.product || '',
                     l.campaign_name || '',
-                    l.status_name || ''
+                    l.status_name || '',
+                    l.vendedora || l.seller_name || '',
+                    l.checking ? 'Sim' : 'Não',
+                    l.sale_completed ? 'Sim' : 'Não'
                 ]);
                 const csv = [headers, ...rows].map(row => row.join(';')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
