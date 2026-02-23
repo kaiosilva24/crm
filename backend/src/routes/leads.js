@@ -218,6 +218,108 @@ router.patch('/bulk/reassign', authorize('admin'), async (req, res) => {
 });
 
 /**
+ * PATCH /api/leads/bulk/mirror-sellers (Admin only)
+ * Faz o match dos leads selecionados com uma campanha destino (por telefone ou email)
+ * e copia o seller_id dessa campanha destino para o lead atual.
+ */
+router.patch('/bulk/mirror-sellers', authorize('admin'), async (req, res) => {
+    try {
+        const { lead_uuids, target_campaign_id } = req.body;
+
+        if (!Array.isArray(lead_uuids) || lead_uuids.length === 0) {
+            return res.status(400).json({ error: 'lead_uuids deve ser um array não vazio' });
+        }
+        if (!target_campaign_id) {
+            return res.status(400).json({ error: 'A campanha de destino (target_campaign_id) é obrigatória' });
+        }
+
+        let updatedCount = 0;
+        let notFoundCount = 0;
+        let alreadyHasSellerCount = 0; // Opcional contabilizar, mas útil
+
+        // Como pode demorar, vamos fazer sequencial ou em lotes. Faremos sequencial por segurança.
+
+
+        for (const uuid of lead_uuids) {
+            const currentLead = await db.getLeadByUuid(uuid);
+            if (!currentLead) continue;
+
+            const email = currentLead.email;
+            const phone = currentLead.phone;
+
+            let targetLead = null;
+
+            // 1. Tentar match por Telefone (Prioridade)
+            if (phone) {
+                const cleanPhone = phone.replace(/\D/g, '');
+                if (cleanPhone.length >= 8) {
+                    const phoneEnd = cleanPhone.slice(-8);
+                    const { data } = await supabase
+                        .from('leads')
+                        .select('id, seller_id')
+                        .eq('campaign_id', target_campaign_id)
+                        .ilike('phone', `%${phoneEnd}`)
+                        .not('seller_id', 'is', null) // Só queremos se tiver vendedora para espelhar
+                        .limit(1)
+                        .maybeSingle();
+                    targetLead = data;
+                }
+            }
+
+            // 2. Tentar match por Email se não achou por telefone
+            if (!targetLead && email) {
+                const { data } = await supabase
+                    .from('leads')
+                    .select('id, seller_id')
+                    .eq('campaign_id', target_campaign_id)
+                    .ilike('email', email)
+                    .not('seller_id', 'is', null)
+                    .limit(1)
+                    .maybeSingle();
+                targetLead = data;
+            }
+
+            if (targetLead && targetLead.seller_id) {
+                // Se achou correspondência e a correspondência tem vendedora
+
+                // Se a vendedora já é a mesma, podemos pular ou sobrescrever (dá na mesma)
+                if (currentLead.seller_id !== targetLead.seller_id) {
+                    const obs = `[AUTO] Vendedora espelhada da campanha ${target_campaign_id} via cruzamento de dados em ${new Date().toLocaleString('pt-BR')}`;
+                    const newObs = currentLead.observations ? `${currentLead.observations}\n${obs}` : obs;
+
+                    await db.updateLeadById(currentLead.id, {
+                        seller_id: targetLead.seller_id,
+                        observations: newObs,
+                        updated_at: new Date().toISOString()
+                    });
+                    updatedCount++;
+                } else {
+                    alreadyHasSellerCount++;
+                }
+            } else {
+                notFoundCount++;
+            }
+        }
+
+        return res.json({
+            message: 'Cruzamento finalizado',
+            stats: {
+                total_processed: lead_uuids.length,
+                updated: updatedCount,
+                already_matched: alreadyHasSellerCount,
+                not_found_or_no_seller: notFoundCount
+            }
+        });
+
+    } catch (error) {
+        console.error('Error mirror sellers bulk:', error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: 'Erro ao espelhar vendedoras' });
+        }
+    }
+});
+
+/**
  * GET /api/leads/statuses
  */
 router.get('/statuses', async (req, res) => {

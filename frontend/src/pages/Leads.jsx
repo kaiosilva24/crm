@@ -72,6 +72,11 @@ export default function Leads() {
     const [reassignTargets, setReassignTargets] = useState([]);
     const [reassigning, setReassigning] = useState(false);
 
+    // Mirror Sellers Modal
+    const [showMirrorModal, setShowMirrorModal] = useState(false);
+    const [mirrorTargetCampaign, setMirrorTargetCampaign] = useState('');
+    const [mirroring, setMirroring] = useState(false);
+
     // Edit Lead Details
     const [editMode, setEditMode] = useState(false);
     const [editedName, setEditedName] = useState('');
@@ -440,6 +445,32 @@ export default function Leads() {
             alert('❌ Erro ao reatribuir leads: ' + error.message);
         } finally {
             setReassigning(false);
+        }
+    };
+
+    // Bulk Mirror Sellers
+    const handleBulkMirror = async () => {
+        if (!mirrorTargetCampaign) return;
+        if (selectedUuids.size === 0) return;
+
+        setMirroring(true);
+        try {
+            const uuidsArray = Array.from(selectedUuids);
+
+            const response = await api.bulkMirrorSellers(uuidsArray, parseInt(mirrorTargetCampaign));
+
+            alert(`✅ Processo de cruzamento finalizado!\n\nProcessados: ${response.stats.total_processed}\nAtualizados: ${response.stats.updated}\nJá estavam corretos: ${response.stats.already_matched}\nNão encontrados na outra campanha: ${response.stats.not_found_or_no_seller}`);
+
+            setShowMirrorModal(false);
+            setMirrorTargetCampaign('');
+            setSelectedUuids(new Set());
+            setSelectAll(false);
+            loadLeads();
+        } catch (error) {
+            console.error('Erro ao espelhar vendedoras:', error);
+            alert('❌ Erro ao espelhar vendedoras: ' + error.message);
+        } finally {
+            setMirroring(false);
         }
     };
 
@@ -835,6 +866,17 @@ export default function Leads() {
                             </button>
                         )}
 
+                        {isAdmin && (
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowMirrorModal(true)}
+                                style={{ background: '#8b5cf6', borderColor: '#8b5cf6', color: '#fff' }}
+                                title="Copiar a vendedora (via cruzamento de dados) de outra campanha para estes leads"
+                            >
+                                🪞 Espelhar Vendedoras
+                            </button>
+                        )}
+
                         {/* Botão de Exportação */}
                         <div className="export-dropdown" style={{ position: 'relative' }}>
                             <button
@@ -1024,6 +1066,89 @@ export default function Leads() {
                                 {reassigning ? 'Salvando...' : 'Confirmar Transferência'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Espalhamento de Vendedoras */}
+            {showMirrorModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div className="card" style={{ width: 450, maxWidth: '90%' }}>
+                        <h3 style={{ marginBottom: 16 }}>Espelhar Vendedoras</h3>
+
+                        {mirroring ? (
+                            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                                <div className="spinner" style={{
+                                    border: '4px solid rgba(139, 92, 246, 0.1)',
+                                    borderLeftColor: '#8b5cf6',
+                                    borderRadius: '50%',
+                                    width: '40px',
+                                    height: '40px',
+                                    animation: 'spin 1s linear infinite',
+                                    margin: '0 auto 16px auto'
+                                }}></div>
+                                <style>{`
+                                    @keyframes spin {
+                                        0% { transform: rotate(0deg); }
+                                        100% { transform: rotate(360deg); }
+                                    }
+                                `}</style>
+                                <h4 style={{ color: '#8b5cf6', marginBottom: 8 }}>Cruzando Dados...</h4>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    Isso pode levar alguns segundos dependendo da quantidade de contatos. Por favor, aguarde.
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
+                                    Para os <strong>{selectedUuids.size}</strong> leads selecionados, o sistema vai buscar
+                                    (por Telefone ou E-mail) se eles também existem na <strong>Campanha Desejada</strong> selecionada abaixo.
+                                    <br /><br />
+                                    Se um lead for encontrado lá, o sistema irá copiar a mesma vendedora que o atendeu para o lead atual.
+                                </p>
+
+                                <div style={{ marginBottom: 24 }}>
+                                    <label className="form-label">Campanha Desejada (Onde buscar as vendedoras)</label>
+                                    <select
+                                        className="form-select"
+                                        style={{ width: '100%', mb: 2 }}
+                                        value={mirrorTargetCampaign}
+                                        onChange={e => setMirrorTargetCampaign(e.target.value)}
+                                    >
+                                        <option value="">- Selecione a campanha -</option>
+                                        {campaigns.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+
+                                    <p style={{ fontSize: '0.75rem', color: '#8b5cf6', marginTop: 12 }}>
+                                        🛈 Apenas os leads que tiverem um "match" preciso na campanha desejada terão sua vendedora alterada.
+                                    </p>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                    <button
+                                        className="btn btn-ghost"
+                                        onClick={() => setShowMirrorModal(false)}
+                                        disabled={mirroring}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleBulkMirror}
+                                        disabled={mirroring || !mirrorTargetCampaign}
+                                        style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }}
+                                    >
+                                        Iniciar Espelhamento
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

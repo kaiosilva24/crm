@@ -35,6 +35,7 @@ export const api = {
     deleteLead: (uuid) => request(`/leads/${uuid}`, { method: 'DELETE' }),
     deleteLeadsBulk: (lead_uuids) => request('/leads/bulk', { method: 'DELETE', body: JSON.stringify({ lead_uuids }) }),
     bulkReassignLeads: (lead_uuids, seller_ids) => request('/leads/bulk/reassign', { method: 'PATCH', body: JSON.stringify({ lead_uuids, seller_ids }) }),
+    bulkMirrorSellers: (lead_uuids, target_campaign_id) => request('/leads/bulk/mirror-sellers', { method: 'PATCH', body: JSON.stringify({ lead_uuids, target_campaign_id }) }),
     selfAssignLead: (uuid) => request(`/leads/${uuid}/self-assign`, { method: 'PATCH' }),
     importCheckingCSV: (csvData) => request('/leads/import-checking', { method: 'POST', body: JSON.stringify({ csvData }) }),
     getCheckingLogs: () => request('/leads/checking-logs'),
