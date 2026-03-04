@@ -15,7 +15,7 @@ router.use(authenticate);
  */
 router.get('/', async (req, res) => {
     try {
-        const { status, search, search_observation, campaign_id, subcampaign_id, in_group, show_inactive, seller_id, page = 1, limit = 50 } = req.query;
+        const { status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, page = 1, limit = 50 } = req.query;
 
         // Lógica de filtro de vendedor:
         // - Admin: vê todos, pode filtrar por seller_id
@@ -43,6 +43,8 @@ router.get('/', async (req, res) => {
             campaign_id,
             subcampaign_id,
             in_group,
+            checking,
+            sale_completed,
             show_inactive: show_inactive === 'true',
             seller_id: effectiveSellerId,
             page: parseInt(page),
@@ -71,7 +73,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/all-uuids', authenticate, async (req, res) => {
     try {
-        const { status, search, campaign_id, in_group, show_inactive, seller_id } = req.query;
+        const { status, search, campaign_id, in_group, checking, sale_completed, show_inactive, seller_id } = req.query;
 
         let effectiveSellerId = null;
 
@@ -90,6 +92,8 @@ router.get('/all-uuids', authenticate, async (req, res) => {
             search,
             campaign_id,
             in_group,
+            checking,
+            sale_completed,
             show_inactive,
             seller_id: effectiveSellerId
         });

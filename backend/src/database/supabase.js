@@ -177,7 +177,7 @@ export const db = {
     },
 
     // ==================== LEADS ====================
-    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, show_inactive, seller_id, page = 1, limit = 50 }) {
+    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, page = 1, limit = 50 }) {
         // ESTRATÉGIA ESPECIAL para filtro in_group:
         // Como o in_group vem de uma tabela separada (lead_campaign_groups),
         // precisamos buscar TODOS os leads que correspondem aos outros filtros primeiro,
@@ -221,6 +221,12 @@ export const db = {
         }
         if (search_observation) {
             query = query.ilike('observations', `%${search_observation}%`);
+        }
+        if (checking !== undefined) {
+            query = query.eq('checking', checking === 'true');
+        }
+        if (sale_completed !== undefined) {
+            query = query.eq('sale_completed', sale_completed === 'true');
         }
 
         query = query.order('created_at', { ascending: false }).range(fetchOffset, fetchOffset + fetchLimit - 1);
@@ -541,6 +547,12 @@ export const db = {
             // Se NÃO tiver campaign_id, usa o campo legado (comportamento padrão)
             if (filters.in_group !== undefined && !filters.campaign_id) {
                 query = query.eq('in_group', filters.in_group === 'true');
+            }
+            if (filters.checking !== undefined) {
+                query = query.eq('checking', filters.checking === 'true');
+            }
+            if (filters.sale_completed !== undefined) {
+                query = query.eq('sale_completed', filters.sale_completed === 'true');
             }
 
             if (filters.seller_id === 'null') {

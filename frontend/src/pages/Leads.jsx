@@ -22,6 +22,8 @@ export default function Leads() {
     const [observation, setObservation] = useState('');
     const [sellers, setSellers] = useState([]);
     const [sellerFilter, setSellerFilter] = useState('');
+    const [checkingFilter, setCheckingFilter] = useState('');
+    const [saleFilter, setSaleFilter] = useState('');
 
     // WhatsApp templates
     const [whatsappTemplates, setWhatsappTemplates] = useState([]);
@@ -56,7 +58,7 @@ export default function Leads() {
     // Auto-refresh desativado
 
     // Refs para manter valores atualizados no interval
-    const filtersRef = useRef({ search, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page });
+    const filtersRef = useRef({ search, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page });
 
     // vCard Options Modal
     const [showVCardOptions, setShowVCardOptions] = useState(false);
@@ -86,11 +88,11 @@ export default function Leads() {
 
     // Atualizar ref quando filtros mudam
     useEffect(() => {
-        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page };
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page]);
+        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page };
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page]);
 
     const loadLeads = useCallback(async () => {
-        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page } = filtersRef.current;
+        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page } = filtersRef.current;
         const params = { page, limit: LIMIT };
         if (search) {
             if (searchByObservation) {
@@ -104,6 +106,8 @@ export default function Leads() {
         if (subcampaignFilter) params.subcampaign_id = subcampaignFilter;
         if (inGroupFilter) params.in_group = inGroupFilter;
         if (sellerFilter) params.seller_id = sellerFilter;
+        if (checkingFilter) params.checking = checkingFilter;
+        if (saleFilter) params.sale_completed = saleFilter;
         try {
             const data = await api.getLeads(params);
             setLeads(data.leads);
@@ -499,14 +503,14 @@ export default function Leads() {
     // Recarregar quando filtros ou página mudam (SEM DEBOUNCE - filtro instantâneo)
     useEffect(() => {
         loadLeads();
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, page, loadLeads]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, loadLeads]);
 
     // Reset página quando filtros mudam
     useEffect(() => {
         setPage(1);
         setSelectedUuids(new Set());
         setSelectAll(false);
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter]);
 
     // Fechar dropdown de exportação ao clicar fora
     useEffect(() => {
@@ -702,6 +706,8 @@ export default function Leads() {
             if (campaignFilter) params.campaign_id = campaignFilter;
             if (inGroupFilter) params.in_group = inGroupFilter;
             if (sellerFilter) params.seller_id = sellerFilter;
+            if (checkingFilter) params.checking = checkingFilter;
+            if (saleFilter) params.sale_completed = saleFilter;
 
             const data = await api.getAllLeadUuids(params);
             setSelectedUuids(new Set(data.uuids));
@@ -803,6 +809,16 @@ export default function Leads() {
                         <option value="">Grupo</option>
                         <option value="true">No grupo</option>
                         <option value="false">Fora</option>
+                    </select>
+                    <select className="form-select" style={{ width: 130 }} value={checkingFilter} onChange={e => setCheckingFilter(e.target.value)}>
+                        <option value="">Checkin</option>
+                        <option value="true">✅ Com checkin</option>
+                        <option value="false">❌ Sem checkin</option>
+                    </select>
+                    <select className="form-select" style={{ width: 130 }} value={saleFilter} onChange={e => setSaleFilter(e.target.value)}>
+                        <option value="">Venda</option>
+                        <option value="true">✅ Com venda</option>
+                        <option value="false">❌ Sem venda</option>
                     </select>
                     {isAdmin && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
