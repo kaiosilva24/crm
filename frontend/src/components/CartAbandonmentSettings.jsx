@@ -325,7 +325,7 @@ export default function CartAbandonmentSettings() {
 
     return (
         <div style={{ maxWidth: 1200 }}>
-            <h2>Abandono de Carrinho Hotmart</h2>
+            <h2>Abandono de Carrinho</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
                 Configure o sistema de recuperação de carrinho abandonado com integração ao ManyChat
             </p>
@@ -334,7 +334,7 @@ export default function CartAbandonmentSettings() {
             <div className="card" style={{ marginBottom: 24 }}>
                 <h3>URL do Webhook</h3>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-                    Configure esta URL no painel da Hotmart para receber eventos de abandono de carrinho
+                    Configure esta URL na sua plataforma de pagamento para receber eventos de abandono de carrinho
                 </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                     <input

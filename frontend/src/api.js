@@ -103,13 +103,13 @@ export const api = {
     saveWhapiSettings: (data) => request('/whatsapp-groups/whapi/settings', { method: 'POST', body: JSON.stringify(data) }),
     testWhapiConnection: () => request('/whatsapp-groups/whapi/test'),
     getWhapiGroups: () => request('/whatsapp-groups/whapi/groups'),
-    // Hotmart
+    // Webhook Integration (generic - supports Hotmart, Looma, etc.)
     getHotmartSettings: () => request('/hotmart/settings'),
     updateHotmartSettings: (data) => request('/hotmart/settings', { method: 'PUT', body: JSON.stringify(data) }),
     generateHotmartSecret: () => request('/hotmart/generate-secret', { method: 'POST' }),
     getHotmartLogs: (params = {}) => request(`/hotmart/logs?${new URLSearchParams(params)}`),
     testHotmartWebhook: () => request('/hotmart/test', { method: 'POST' }),
-    // Hotmart Webhook Configs
+    // Webhook Configs
     getHotmartConfigs: () => request('/hotmart/configs'),
     createHotmartConfig: (data) => request('/hotmart/configs', { method: 'POST', body: JSON.stringify(data) }),
     updateHotmartConfig: (id, data) => request(`/hotmart/configs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

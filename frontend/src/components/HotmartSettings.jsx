@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Copy, RefreshCw, Zap, Check, X, AlertCircle, Plus, Trash2 } from 'lucide-react';
 
-export default function HotmartSettings() {
+export default function HotmartSettings() {  // Webhook Settings (manteve nome do componente para não quebrar importação)
     const [settings, setSettings] = useState(null);
     const [configs, setConfigs] = useState([]);
     const [campaigns, setCampaigns] = useState([]);
@@ -175,9 +175,9 @@ export default function HotmartSettings() {
 
     return (
         <div style={{ maxWidth: 1200 }}>
-            <h2>Integração Hotmart</h2>
+            <h2>Integração Webhook</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Configure múltiplos webhooks para receber leads de diferentes campanhas do Hotmart
+                Configure múltiplos webhooks para receber leads de diferentes plataformas de pagamento (Hotmart, Looma, etc.)
             </p>
 
 

@@ -1,6 +1,6 @@
 /**
- * Hotmart Webhook Integration Routes - Supabase Version
- * Handles automatic lead import from Hotmart purchases
+ * Webhook Integration Routes - Supabase Version
+ * Handles automatic lead import from payment platforms (Hotmart, Looma, etc.)
  */
 
 import { Router } from 'express';
@@ -80,13 +80,13 @@ function normalizePhone(phone) {
 
 /**
  * POST /api/hotmart/webhook/:number
- * Receive Hotmart purchase notifications (public endpoint with webhook number)
+ * Receive payment platform webhook notifications (public endpoint with webhook number)
  */
 router.post('/webhook:number(\\d+)?', async (req, res) => {
     try {
         const payload = req.body;
         const webhookNumber = parseInt(req.params.number) || 1; // Default to webhook1 if no number
-        console.log(`📥 Hotmart webhook${webhookNumber} received:`, JSON.stringify(payload, null, 2));
+        console.log(`📥 Webhook${webhookNumber} received:`, JSON.stringify(payload, null, 2));
 
         // Get webhook configuration
         const { data: config } = await supabase
@@ -203,7 +203,7 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error processing Hotmart webhook:', error);
+        console.error('❌ Error processing webhook:', error);
         await logWebhook(req.body, 'error', error.message, null, null, null, null, null);
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -316,7 +316,7 @@ router.delete('/configs/:id', authenticate, authorize('admin'), async (req, res)
 
 /**
  * GET /api/hotmart/settings
- * Get Hotmart configuration
+ * Get webhook configuration
  */
 router.get('/settings', authenticate, authorize('admin'), async (req, res) => {
     try {
@@ -342,14 +342,14 @@ router.get('/settings', authenticate, authorize('admin'), async (req, res) => {
 
         res.json({ settings });
     } catch (error) {
-        console.error('Error fetching Hotmart settings:', error);
+        console.error('Error fetching webhook settings:', error);
         res.status(500).json({ error: 'Erro ao buscar configurações' });
     }
 });
 
 /**
  * PUT /api/hotmart/settings
- * Update Hotmart configuration
+ * Update webhook configuration
  */
 router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
     try {
@@ -371,7 +371,7 @@ router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
 
         res.json({ message: 'Configurações salvas com sucesso', settings });
     } catch (error) {
-        console.error('Error updating Hotmart settings:', error);
+        console.error('Error updating webhook settings:', error);
         res.status(500).json({ error: 'Erro ao salvar configurações' });
     }
 });
@@ -478,7 +478,21 @@ router.post('/test', authenticate, authorize('admin'), async (req, res) => {
 
 // Helper functions
 
+/**
+ * Auto-detect payload format and extract lead data
+ * Supports: Hotmart, Looma, and generic payloads
+ */
 function extractLeadData(payload) {
+    // Try each platform's extractor in order
+    return extractHotmartData(payload)
+        || extractLoomaData(payload)
+        || extractGenericData(payload);
+}
+
+/**
+ * Extract lead data from Hotmart payload
+ */
+function extractHotmartData(payload) {
     try {
         const { event, data } = payload;
 
@@ -494,13 +508,83 @@ function extractLeadData(payload) {
         }
 
         return {
-            name: buyer.name || buyer.first_name || 'Lead Hotmart',
+            name: buyer.name || buyer.first_name || 'Lead Webhook',
             email: buyer.email,
             phone: buyer.checkout_phone || buyer.phone || '',
-            product: product.name || 'Produto Hotmart'
+            product: product.name || 'Produto'
         };
     } catch (error) {
-        console.error('Error extracting lead data:', error);
+        return null;
+    }
+}
+
+/**
+ * Extract lead data from Looma payload
+ * Looma pode enviar dados em diferentes formatos
+ */
+function extractLoomaData(payload) {
+    try {
+        // Formato Looma: campos diretos ou dentro de "data"
+        const data = payload.data || payload;
+
+        // Looma costuma enviar com campos como customer, client, comprador
+        const customer = data.customer || data.client || data.comprador || data.buyer || data;
+
+        // Verificar se tem campos de cliente válidos
+        const name = customer.name || customer.nome || customer.first_name ||
+            data.name || data.nome || data.customer_name || data.client_name;
+        const email = customer.email || data.email || data.customer_email || data.client_email;
+        const phone = customer.phone || customer.telefone || customer.cellphone || customer.celular ||
+            data.phone || data.telefone || data.customer_phone || data.cellphone;
+        const product = data.product_name || data.produto || data.product?.name ||
+            data.offer_name || data.oferta || payload.product_name || '';
+
+        if (!name && !email && !phone) {
+            return null;
+        }
+
+        return {
+            name: name || 'Lead Webhook',
+            email: email || '',
+            phone: phone || '',
+            product: product || 'Produto'
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Generic fallback - extract lead data from any payload format
+ * Tries common field names used by various platforms
+ */
+function extractGenericData(payload) {
+    try {
+        const data = payload.data || payload;
+
+        // Tentar diversos nomes de campo comuns
+        const name = data.name || data.nome || data.first_name || data.full_name ||
+            data.customer_name || data.client_name || data.comprador ||
+            data.buyer_name || '';
+        const email = data.email || data.customer_email || data.client_email ||
+            data.buyer_email || '';
+        const phone = data.phone || data.telefone || data.cellphone || data.celular ||
+            data.mobile || data.whatsapp || data.customer_phone ||
+            data.buyer_phone || '';
+        const product = data.product || data.produto || data.product_name ||
+            data.offer || data.oferta || '';
+
+        if (!name && !email && !phone) {
+            return null;
+        }
+
+        return {
+            name: name || 'Lead Webhook',
+            email: email || '',
+            phone: phone || '',
+            product: product || 'Produto'
+        };
+    } catch (error) {
         return null;
     }
 }

@@ -20,7 +20,7 @@ export default function Settings() {
                     <TabButton active={activeTab === 'forms'} onClick={() => setActiveTab('forms')} icon={<Key size={16} />} label="Forms Checking" />
                     <TabButton active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} icon={<MessageCircle size={16} />} label="WhatsApp" />
 
-                    <TabButton active={activeTab === 'hotmart'} onClick={() => setActiveTab('hotmart')} icon={<Zap size={16} />} label="Hotmart" />
+                    <TabButton active={activeTab === 'hotmart'} onClick={() => setActiveTab('hotmart')} icon={<Zap size={16} />} label="Webhook" />
                     <TabButton active={activeTab === 'cart-abandonment'} onClick={() => setActiveTab('cart-abandonment')} icon={<ShoppingCart size={16} />} label="Abandono Carrinho" />
                     <TabButton active={activeTab === 'greatpages'} onClick={() => setActiveTab('greatpages')} icon={<Plug size={16} />} label="GreatPages" />
                     <TabButton active={activeTab === 'exclusion'} onClick={() => setActiveTab('exclusion')} icon={<Shield size={16} />} label="Exclusão" />
@@ -294,7 +294,7 @@ function onSubmit(e) {
 
             <div style={{ marginBottom: 24, padding: 12, borderRadius: 6, background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
                 <p style={{ fontSize: '0.85rem', color: '#6366f1', margin: 0, lineHeight: 1.6 }}>
-                    ℹ️ <strong>Distribuição Round-Robin:</strong> Quando ativada, os leads recebidos via webhook (Hotmart, GreatPages) são automaticamente distribuídos para vendedores ativos de forma sequencial. Quando desativada, os leads são criados sem vendedor atribuído.
+                    ℹ️ <strong>Distribuição Round-Robin:</strong> Quando ativada, os leads recebidos via webhook (Webhook, GreatPages) são automaticamente distribuídos para vendedores ativos de forma sequencial. Quando desativada, os leads são criados sem vendedor atribuído.
                 </p>
             </div>
 
