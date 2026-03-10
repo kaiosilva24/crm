@@ -118,4 +118,10 @@ export const api = {
     getAllWhatsAppGroups: () => request('/whatsapp-groups/groups'),
     // Exclusion
     getExclusionLogs: (params = {}) => request(`/exclusion-logs?${new URLSearchParams(params)}`),
+    // ManyChat
+    getManychatSettings: () => request('/manychat/settings'),
+    updateManychatSettings: (data) => request('/manychat/settings', { method: 'PUT', body: JSON.stringify(data) }),
+    testManychatConnection: (api_token) => request('/manychat/test-connection', { method: 'POST', body: JSON.stringify({ api_token }) }),
+    sendManychatTestAutomation: (leadData) => request('/manychat/test-automation', { method: 'POST', body: JSON.stringify({ leadData }) }),
+    getManychatEvents: (params = {}) => request(`/manychat/events?${new URLSearchParams(params)}`),
 };

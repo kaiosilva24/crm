@@ -200,11 +200,53 @@ export async function createSubscriber(firstName, lastName, phone, email, apiTok
             return response.data.data.id;
         }
         return null;
+        return null;
     } catch (error) {
         const detail = error.response && error.response.data
             ? JSON.stringify(error.response.data)
             : error.message;
         console.error('❌ Error creating subscriber:', detail);
+        throw new Error(detail);
+    }
+}
+
+/**
+ * Create a new subscriber with ONLY whatsapp_phone
+ * Used for specific automations that do not need system 'phone' or 'email' opt-ins.
+ * This avoids the 'Permission denied to import phone' error.
+ */
+export async function createWhatsAppSubscriber(firstName, lastName, whatsappPhone, email, apiToken) {
+    try {
+        console.log(`🆕 Creating new pure-WhatsApp subscriber: ${firstName} ${lastName} (${whatsappPhone})`);
+        const formattedPhone = whatsappPhone.startsWith('+') ? whatsappPhone : `+${whatsappPhone}`;
+        const payload = {
+            first_name: firstName,
+            last_name: lastName,
+            whatsapp_phone: formattedPhone,     // ONLY use whatsapp_phone
+            consent_phrase: "Integracao CRM"
+        };
+        if (email) {
+            payload.email = email;
+            payload.has_opt_in_email = true;
+        }
+
+        const response = await axios.post(`${MANYCHAT_API_BASE}/fb/subscriber/createSubscriber`, payload, {
+            headers: {
+                'Authorization': `Bearer ${apiToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.data && response.data.data) {
+            console.log(`✅ Pure WhatsApp Subscriber created: ${response.data.data.id}`);
+            return response.data.data.id;
+        }
+        return null;
+    } catch (error) {
+        const detail = error.response && error.response.data
+            ? JSON.stringify(error.response.data)
+            : error.message;
+        console.error('❌ Error creating WhatsApp subscriber:', detail);
         throw new Error(detail);
     }
 }
@@ -523,3 +565,88 @@ export async function sendFlowToSubscriber(subscriberId, flowId, apiToken) {
         throw error;
     }
 }
+
+/**
+ * Delete a subscriber (Note: ManyChat Public API might not fully support this, but we attempt it or alternative logic)
+ * We will try standard 'deleteSubscriber' or 'unsubscribe' logic if delete is not available.
+ * Many users achieve re-triggering by removing and re-adding tags.
+ */
+export async function deleteSubscriber(subscriberId, apiToken) {
+    try {
+        console.log(`🗑️ Attempting to delete/unsubscribe subscriber ${subscriberId}...`);
+        
+        // Attempt to call a delete endpoint if it exists in Manychat API
+        try {
+            await axios.post(`${MANYCHAT_API_BASE}/fb/subscriber/deleteSubscriber`, {
+                subscriber_id: subscriberId
+            }, {
+                headers: { 
+                    'Authorization': `Bearer ${apiToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`✅ Subscriber deleted via API`);
+        } catch (delErr) {
+            console.log(`⚠️ Delete endpoint failed (expected usually), falling back to unsubscribe/wipe...`);
+            // Fallback: update subscriber to remove consent or unsubscribe if delete doesn't exist
+            await axios.post(`${MANYCHAT_API_BASE}/fb/subscriber/updateSubscriber`, {
+                subscriber_id: subscriberId,
+                has_opt_in_sms: false,
+                has_opt_in_email: false,
+                phone: null,
+                whatsapp_phone: null
+            }, {
+                headers: { 
+                    'Authorization': `Bearer ${apiToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`✅ Subscriber wiped/unsubscribed as fallback`);
+        }
+        return true;
+    } catch (error) {
+        console.error('❌ Error deleting/unsubscribing subscriber:', error.response ? error.response.data : error.message);
+        // We do not throw because we don't want to stop the flow if delete fails
+        return false;
+    }
+}
+
+/**
+ * Remove a tag from a subscriber by Tag Name
+ */
+export async function removeTagByName(subscriberId, tagName, apiToken) {
+    try {
+        console.log(`🗑️ Removing tag '${tagName}' from subscriber ${subscriberId}`);
+        let tagId = null;
+        if (!isNaN(tagName)) {
+            tagId = tagName;
+        } else {
+            const tagsRes = await axios.get(`${MANYCHAT_API_BASE}/fb/page/getTags`, {
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            });
+            if (tagsRes.data && tagsRes.data.data) {
+                const tag = tagsRes.data.data.find(t => t.name === tagName);
+                if (tag) tagId = tag.id;
+            }
+        }
+
+        if (!tagId) {
+            console.log(`Tag '${tagName}' not found, nothing to remove.`);
+            return true;
+        }
+
+        await axios.post(`${MANYCHAT_API_BASE}/fb/subscriber/removeTag`, {
+            subscriber_id: subscriberId,
+            tag_id: tagId
+        }, {
+            headers: { 'Authorization': `Bearer ${apiToken}` }
+        });
+
+        console.log(`✅ Tag removed successfully`);
+        return true;
+    } catch (error) {
+        console.error('❌ Error removing tag (might not have had it):', error.response ? error.response.data : error.message);
+        return false;
+    }
+}
+

@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { supabase } from '../database/supabase.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { processSalesMirroring } from '../services/mirrorService.js';
+import { processManychatAutomation } from './manychat.js';
 
 const router = Router();
 
@@ -195,6 +196,9 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
 
         // 🚀 TRIGGER MIRRORING PROCESS
         processSalesMirroring(config.campaign_id, { email: leadData.email, phone: leadData.phone }, leadUuid);
+
+        // 🤖 TRIGGER MANYCHAT AUTOMATION
+        processManychatAutomation(config.id, leadData);
 
         res.status(200).json({
             message: 'Webhook processed successfully',

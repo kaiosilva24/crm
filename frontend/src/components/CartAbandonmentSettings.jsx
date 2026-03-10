@@ -649,7 +649,6 @@ export default function CartAbandonmentSettings() {
                                     <th style={{ textAlign: 'left', padding: 8 }}>Nome</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Contato</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Erro</th>
-                                    <th style={{ textAlign: 'left', padding: 8 }}>Na Campanha</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Ações</th>
                                 </tr>
                             </thead>
@@ -773,9 +772,7 @@ export default function CartAbandonmentSettings() {
                                     <th style={{ textAlign: 'left', padding: 8 }}>Contato</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Produto</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Status</th>
-                                    <th style={{ textAlign: 'left', padding: 8 }}>1ª Msg</th>
-                                    <th style={{ textAlign: 'left', padding: 8 }}>2ª Msg</th>
-                                    <th style={{ textAlign: 'left', padding: 8 }}>Na Campanha</th>
+                                    <th style={{ textAlign: 'left', padding: 8 }}>Automação Enviada</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -801,22 +798,6 @@ export default function CartAbandonmentSettings() {
                                                 <X size={16} style={{
                                                     color: event.status === 'error' ? '#ef4444' : '#6b7280'
                                                 }} />
-                                            )}
-                                        </td>
-                                        <td style={{ padding: 8 }}>
-                                            {event.second_message_sent ? (
-                                                <Check size={16} style={{ color: '#10b981' }} />
-                                            ) : (
-                                                <X size={16} style={{
-                                                    color: event.status === 'error' ? '#ef4444' : '#6b7280'
-                                                }} />
-                                            )}
-                                        </td>
-                                        <td style={{ padding: 8 }}>
-                                            {event.found_in_campaign ? (
-                                                <Check size={16} style={{ color: '#10b981' }} />
-                                            ) : (
-                                                <X size={16} style={{ color: '#6b7280' }} />
                                             )}
                                         </td>
                                     </tr>

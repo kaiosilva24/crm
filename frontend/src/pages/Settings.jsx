@@ -4,6 +4,7 @@ import { Settings as SettingsIcon, Key, Download, Upload, ArrowUpDown, Copy, Che
 import HotmartSettings from '../components/HotmartSettings';
 import ExclusionSettings from '../components/ExclusionSettings';
 import CartAbandonmentSettings from '../components/CartAbandonmentSettings';
+import ManychatSettings from '../components/ManychatSettings';
 
 export default function Settings() {
     const [activeTab, setActiveTab] = useState('api');
@@ -22,6 +23,7 @@ export default function Settings() {
 
                     <TabButton active={activeTab === 'hotmart'} onClick={() => setActiveTab('hotmart')} icon={<Zap size={16} />} label="Webhook" />
                     <TabButton active={activeTab === 'cart-abandonment'} onClick={() => setActiveTab('cart-abandonment')} icon={<ShoppingCart size={16} />} label="Abandono Carrinho" />
+                    <TabButton active={activeTab === 'manychat'} onClick={() => setActiveTab('manychat')} icon={<MessageCircle size={16} />} label="ManyChat Automação" />
                     <TabButton active={activeTab === 'greatpages'} onClick={() => setActiveTab('greatpages')} icon={<Plug size={16} />} label="GreatPages" />
                     <TabButton active={activeTab === 'exclusion'} onClick={() => setActiveTab('exclusion')} icon={<Shield size={16} />} label="Exclusão" />
 
@@ -39,6 +41,7 @@ export default function Settings() {
 
             {activeTab === 'hotmart' && <HotmartSettings />}
             {activeTab === 'cart-abandonment' && <CartAbandonmentSettings />}
+            {activeTab === 'manychat' && <ManychatSettings />}
             {activeTab === 'greatpages' && <GreatPagesSettings />}
             {activeTab === 'exclusion' && <ExclusionSettings />}
             {activeTab === 'status' && <StatusSettings />}
