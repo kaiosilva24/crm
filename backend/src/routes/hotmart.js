@@ -194,6 +194,13 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             config.id // Add webhook config ID to log
         );
 
+        // Normalize the phone inside leadData BEFORE sending to mirroring and ManyChat
+        // This ensures the automation triggers use exactly the same DDI logic as the CRM database.
+        const normPhone = normalizePhone(leadData.phone);
+        if (normPhone) {
+            leadData.phone = normPhone;
+        }
+
         // 🚀 TRIGGER MIRRORING PROCESS
         processSalesMirroring(config.campaign_id, { email: leadData.email, phone: leadData.phone }, leadUuid);
 

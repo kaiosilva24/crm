@@ -77,11 +77,6 @@ export async function findSubscriberByPhone(phone, apiToken) {
     let cleanPhone = phone.replace(/\D/g, '');
     let formats = [phone, `+${cleanPhone}`, cleanPhone];
 
-    if (cleanPhone.length === 10 || cleanPhone.length === 11) {
-         formats.push(`+55${cleanPhone}`);
-         formats.push(`55${cleanPhone}`);
-    }
-
     const uniqueFormats = [...new Set(formats)];
 
     for (const ph of uniqueFormats) {
@@ -134,11 +129,6 @@ export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
     let cleanPhone = whatsappPhone.replace(/\D/g, '');
     let formats = [whatsappPhone, `+${cleanPhone}`, cleanPhone];
 
-    if (cleanPhone.length === 10 || cleanPhone.length === 11) {
-         formats.push(`+55${cleanPhone}`);
-         formats.push(`55${cleanPhone}`);
-    }
-
     const uniqueFormats = [...new Set(formats)];
 
     for (const ph of uniqueFormats) {
@@ -188,11 +178,8 @@ export async function createSubscriber(firstName, lastName, phone, email, apiTok
     try {
         console.log(`🆕 Creating new WhatsApp subscriber: ${firstName} ${lastName} (${phone}, ${email})`);
         
-        // Ensure proper E.164 formatting (specifically for Brazilian numbers without DDI)
+        // Ensure strict E.164 formatting without blindly mutating DDIs
         let cleanPhone = phone.replace(/\D/g, '');
-        if (cleanPhone.length === 10 || cleanPhone.length === 11) {
-            cleanPhone = '55' + cleanPhone;
-        }
         const formattedPhone = `+${cleanPhone}`;
         
         const payload = {
@@ -237,11 +224,8 @@ export async function createWhatsAppSubscriber(firstName, lastName, whatsappPhon
     try {
         console.log(`🆕 Creating new pure-WhatsApp subscriber: ${firstName} ${lastName} (${whatsappPhone})`);
         
-        // Ensure proper E.164 formatting (specifically for Brazilian numbers without DDI)
+        // Ensure strict E.164 formatting without blindly mutating DDIs
         let cleanPhone = whatsappPhone.replace(/\D/g, '');
-        if (cleanPhone.length === 10 || cleanPhone.length === 11) {
-            cleanPhone = '55' + cleanPhone;
-        }
         const formattedPhone = `+${cleanPhone}`;
         
         const payload = {
