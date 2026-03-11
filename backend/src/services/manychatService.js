@@ -72,12 +72,19 @@ export async function getFlows(apiToken) {
  * Find subscriber by phone number
  */
 export async function findSubscriberByPhone(phone, apiToken) {
-    // Try multiple formats: original, with +, without +
-    const formats = [phone];
-    if (!phone.startsWith('+')) formats.push(`+${phone}`);
-    if (phone.startsWith('+')) formats.push(phone.slice(1));
+    if (!phone) return null;
 
-    for (const ph of formats) {
+    let cleanPhone = phone.replace(/\D/g, '');
+    let formats = [phone, `+${cleanPhone}`, cleanPhone];
+
+    if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+         formats.push(`+55${cleanPhone}`);
+         formats.push(`55${cleanPhone}`);
+    }
+
+    const uniqueFormats = [...new Set(formats)];
+
+    for (const ph of uniqueFormats) {
         try {
             console.log(`[ManyChat] Looking up subscriber by phone: ${ph}`);
             // Correct API: /fb/subscriber/findBySystemField?phone=...
@@ -124,13 +131,17 @@ export async function findSubscriberByPhone(phone, apiToken) {
 export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
     if (!whatsappPhone) return null;
 
-    // Try both with and without + prefix
-    const phoneFormats = [
-        whatsappPhone,
-        whatsappPhone.startsWith('+') ? whatsappPhone.substring(1) : `+${whatsappPhone}`
-    ];
+    let cleanPhone = whatsappPhone.replace(/\D/g, '');
+    let formats = [whatsappPhone, `+${cleanPhone}`, cleanPhone];
 
-    for (const ph of phoneFormats) {
+    if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+         formats.push(`+55${cleanPhone}`);
+         formats.push(`55${cleanPhone}`);
+    }
+
+    const uniqueFormats = [...new Set(formats)];
+
+    for (const ph of uniqueFormats) {
         try {
             console.log(`🔍 Finding ManyChat subscriber by WhatsApp: ${ph}`);
             const response = await axios.get(`${MANYCHAT_API_BASE}/fb/subscriber/findBySystemField`, {
@@ -176,7 +187,14 @@ export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
 export async function createSubscriber(firstName, lastName, phone, email, apiToken) {
     try {
         console.log(`🆕 Creating new WhatsApp subscriber: ${firstName} ${lastName} (${phone}, ${email})`);
-        const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+        
+        // Ensure proper E.164 formatting (specifically for Brazilian numbers without DDI)
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+            cleanPhone = '55' + cleanPhone;
+        }
+        const formattedPhone = `+${cleanPhone}`;
+        
         const payload = {
             first_name: firstName,
             last_name: lastName,
@@ -218,7 +236,14 @@ export async function createSubscriber(firstName, lastName, phone, email, apiTok
 export async function createWhatsAppSubscriber(firstName, lastName, whatsappPhone, email, apiToken) {
     try {
         console.log(`🆕 Creating new pure-WhatsApp subscriber: ${firstName} ${lastName} (${whatsappPhone})`);
-        const formattedPhone = whatsappPhone.startsWith('+') ? whatsappPhone : `+${whatsappPhone}`;
+        
+        // Ensure proper E.164 formatting (specifically for Brazilian numbers without DDI)
+        let cleanPhone = whatsappPhone.replace(/\D/g, '');
+        if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+            cleanPhone = '55' + cleanPhone;
+        }
+        const formattedPhone = `+${cleanPhone}`;
+        
         const payload = {
             first_name: firstName,
             last_name: lastName,
