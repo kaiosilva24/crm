@@ -48,7 +48,7 @@ export default function Campaigns() {
 
     const handleArchive = async (uuid) => {
         if (confirm('Tem certeza que deseja arquivar esta campanha?')) {
-            await api.deleteCampaign(uuid);
+            await api.updateCampaign(uuid, { is_active: false });
             loadCampaigns();
         }
     };
