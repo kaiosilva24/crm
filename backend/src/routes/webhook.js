@@ -306,8 +306,11 @@ router.post('/greatpages', async (req, res) => {
         // Lógica de espelhamento de vendedora (se campanha tiver mirror_campaign_id)
         if (campaignId) {
             const campaign = await db.getCampaignByUuid(campaignUuid);
-            if (campaign && campaign.mirror_campaign_id) {
-                console.log(`   🪞 Campanha espelha ${campaign.mirror_campaign_id}. Buscando vendedora...`);
+            if (campaign && (campaign.mirror_campaign_id || (campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0))) {
+                const mirrorIds = campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0 
+                                  ? campaign.mirror_campaign_ids 
+                                  : [campaign.mirror_campaign_id];
+                console.log(`   🪞 Campanha espelha campanhas: [${mirrorIds.join(', ')}]. Buscando vendedora...`);
 
                 let sourceLead = null;
 
@@ -319,8 +322,9 @@ router.post('/greatpages', async (req, res) => {
                     const { data: leads, error } = await supabase
                         .from('leads')
                         .select('id, first_name, seller_id, phone')
-                        .eq('campaign_id', campaign.mirror_campaign_id)
+                        .in('campaign_id', mirrorIds)
                         .ilike('phone', `%${phoneEnd}`)
+                        .order('created_at', { ascending: false })
                         .limit(1);
 
                     console.log(`   📊 Query result: ${leads?.length || 0} leads encontrados`);
@@ -337,8 +341,9 @@ router.post('/greatpages', async (req, res) => {
                     const { data: leads, error } = await supabase
                         .from('leads')
                         .select('id, first_name, seller_id, email')
-                        .eq('campaign_id', campaign.mirror_campaign_id)
+                        .in('campaign_id', mirrorIds)
                         .eq('email', email.toLowerCase())
+                        .order('created_at', { ascending: false })
                         .limit(1);
 
                     console.log(`   📊 Query result: ${leads?.length || 0} leads encontrados`);

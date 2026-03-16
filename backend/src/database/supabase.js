@@ -856,6 +856,8 @@ export const db = {
             throw error;
         }
         console.log('✅ Campaign updated successfully:', data);
+        cache.del('campaigns_true');
+        cache.del('campaigns_false');
         return data;
     },
 

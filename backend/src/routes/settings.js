@@ -733,13 +733,15 @@ router.post('/import/leads', async (req, res) => {
                                 console.log(`🔍 Debug Mirror Update: Buscando campanha destino ID=${campaign_id}`);
                                 const targetCampaign = await db.getCampaignById(campaign_id);
 
-                                if (targetCampaign && targetCampaign.mirror_campaign_id) {
-                                    mirrorCampaignId = targetCampaign.mirror_campaign_id;
-                                    console.log(`🔍 Debug Mirror Update: Campanha encontrada. MirrorID=${mirrorCampaignId}`);
-                                    console.log(`🔍 Debug Mirror Update: Comparando existing.campaign_id (${existing.campaign_id}) com mirror (${mirrorCampaignId})`);
+                                if (targetCampaign && (targetCampaign.mirror_campaign_id || (targetCampaign.mirror_campaign_ids && targetCampaign.mirror_campaign_ids.length > 0))) {
+                                    const mirrorIds = targetCampaign.mirror_campaign_ids && targetCampaign.mirror_campaign_ids.length > 0
+                                        ? targetCampaign.mirror_campaign_ids
+                                        : [targetCampaign.mirror_campaign_id];
 
-                                    // Converter para string para garantir comparação
-                                    if (String(existing.campaign_id) === String(mirrorCampaignId)) {
+                                    const mirroredMatch = mirrorIds.find(id => String(id) === String(existing.campaign_id));
+
+                                    if (mirroredMatch) {
+                                        mirrorCampaignId = mirroredMatch;
                                         isMirrored = true;
                                         console.log(`   🪞 Espelhamento detectado (Update): Buscando vendedora na campanha ${mirrorCampaignId}...`);
 
@@ -892,8 +894,12 @@ router.post('/import/leads', async (req, res) => {
                     try {
                         // 1. Verificar se a campanha tem espelhamento configurado
                         const campaign = await db.getCampaignById(campaign_id);
-                        if (campaign && campaign.mirror_campaign_id) {
-                            console.log(`   🪞 Campanha ${campaign.id} espelha ${campaign.mirror_campaign_id}. Verificando lead...`);
+                        if (campaign && (campaign.mirror_campaign_id || (campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0))) {
+                            const mirrorIds = campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0
+                                ? campaign.mirror_campaign_ids
+                                : [campaign.mirror_campaign_id];
+                                
+                            console.log(`   🪞 Campanha ${campaign.id} espelha [${mirrorIds.join(', ')}]. Verificando lead...`);
 
                             // 2. Buscar lead na campanha espelhada (pelo telefone ou email)
                             let sourceLead = null;
@@ -903,8 +909,9 @@ router.post('/import/leads', async (req, res) => {
                                 const { data: leads } = await supabase
                                     .from('leads')
                                     .select('seller_id')
-                                    .eq('campaign_id', campaign.mirror_campaign_id)
+                                    .in('campaign_id', mirrorIds)
                                     .ilike('phone', `%${phoneEnd}`)
+                                    .order('created_at', { ascending: false })
                                     .limit(1);
                                 if (leads && leads.length > 0) sourceLead = leads[0];
                             }
@@ -913,8 +920,9 @@ router.post('/import/leads', async (req, res) => {
                                 const { data: leads } = await supabase
                                     .from('leads')
                                     .select('seller_id')
-                                    .eq('campaign_id', campaign.mirror_campaign_id)
+                                    .in('campaign_id', mirrorIds)
                                     .eq('email', leadEmail)
+                                    .order('created_at', { ascending: false })
                                     .limit(1);
                                 if (leads && leads.length > 0) sourceLead = leads[0];
                             }

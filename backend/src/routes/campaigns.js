@@ -52,7 +52,7 @@ router.post('/', authorize('admin'), async (req, res) => {
             name,
             description: description || null,
             is_active: true,
-            mirror_campaign_id: req.body.mirror_campaign_id || null, // Existing field (seller mirror)
+            mirror_campaign_ids: req.body.mirror_campaign_ids || [], // NEW field (array of seller mirror IDs)
             mirror_sales_source_id: req.body.mirror_sales_source_id || null // NEW field (sales mirror)
         });
 
@@ -82,8 +82,8 @@ router.patch('/:uuid', authorize('admin'), async (req, res) => {
         if (typeof is_active === 'boolean') updateData.is_active = is_active;
 
         // Convert empty strings to null for integer fields
-        if (req.body.mirror_campaign_id !== undefined) {
-            updateData.mirror_campaign_id = req.body.mirror_campaign_id === '' ? null : req.body.mirror_campaign_id;
+        if (req.body.mirror_campaign_ids !== undefined) {
+            updateData.mirror_campaign_ids = Array.isArray(req.body.mirror_campaign_ids) ? req.body.mirror_campaign_ids : [];
         }
         if (req.body.mirror_sales_source_id !== undefined) {
             updateData.mirror_sales_source_id = req.body.mirror_sales_source_id === '' ? null : req.body.mirror_sales_source_id;
