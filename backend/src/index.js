@@ -53,7 +53,9 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'https://crm-recovery.vercel.app',
-    'https://crmsales-recovery-crm-api.onrender.com'
+    'https://crmsales-recovery-crm-api.onrender.com',
+    'https://crm.discloud.app',
+    'https://wpp-advanced.discloud.app'
 ];
 
 app.use(cors({
@@ -66,8 +68,8 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Permitir qualquer subdomínio do Vercel (preview deployments)
-        if (origin.endsWith('.vercel.app')) {
+        // Permitir qualquer subdomínio do Vercel e Discloud
+        if (origin.endsWith('.vercel.app') || origin.endsWith('.discloud.app')) {
             return callback(null, true);
         }
 
