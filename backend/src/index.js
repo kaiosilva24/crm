@@ -12,8 +12,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Carregar variáveis de ambiente PRIMEIRO
-dotenv.config();
+// Carregar variáveis de ambiente PRIMEIRO - caminho relativo ao arquivo
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Importar cliente Supabase e rotas
 import { initializeDatabase } from './database/supabase.js';
