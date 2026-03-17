@@ -6,9 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
-# Build outputs
-dist/
-build/
+# Build outputs (permitidos p/ deploy)
+# dist/
+# build/
 
 # Database files (SQLite local)
 data/
