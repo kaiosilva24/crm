@@ -1,0 +1,6 @@
+{
+  "code": "23503",
+  "details": "Key (id)=(23) is still referenced from table \"import_batches\".",
+  "hint": null,
+  "message": "update or delete on table \"campaigns\" violates foreign key constraint \"import_batches_campaign_id_fkey\" on table \"import_batches\""
+}

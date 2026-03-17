@@ -38,10 +38,10 @@ import cartAbandonmentRoutes from './routes/cartAbandonment.js';
 import manychatRoutes from './routes/manychat.js';
 import { restoreSessions } from './services/whatsappService.js';
 
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 8080;
 
 // Log da porta fornecida pelo ambiente para debug no Discloud
-console.log(`Porta fornecida via ENV: ${process.env.PORT || 'Nenhuma (usando 80)'}`);
+console.log(`Porta fornecida via ENV: ${process.env.PORT || 'Nenhuma (usando 8080)'}`);
 
 // Inicializar conexão com Supabase
 initializeDatabase();
@@ -119,8 +119,8 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 CRM API running on port ${PORT} (0.0.0.0)`);
+app.listen(PORT, () => {
+    console.log(`🚀 CRM API running on port ${PORT}`);
     console.log(`📦 Database: Supabase (PostgreSQL)`);
 
     // Restaurar sessões do WhatsApp com delay (evita rate-limit no startup)
