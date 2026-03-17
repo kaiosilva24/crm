@@ -18,11 +18,33 @@ if (!supabaseUrl || !supabaseKey) {
     console.error('❌ SUPABASE_URL e SUPABASE_ANON_KEY são obrigatórios no arquivo .env');
     process.exit(1);
 }
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import https from 'https';
 
 // Cache configuration (Default TTL: 60 seconds)
 const cache = new NodeCache({ stdTTL: 60 });
+
+// Força IPv4 no node native fetch para contornar problemas de rede do Discloud (Node 18+)
+// supabase-js usa internamente fetch()
+const httpsAgent = new https.Agent({
+    family: 4, // Força resolução IPv4 evitando timeout caso o Cloud tente IPv6 sem rota
+    keepAlive: true
+});
+
+const customFetch = (url, options) => {
+    return fetch(url, {
+        ...options,
+        agent: httpsAgent 
+    });
+};
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false
+    },
+    global: {
+        fetch: customFetch
+    }
+});
 
 // Helper to get from cache or set if missing
 const getCached = async (key, fetcher, ttl = 60) => {
