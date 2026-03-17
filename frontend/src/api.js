@@ -2,7 +2,7 @@
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname.match(/^192\.168\./) || window.location.hostname.match(/^10\./) || window.location.hostname.match(/^172\.(1[6-9]|2\d|3[0-1])\./);
 const API_URL = isLocal
     ? `http://${window.location.hostname}:3001/api`
-    : 'https://crmsales-recovery-crm-api.onrender.com/api';
+    : '/api';
 
 async function request(endpoint, options = {}) {
     const token = localStorage.getItem('token');

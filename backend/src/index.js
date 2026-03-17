@@ -6,6 +6,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Carregar variáveis de ambiente PRIMEIRO
 dotenv.config();
@@ -100,7 +105,16 @@ app.use('/api/exclusion-logs', exclusionLogsRoutes);
 app.use('/api/cart-abandonment', cartAbandonmentRoutes);
 app.use('/api/manychat', manychatRoutes);
 
+// ======== Front-End Integration ========
+// Serve os arquivos estáticos do frontend
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
 
+// Rota de fallback para SPA (Single Page Applications)
+// Todas as rotas não /api/ retornam para o index.html da UI
+app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 CRM API running on http://localhost:${PORT}`);

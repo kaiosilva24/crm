@@ -1,0 +1,11 @@
+{
+  "name": "sales-recovery-crm",
+  "version": "1.0.0",
+  "description": "CRM e Recuperador de Vendas Automático",
+  "main": "backend/src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "postinstall": "npm install --prefix backend"
+  }
+}
