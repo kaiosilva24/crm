@@ -8,7 +8,8 @@ import cron from 'node-cron';
 
 const AUTO_SYNC_ENABLED = process.env.AUTO_SYNC_ENABLED === 'true';
 const AUTO_SYNC_INTERVAL = parseInt(process.env.AUTO_SYNC_INTERVAL || '30'); // minutos
-const API_URL = process.env.API_URL || 'http://localhost:3001';
+const PORT = process.env.PORT || 80;
+const API_URL = process.env.API_URL || `http://127.0.0.1:${PORT}`;
 
 let isRunning = false;
 
