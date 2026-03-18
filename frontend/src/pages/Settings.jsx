@@ -140,7 +140,7 @@ function FormsSettings() {
     if (loading) return <div className="card">Carregando...</div>;
 
     // URL de Produção (Render)
-    const webhookUrl = "https://crmsales-recovery-crm-api.onrender.com/api/webhook/checking";
+    const webhookUrl = "https://crm.discloud.app/api/webhook/checking";
 
     // Script Template
     const scriptTemplate = `// SCRIPT PARA GOOGLE FORMS (APPS SCRIPT)
@@ -378,7 +378,7 @@ function GreatPagesSettings() {
     // Detectar ambiente automaticamente e definir estado inicial
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const [baseUrl, setBaseUrl] = useState(
-        isLocal ? "" : "https://crmsales-recovery-crm-api.onrender.com"
+        isLocal ? "" : "https://crm.discloud.app"
     );
 
     // GreatPages Logs State
