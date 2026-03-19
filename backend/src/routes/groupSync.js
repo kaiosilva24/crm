@@ -151,7 +151,7 @@ router.post('/sync-group-status', async (req, res) => {
                     const sock = getActiveConnection(group.connection_id);
 
                     // 🔍 DIAGNÓSTICO: Verificar se conexão está ativa (sock e socket aberto)
-                    if (!sock || (sock.ws && sock.ws.readyState !== 1)) {
+                    if (!sock) {
                         console.warn(`⚠️ Conexão inativa ou fechada: ${group.connection_id} (Grupo: ${group.group_name})`);
                         inactiveConnectionsCount++;
                         inactiveConnections.push({

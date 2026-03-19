@@ -383,8 +383,8 @@ async function syncWhatsAppGroups(connectionId, sock) {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Verificar se socket ainda está aberto antes de puxar dados (evitar crash de "Connection Closed")
-        if (!sock || (sock.ws && sock.ws.readyState !== 1)) {
-            console.warn(`⚠️ Socket WhatsApp não está totalmente aberto (readyState: ${sock?.ws?.readyState}). Sincronização cancelada.`);
+        if (!sock) {
+            console.warn(`⚠️ Socket WhatsApp não encontrado. Sincronização cancelada.`);
             throw new Error('Connection Closed');
         }
 
