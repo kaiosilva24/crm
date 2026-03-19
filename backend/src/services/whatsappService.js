@@ -382,6 +382,12 @@ async function syncWhatsAppGroups(connectionId, sock) {
         // Aguardar 2 segundos antes de buscar grupos (evitar rate-limit)
         await new Promise(resolve => setTimeout(resolve, 2000));
 
+        // Verificar se socket ainda está aberto antes de puxar dados (evitar crash de "Connection Closed")
+        if (!sock || (sock.ws && sock.ws.readyState !== 1)) {
+            console.warn(`⚠️ Socket WhatsApp não está totalmente aberto (readyState: ${sock?.ws?.readyState}). Sincronização cancelada.`);
+            throw new Error('Connection Closed');
+        }
+
         // Buscar todos os grupos
         const groups = await sock.groupFetchAllParticipating();
         const groupList = Object.values(groups);

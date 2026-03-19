@@ -716,8 +716,8 @@ router.get('/campaigns/:campaignId/participants', async (req, res) => {
         for (const group of groups) {
             try {
                 const sock = getActiveConnection(group.connection_id);
-                if (!sock) {
-                    console.log(`⚠️ Conexão ${group.connection_id} não ativa`);
+                if (!sock || (sock.ws && sock.ws.readyState !== 1)) {
+                    console.log(`⚠️ Conexão ${group.connection_id} não ativa ou socket fechado (readyState: ${sock?.ws?.readyState})`);
                     continue;
                 }
 

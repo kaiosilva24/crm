@@ -143,24 +143,25 @@ router.post('/sync-group-status', async (req, res) => {
             let activeConnectionsCount = 0;
             let inactiveConnectionsCount = 0;
             const inactiveConnections = [];
+            let hasFetchError = false;
 
             // Buscar participantes dos grupos desta campanha
             await Promise.all(groups.map(async (group) => {
                 try {
                     const sock = getActiveConnection(group.connection_id);
 
-                    // 🔍 DIAGNÓSTICO: Verificar se conexão está ativa
-                    if (!sock) {
-                        console.warn(`⚠️ Conexão inativa: ${group.connection_id} (Grupo: ${group.group_name})`);
+                    // 🔍 DIAGNÓSTICO: Verificar se conexão está ativa (sock e socket aberto)
+                    if (!sock || (sock.ws && sock.ws.readyState !== 1)) {
+                        console.warn(`⚠️ Conexão inativa ou fechada: ${group.connection_id} (Grupo: ${group.group_name})`);
                         inactiveConnectionsCount++;
                         inactiveConnections.push({
                             connection_id: group.connection_id,
                             group_name: group.group_name
                         });
+                        hasFetchError = true; // Marcar como erro para abortar a campanha
                         return;
                     }
 
-                    activeConnectionsCount++;
                     console.log(`✅ Conexão ativa: ${group.connection_id} - Buscando participantes do grupo ${group.group_name}`);
 
                     const metadata = await sock.groupMetadata(group.group_id);
@@ -178,8 +179,11 @@ router.post('/sync-group-status', async (req, res) => {
                             if (normalized) groupParticipants.add(normalized);
                         }
                     });
+                    // Só incrementar conexões ativas se a busca for bem sucedida
+                    activeConnectionsCount++;
                 } catch (e) {
                     console.error(`❌ Erro ao buscar grupo ${group.group_name}: ${e.message}`);
+                    hasFetchError = true; // Flag para parar a sincronização se uma falhar
                 }
             }));
 
@@ -199,21 +203,25 @@ router.post('/sync-group-status', async (req, res) => {
                 console.warn(`\n💡 SOLUÇÃO: Verifique se as conexões do WhatsApp estão conectadas em /api/whatsapp/connections`);
             }
 
-            // 🛡️ VERIFICAÇÃO DE SEGURANÇA CRÍTICA
-            if (activeConnectionsCount === 0 && groups.length > 0) {
-                const errorMsg = `Nenhuma conexão WhatsApp ativa encontrada para a campanha ${campaignId}. Conecte pelo menos uma conexão antes de sincronizar.`;
+            if ((activeConnectionsCount === 0 && groups.length > 0) || hasFetchError) {
+                const errorReason = hasFetchError ? "Houve falha na busca de dados de um ou mais grupos (conexão caiu)." : "Nenhuma conexão WhatsApp ativa encontrada para a campanha.";
+                const errorMsg = `Não foi possível sincronizar a campanha ${campaignId}: ${errorReason}`;
                 console.error('\n' + '='.repeat(70));
-                console.error(`❌ SINCRONIZAÇÃO ABORTADA: ${errorMsg}`);
-                console.error('💡 Os dados anteriores serão mantidos sem alteração');
+                console.error(`❌ SINCRONIZAÇÃO ABORTADA PARA CAMPANHA ${campaignId}: ${errorReason}`);
+                console.error('💡 Os dados anteriores serão mantidos sem alteração para evitar falsos-negativos');
                 console.error('='.repeat(70));
 
-                return res.status(400).json({
-                    success: false,
-                    error: errorMsg,
-                    activeConnections: activeConnectionsCount,
-                    totalGroups: groups.length,
-                    connectionError: true // Flag para indicar erro de conexão
-                });
+                if (campaignMap.size === 1) { // Se for a última/única campanha a dar esse erro
+                    return res.status(400).json({
+                        success: false,
+                        error: errorMsg,
+                        activeConnections: activeConnectionsCount,
+                        totalGroups: groups.length,
+                        connectionError: true
+                    });
+                } else {
+                    continue; // Pula essa campanha e vai parar a próxima se houver múltiplas
+                }
             }
 
             // Buscar leads desta campanha com paginação para garantir que pegue todos
