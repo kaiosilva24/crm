@@ -31,7 +31,7 @@ export default function CartAbandonmentSettings() {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const baseUrl = isLocalhost
         ? window.location.origin.replace('5173', '3001')  // Local: http://localhost:3001
-        : 'https://crm.discloud.app'; // Produção: URL do backend no Discloud
+        : window.location.origin; // Produção: usa o host atual
 
     const webhookUrl = `${baseUrl}/api/cart-abandonment/webhook`;
 

@@ -52,6 +52,7 @@ const app = express();
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:8080',
     'https://crm-recovery.vercel.app',
     'https://crmsales-recovery-crm-api.onrender.com',
     'https://crm.discloud.app',

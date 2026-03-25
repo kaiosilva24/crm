@@ -1,8 +1,6 @@
-// Detecta automaticamente se está em produção ou desenvolvimento
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname.match(/^192\.168\./) || window.location.hostname.match(/^10\./) || window.location.hostname.match(/^172\.(1[6-9]|2\d|3[0-1])\./);
-const API_URL = isLocal
-    ? `http://${window.location.hostname}:3001/api`
-    : 'https://crm.discloud.app/api';
+// Em dev local, usa URL relativa '/api' (proxy do Vite redireciona para :8080)
+// Em produção, usa a URL absoluta do servidor
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 async function request(endpoint, options = {}) {
     const token = localStorage.getItem('token');

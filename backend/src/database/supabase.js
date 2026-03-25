@@ -1,13 +1,10 @@
 /**
- * Supabase Database Client
- * Cliente otimizado para operações com Supabase
+ * Database Client - PostgreSQL via pg-adapter
+ * Usa pg-adapter.js que emula a interface do Supabase SDK,
+ * permitindo trocar o banco sem alterar rotas.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import fetch from 'node-fetch';
-import http from 'http';
-import https from 'https';
-
+import { supabase as _supabase } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import NodeCache from 'node-cache';
@@ -15,40 +12,8 @@ import fs from 'fs';
 
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+export const supabase = _supabase;
 
-if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ SUPABASE_URL e SUPABASE_ANON_KEY são obrigatórios no arquivo .env');
-    process.exit(1);
-}
-
-// Criar HTTP/HTTPS Agents forçando a familia de IPs para 4 (IPv4) - Evita timeouts no Discloud
-const httpAgent = new http.Agent({ family: 4 });
-const httpsAgent = new https.Agent({ family: 4 });
-
-const customFetch = (url, options) => {
-    return fetch(url, {
-        ...options,
-        agent: function (_parsedURL) {
-            if (_parsedURL.protocol === 'http:') {
-                return httpAgent;
-            } else {
-                return httpsAgent;
-            }
-        }
-    });
-};
-
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: false,
-    },
-    global: {
-        fetch: customFetch
-    }
-});
 
 // Cache configuration (Default TTL: 60 seconds)
 const cache = new NodeCache({ stdTTL: 60 });
@@ -211,39 +176,31 @@ export const db = {
         // Como o in_group vem de uma tabela separada (lead_campaign_groups),
         // precisamos buscar TODOS os leads que correspondem aos outros filtros primeiro,
         // depois aplicar o filtro in_group, e então paginar manualmente.
-        // Isso garante que a paginação funcione corretamente.
-
         const useInGroupFilter = in_group !== undefined;
-        const fetchLimit = useInGroupFilter ? 5000 : limit; // Buscar mais leads se filtro in_group está ativo
+        const fetchLimit = useInGroupFilter ? 5000 : limit;
         const fetchOffset = useInGroupFilter ? 0 : (page - 1) * limit;
 
+        // SELECT simples — sem joins (pg-adapter não suporta joins Supabase)
         let query = supabase
             .from('leads')
-            .select(`
-                *,
-                lead_statuses!status_id(id, name, color),
-                users!seller_id(id, name),
-                campaigns!campaign_id(id, name),
-                subcampaigns!subcampaign_id(id, name, color)
-            `, { count: 'exact' });
+            .select('*', { count: 'exact' });
 
         if (!show_inactive) {
-            query = query.or('is_active.eq.true,is_active.is.null');
+            // is_active todos são true no Oracle, então não filtramos para evitar problema
+            // query = query.or('is_active.eq.true,is_active.is.null');
         }
         if (seller_id === 'null') {
-            // Filter ONLY leads without a seller
             query = query.is('seller_id', null);
         } else if (seller_id) {
-            // Include leads assigned to this seller OR unassigned leads (seller_id = null)
             query = query.or(`seller_id.eq.${seller_id},seller_id.is.null`);
         }
         if (status === 'null') {
             query = query.is('status_id', null);
         } else if (status) {
-            query = query.eq('status_id', status);
+            query = query.eq('status_id', parseInt(status));
         }
-        if (campaign_id) query = query.eq('campaign_id', campaign_id);
-        if (subcampaign_id) query = query.eq('subcampaign_id', subcampaign_id);
+        if (campaign_id) query = query.eq('campaign_id', parseInt(campaign_id));
+        if (subcampaign_id) query = query.eq('subcampaign_id', parseInt(subcampaign_id));
 
         if (search) {
             query = query.or(`first_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -263,48 +220,73 @@ export const db = {
         const { data, error, count } = await query;
         if (error) throw error;
 
-        // Buscar in_group de todos os leads de uma vez
-        const leadIds = (data || []).map(l => l.id);
-        let campaignGroupsMap = new Map();
+        const leadRows = data || [];
 
-        if (leadIds.length > 0) {
-            // Buscar in_group para os leads DA CAMPANHA ESPECÍFICA
-            let pageGroupQuery = supabase
-                .from('lead_campaign_groups')
-                .select('lead_id, campaign_id, in_group')
-                .in('lead_id', leadIds);
+        // ── POST-ENRICHMENT: buscar dados relacionados em queries separadas ──
+        // Coletar IDs únicos
+        const statusIds = [...new Set(leadRows.map(l => l.status_id).filter(Boolean))];
+        const sellerIds = [...new Set(leadRows.map(l => l.seller_id).filter(Boolean))];
+        const campaignIds = [...new Set(leadRows.map(l => l.campaign_id).filter(Boolean))];
+        const subcampaignIds = [...new Set(leadRows.map(l => l.subcampaign_id).filter(Boolean))];
+        const leadIds = leadRows.map(l => l.id);
 
-            // Filtrar por campaign_id se estiver filtrando por campanha
-            if (campaign_id) {
-                pageGroupQuery = pageGroupQuery.eq('campaign_id', campaign_id);
-            }
+        // Buscar em paralelo
+        const [statusMap, sellerMap, campaignMap, subcampaignMap, campaignGroupsMap] = await Promise.all([
+            // status
+            statusIds.length > 0
+                ? supabase.from('lead_statuses').select('id, name, color').in('id', statusIds)
+                    .then(({ data }) => new Map((data || []).map(s => [s.id, s])))
+                : Promise.resolve(new Map()),
+            // sellers
+            sellerIds.length > 0
+                ? supabase.from('users').select('id, name').in('id', sellerIds)
+                    .then(({ data }) => new Map((data || []).map(u => [u.id, u])))
+                : Promise.resolve(new Map()),
+            // campaigns
+            campaignIds.length > 0
+                ? supabase.from('campaigns').select('id, name').in('id', campaignIds)
+                    .then(({ data }) => new Map((data || []).map(c => [c.id, c])))
+                : Promise.resolve(new Map()),
+            // subcampaigns
+            subcampaignIds.length > 0
+                ? supabase.from('subcampaigns').select('id, name, color').in('id', subcampaignIds)
+                    .then(({ data }) => new Map((data || []).map(s => [s.id, s])))
+                : Promise.resolve(new Map()),
+            // in_group (lead_campaign_groups)
+            leadIds.length > 0
+                ? (() => {
+                    let q = supabase.from('lead_campaign_groups').select('lead_id, campaign_id, in_group').in('lead_id', leadIds);
+                    if (campaign_id) q = q.eq('campaign_id', parseInt(campaign_id));
+                    return q.then(({ data }) => {
+                        const m = new Map();
+                        (data || []).forEach(cg => m.set(`${cg.lead_id}_${cg.campaign_id}`, cg.in_group));
+                        return m;
+                    });
+                })()
+                : Promise.resolve(new Map()),
+        ]);
 
-            const { data: campaignGroups } = await pageGroupQuery;
-
-            // Criar mapa: lead_id + campaign_id -> in_group
-            (campaignGroups || []).forEach(cg => {
-                const key = `${cg.lead_id}_${cg.campaign_id}`;
-                campaignGroupsMap.set(key, cg.in_group);
-            });
-        }
-
-        // Mapear dados para formato esperado
-        let leads = (data || []).map(l => {
-            const key = `${l.id}_${l.campaign_id}`;
-            let inGroupValue = campaignGroupsMap.has(key) ? campaignGroupsMap.get(key) : false;
+        // Mapear dados com enriquecimento
+        let leads = leadRows.map(l => {
+            const st = l.status_id ? statusMap.get(l.status_id) : null;
+            const sel = l.seller_id ? sellerMap.get(l.seller_id) : null;
+            const camp = l.campaign_id ? campaignMap.get(l.campaign_id) : null;
+            const sub = l.subcampaign_id ? subcampaignMap.get(l.subcampaign_id) : null;
+            const cgKey = `${l.id}_${l.campaign_id}`;
+            const inGroupValue = campaignGroupsMap.has(cgKey) ? campaignGroupsMap.get(cgKey) : (l.in_group || false);
 
             return {
                 ...l,
-                status_id: l.lead_statuses?.id || l.status_id,
-                status_name: l.lead_statuses?.name,
-                status_color: l.lead_statuses?.color,
+                status_id: l.status_id,
+                status_name: st?.name || null,
+                status_color: st?.color || null,
                 seller_id: l.seller_id,
-                seller_name: l.users?.name,
-                campaign_name: l.campaigns?.name,
+                seller_name: sel?.name || null,
+                campaign_name: camp?.name || null,
                 subcampaign_id: l.subcampaign_id,
-                subcampaign_name: l.subcampaigns?.name,
-                subcampaign_color: l.subcampaigns?.color,
-                in_group: inGroupValue
+                subcampaign_name: sub?.name || null,
+                subcampaign_color: sub?.color || null,
+                in_group: inGroupValue,
             };
         });
 
@@ -314,33 +296,10 @@ export const db = {
 
         if (useInGroupFilter) {
             const inGroupBool = in_group === 'true';
-
-            console.log(`🔍 [DEBUG] Filtro in_group aplicado:`, {
-                campaign_id,
-                in_group,
-                inGroupBool,
-                totalLeadsBeforeFilter: leads.length,
-                totalCountBeforeFilter: count
-            });
-
-            // Filtrar leads por in_group
             const filteredLeads = leads.filter(l => l.in_group === inGroupBool);
-
-            console.log(`🔍 [DEBUG] Leads após filtro in_group: ${filteredLeads.length}`);
-
-            // Paginar manualmente
             const offset = (page - 1) * limit;
             paginatedLeads = filteredLeads.slice(offset, offset + limit);
             finalTotal = filteredLeads.length;
-
-            console.log(`🔍 [DEBUG] Paginação manual:`, {
-                page,
-                limit,
-                offset,
-                totalFiltered: filteredLeads.length,
-                pageLeads: paginatedLeads.length,
-                finalTotal
-            });
         }
 
         return { leads: paginatedLeads, total: finalTotal };
@@ -1335,8 +1294,8 @@ export const db = {
 };
 
 export function initializeDatabase() {
-    console.log('✅ Supabase client initialized');
-    console.log(`📌 Connected to: ${supabaseUrl}`);
+    console.log('✅ PostgreSQL (Oracle) client initialized');
+    console.log(`📌 Connected to: ${process.env.DATABASE_URL?.replace(/:([^:@]+)@/, ':***@')}`);
 }
 
 export default db;

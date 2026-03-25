@@ -86,6 +86,16 @@ function normalizePhone(phone) {
 }
 
 
+
+/**
+ * Rota de Debug para ver conexões RAM
+ */
+router.get('/debug-active', (req, res) => {
+    import('../services/whatsappService.js').then(({ listActiveConnections }) => {
+        res.json({ active: listActiveConnections() });
+    });
+});
+
 /**
  * Listar todas as conexões WhatsApp
  */
@@ -334,26 +344,26 @@ router.get('/campaigns/:campaignId/groups', async (req, res) => {
     try {
         const { campaignId } = req.params;
 
-        const { data, error } = await supabase
-            .from('campaign_groups')
-            .select(`
-                id,
-                whatsapp_group_id,
-                whatsapp_groups (
-                    id,
-                    group_id,
-                    group_name,
-                    participant_count,
-                    whatsapp_connections (
-                        id,
-                        name,
-                        phone_number
+        const { rows: data } = await supabase._pool.query(`
+            SELECT 
+                cg.id,
+                cg.whatsapp_group_id,
+                json_build_object(
+                    'id', wg.id,
+                    'group_id', wg.group_id,
+                    'group_name', wg.group_name,
+                    'participant_count', wg.participant_count,
+                    'whatsapp_connections', json_build_object(
+                        'id', wc.id,
+                        'name', wc.name,
+                        'phone_number', wc.phone_number
                     )
-                )
-            `)
-            .eq('campaign_id', campaignId);
-
-        if (error) throw error;
+                ) as whatsapp_groups
+            FROM campaign_groups cg
+            INNER JOIN whatsapp_groups wg ON wg.id = cg.whatsapp_group_id
+            LEFT JOIN whatsapp_connections wc ON wc.id = wg.connection_id
+            WHERE cg.campaign_id = $1
+        `, [parseInt(campaignId)]);
 
         res.json(data);
     } catch (error) {
@@ -627,16 +637,19 @@ router.post('/campaigns/:campaignId/sync-participants', async (req, res) => {
  */
 router.get('/synced-campaigns', async (req, res) => {
     try {
-        // Buscar campanhas que têm grupos associados
-        const { data: campaignGroups, error } = await supabase
-            .from('campaign_groups')
-            .select(`
-                campaign_id,
-                campaigns(id, name),
-                whatsapp_groups(id, group_name, participant_count)
-            `);
-
-        if (error) throw error;
+        // Buscar campanhas que têm grupos associados usando query raw
+        const { rows: campaignGroups } = await supabase._pool.query(`
+            SELECT 
+                cg.campaign_id,
+                c.id as campaign_id_ref,
+                c.name as campaign_name,
+                wg.id as wg_id,
+                wg.group_name as wg_group_name,
+                wg.participant_count as wg_participant_count
+            FROM campaign_groups cg
+            INNER JOIN campaigns c ON c.id = cg.campaign_id
+            INNER JOIN whatsapp_groups wg ON wg.id = cg.whatsapp_group_id
+        `);
 
         // Agrupar por campanha
         const campaignsMap = new Map();
@@ -646,8 +659,8 @@ router.get('/synced-campaigns', async (req, res) => {
 
             if (!campaignsMap.has(campaignId)) {
                 campaignsMap.set(campaignId, {
-                    id: cg.campaigns.id,
-                    name: cg.campaigns.name,
+                    id: cg.campaign_id_ref,
+                    name: cg.campaign_name,
                     groups: [],
                     groups_count: 0,
                     participants_count: 0
@@ -655,9 +668,13 @@ router.get('/synced-campaigns', async (req, res) => {
             }
 
             const campaign = campaignsMap.get(campaignId);
-            campaign.groups.push(cg.whatsapp_groups);
+            campaign.groups.push({
+                id: cg.wg_id,
+                group_name: cg.wg_group_name,
+                participant_count: cg.wg_participant_count
+            });
             campaign.groups_count++;
-            campaign.participants_count += cg.whatsapp_groups.participant_count || 0;
+            campaign.participants_count += cg.wg_participant_count || 0;
         });
 
         const syncedCampaigns = Array.from(campaignsMap.values());

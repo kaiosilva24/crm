@@ -81,86 +81,28 @@ router.get('/', async (req, res) => {
             // Vendas concluídas
             applyFilters(supabase.from('leads').select('*', { count: 'exact', head: true }).eq('sale_completed', true)),
 
-            // In group - usar lead_campaign_groups quando há filtro de campanha
-            (() => {
-                if (campaign_id) {
-                    if (subcampaign_id) {
-                        // Com subcampaign: JOIN leads com lead_campaign_groups
-                        let query = supabase
-                            .from('leads')
-                            .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                            .eq('campaign_id', parseInt(campaign_id))
-                            .eq('subcampaign_id', parseInt(subcampaign_id))
-                            .eq('lead_campaign_groups.in_group', true);
-                        if (sellerId) query = query.eq('seller_id', sellerId);
-                        return query;
-                    } else {
-                        // Sem subcampaign: query direta em lead_campaign_groups com JOIN em leads para filtrar seller
-                        if (sellerId) {
-                            return supabase
-                                .from('leads')
-                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .eq('seller_id', sellerId)
-                                .eq('lead_campaign_groups.in_group', true);
-                        } else {
-                            return supabase
-                                .from('lead_campaign_groups')
-                                .select('*', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .eq('in_group', true);
-                        }
-                    }
-                } else {
-                    // Sem filtro: contar leads ÚNICOS que estão em PELO MENOS UM grupo
-                    let query = supabase
-                        .from('leads')
-                        .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                        .eq('lead_campaign_groups.in_group', true);
-                    if (sellerId) query = query.eq('seller_id', sellerId);
-                    return query;
-                }
+            // In group - Raw SQL optimization
+            (async () => {
+                let sql = `SELECT COUNT(DISTINCT l.id) as count FROM leads l INNER JOIN lead_campaign_groups lcg ON l.id = lcg.lead_id WHERE lcg.in_group = true`;
+                const params = [];
+                if (campaign_id) { params.push(parseInt(campaign_id)); sql += ` AND l.campaign_id = $${params.length} AND lcg.campaign_id = $${params.length}`; }
+                if (subcampaign_id) { params.push(parseInt(subcampaign_id)); sql += ` AND l.subcampaign_id = $${params.length}`; }
+                if (sellerId) { params.push(sellerId); sql += ` AND l.seller_id = $${params.length}`; }
+                const res = await supabase._pool.query(sql, params);
+                return { count: parseInt(res.rows[0].count, 10) };
             })(),
 
-            // Out group - usar lead_campaign_groups quando há filtro de campanha
-            (() => {
-                if (campaign_id) {
-                    if (subcampaign_id) {
-                        // Com subcampaign: JOIN leads com lead_campaign_groups
-                        let query = supabase
-                            .from('leads')
-                            .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                            .eq('campaign_id', parseInt(campaign_id))
-                            .eq('subcampaign_id', parseInt(subcampaign_id))
-                            .not('lead_campaign_groups.in_group', 'eq', true);
-                        if (sellerId) query = query.eq('seller_id', sellerId);
-                        return query;
-                    } else {
-                        // Sem subcampaign: query com JOIN para filtrar seller
-                        if (sellerId) {
-                            return supabase
-                                .from('leads')
-                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .eq('seller_id', sellerId)
-                                .not('lead_campaign_groups.in_group', 'eq', true);
-                        } else {
-                            return supabase
-                                .from('lead_campaign_groups')
-                                .select('*', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .or('in_group.eq.false,in_group.is.null');
-                        }
-                    }
-                } else {
-                    // Sem filtro: contar leads que NÃO estão em NENHUM grupo
-                    let query = supabase
-                        .from('leads')
-                        .select('id, lead_campaign_groups(in_group)', { count: 'exact', head: true })
-                        .not('lead_campaign_groups.in_group', 'eq', true);
-                    if (sellerId) query = query.eq('seller_id', sellerId);
-                    return query;
-                }
+            // Out group - Raw SQL optimization
+            (async () => {
+                let sql = `SELECT COUNT(DISTINCT l.id) as count FROM leads l WHERE NOT EXISTS (SELECT 1 FROM lead_campaign_groups lcg WHERE lcg.lead_id = l.id AND lcg.in_group = true`;
+                if (campaign_id) { sql += ` AND lcg.campaign_id = ${parseInt(campaign_id)}`; }
+                sql += `)`;
+                const params = [];
+                if (campaign_id) { params.push(parseInt(campaign_id)); sql += ` AND l.campaign_id = $${params.length}`; }
+                if (subcampaign_id) { params.push(parseInt(subcampaign_id)); sql += ` AND l.subcampaign_id = $${params.length}`; }
+                if (sellerId) { params.push(sellerId); sql += ` AND l.seller_id = $${params.length}`; }
+                const res = await supabase._pool.query(sql, params);
+                return { count: parseInt(res.rows[0].count, 10) };
             })(),
 
             // Check-in completed
@@ -171,47 +113,16 @@ router.get('/', async (req, res) => {
 
             // DAILY STATS -----------------------------------------------------------------------
 
-            // In Group (Today)
-            (() => {
-                if (campaign_id) {
-                    if (subcampaign_id) {
-                        let query = supabase
-                            .from('leads')
-                            .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                            .eq('campaign_id', parseInt(campaign_id))
-                            .eq('subcampaign_id', parseInt(subcampaign_id))
-                            .eq('lead_campaign_groups.in_group', true)
-                            .gte('created_at', todayStart);
-                        if (sellerId) query = query.eq('seller_id', sellerId);
-                        return query;
-                    } else {
-                        if (sellerId) {
-                            return supabase
-                                .from('leads')
-                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .eq('seller_id', sellerId)
-                                .eq('lead_campaign_groups.in_group', true)
-                                .gte('created_at', todayStart);
-                        } else {
-                            // Filter by leads created today that are in group
-                            return supabase
-                                .from('leads')
-                                .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                                .eq('campaign_id', parseInt(campaign_id))
-                                .eq('lead_campaign_groups.in_group', true)
-                                .gte('created_at', todayStart);
-                        }
-                    }
-                } else {
-                    let query = supabase
-                        .from('leads')
-                        .select('id, lead_campaign_groups!inner(in_group)', { count: 'exact', head: true })
-                        .eq('lead_campaign_groups.in_group', true)
-                        .gte('created_at', todayStart);
-                    if (sellerId) query = query.eq('seller_id', sellerId);
-                    return query;
-                }
+            // In Group (Today) - Raw SQL optimization
+            (async () => {
+                let sql = `SELECT COUNT(DISTINCT l.id) as count FROM leads l INNER JOIN lead_campaign_groups lcg ON l.id = lcg.lead_id WHERE lcg.in_group = true`;
+                const params = [];
+                if (campaign_id) { params.push(parseInt(campaign_id)); sql += ` AND l.campaign_id = $${params.length} AND lcg.campaign_id = $${params.length}`; }
+                if (subcampaign_id) { params.push(parseInt(subcampaign_id)); sql += ` AND l.subcampaign_id = $${params.length}`; }
+                if (sellerId) { params.push(sellerId); sql += ` AND l.seller_id = $${params.length}`; }
+                params.push(todayStart); sql += ` AND l.created_at >= $${params.length}`;
+                const res = await supabase._pool.query(sql, params);
+                return { count: parseInt(res.rows[0].count, 10) };
             })(),
 
             // Check-in completed (Today)
@@ -221,12 +132,26 @@ router.get('/', async (req, res) => {
 
             // -----------------------------------------------------------------------------------
 
-            // Recent leads
-            (() => {
-                let q = supabase.from('leads').select('uuid, first_name, product_name, lead_statuses(name, color)').order('created_at', { ascending: false }).limit(5);
-                if (sellerId) q = q.eq('seller_id', sellerId);
-                if (campaign_id) q = q.eq('campaign_id', parseInt(campaign_id));
-                return q;
+            // Recent leads - Raw SQL optimization
+            (async () => {
+                let sql = `
+                    SELECT l.uuid, l.first_name, l.product_name, s.name as status_name, s.color as status_color 
+                    FROM leads l 
+                    LEFT JOIN lead_statuses s ON l.status_id = s.id 
+                    WHERE 1=1
+                `;
+                const params = [];
+                if (sellerId) { params.push(sellerId); sql += ` AND l.seller_id = $${params.length}`; }
+                if (campaign_id) { params.push(parseInt(campaign_id)); sql += ` AND l.campaign_id = $${params.length}`; }
+                if (subcampaign_id) { params.push(parseInt(subcampaign_id)); sql += ` AND l.subcampaign_id = $${params.length}`; }
+                sql += ` ORDER BY l.created_at DESC LIMIT 5`;
+                const res = await supabase._pool.query(sql, params);
+                return { data: res.rows.map(r => ({
+                    uuid: r.uuid,
+                    first_name: r.first_name,
+                    product_name: r.product_name,
+                    lead_statuses: { name: r.status_name, color: r.status_color }
+                }))};
             })(),
 
             // Sellers

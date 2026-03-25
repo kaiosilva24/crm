@@ -111,7 +111,10 @@ export default function Leads() {
         try {
             const data = await api.getLeads(params);
             setLeads(data.leads);
-            setPagination(data.pagination || { total: data.leads.length, pages: 1 });
+            setPagination(data.pagination || {
+                total: data.total ?? data.leads.length,
+                pages: data.pages ?? 1
+            });
         } catch (e) {
             console.error('Erro ao carregar leads:', e);
         }
@@ -124,7 +127,7 @@ export default function Leads() {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/group-sync/sync-group-status`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/group-sync/sync-group-status`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -350,7 +353,7 @@ export default function Leads() {
                 // Lógica de exportSelected
                 const uuidsArray = Array.from(selectedUuids);
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/leads/by-uuids`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/leads/by-uuids`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ uuids: uuidsArray })

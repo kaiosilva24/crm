@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Smartphone, RefreshCw, Trash2, Plus, Check, Users, Search, Download } from 'lucide-react';
 import '../styles/Groups.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Groups() {
     const [activeTab, setActiveTab] = useState('connect'); // 'connect', 'select', 'synced'
