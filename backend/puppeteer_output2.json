@@ -1,0 +1,8 @@
+[
+  "200 http://localhost:8080/dashboard",
+  "500 http://localhost:8080/assets/index-DQcaQMS7.js",
+  "200 http://localhost:8080/manifest.json",
+  "200 https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+  "200 http://localhost:8080/vite.svg",
+  "200 http://localhost:8080/icon-192.png"
+]

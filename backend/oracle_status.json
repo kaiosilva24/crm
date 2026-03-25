@@ -1,0 +1,114 @@
+[
+  {
+    "table": "api_settings",
+    "count": 1
+  },
+  {
+    "table": "backups",
+    "count": 114
+  },
+  {
+    "table": "campaign_groups",
+    "count": 2
+  },
+  {
+    "table": "campaign_whatsapp_groups",
+    "count": 0
+  },
+  {
+    "table": "cart_abandonment_events",
+    "count": 12
+  },
+  {
+    "table": "cart_abandonment_logs",
+    "count": 38
+  },
+  {
+    "table": "cart_abandonment_settings",
+    "count": 1
+  },
+  {
+    "table": "distribution_control",
+    "count": 1
+  },
+  {
+    "table": "exclusion_logs",
+    "count": 1078
+  },
+  {
+    "table": "group_contacts_cache",
+    "count": 0
+  },
+  {
+    "table": "group_participants",
+    "count": 0
+  },
+  {
+    "table": "group_participants_cache",
+    "count": 1222
+  },
+  {
+    "table": "group_sync_history",
+    "count": 584
+  },
+  {
+    "table": "hotmart_settings",
+    "count": 1
+  },
+  {
+    "table": "hotmart_webhook_configs",
+    "count": 3
+  },
+  {
+    "table": "hotmart_webhook_logs",
+    "count": 3156
+  },
+  {
+    "table": "lead_campaign_groups",
+    "count": 1148
+  },
+  {
+    "table": "lead_statuses",
+    "count": 3
+  },
+  {
+    "table": "manychat_events",
+    "count": 80
+  },
+  {
+    "table": "manychat_settings",
+    "count": 1
+  },
+  {
+    "table": "schedules",
+    "count": 0
+  },
+  {
+    "table": "subcampaign_groups",
+    "count": 0
+  },
+  {
+    "table": "subcampaigns",
+    "count": 0
+  },
+  {
+    "table": "users",
+    "count": 6
+  },
+  {
+    "table": "wappi_settings",
+    "count": 2
+  },
+  {
+    "table": "whatsapp_auth_state",
+    "count": 1
+  },
+  {
+    "table": "whatsapp_connections",
+    "count": 1
+  },
+  {
+    "table": "whatsapp_groups",
+    "count": 34
+  }
+]

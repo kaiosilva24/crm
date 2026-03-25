@@ -1,0 +1,57 @@
+{
+  "columns": [
+    "id",
+    "uuid",
+    "first_name",
+    "email",
+    "phone",
+    "product_name",
+    "transaction_id",
+    "seller_id",
+    "status_id",
+    "campaign_id",
+    "observations",
+    "source",
+    "in_group",
+    "is_active",
+    "import_batch_id",
+    "created_at",
+    "updated_at",
+    "checking",
+    "sale_completed",
+    "subcampaign_id",
+    "previous_status_id",
+    "previous_checking",
+    "product"
+  ],
+  "is_active_dist": [
+    {
+      "is_active": true,
+      "cnt": "5167"
+    }
+  ],
+  "total": {
+    "total": "5167",
+    "com_camp": "5162"
+  },
+  "sample": [
+    {
+      "id": 41310,
+      "campaign_id": 4,
+      "status_id": null,
+      "seller_id": 4
+    },
+    {
+      "id": 41311,
+      "campaign_id": 4,
+      "status_id": 3,
+      "seller_id": 5
+    },
+    {
+      "id": 41312,
+      "campaign_id": 4,
+      "status_id": null,
+      "seller_id": 6
+    }
+  ]
+}

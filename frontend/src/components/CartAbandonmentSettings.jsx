@@ -27,11 +27,8 @@ export default function CartAbandonmentSettings() {
         };
     });
 
-    // Detecta se está em localhost ou produção
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocalhost
-        ? window.location.origin.replace('5173', '3001')  // Local: http://localhost:3001
-        : window.location.origin; // Produção: usa o host atual
+    // Webhooks devem sempre exibir o caminho absoluto real da produção 
+    const baseUrl = 'https://crm.discloud.app';
 
     const webhookUrl = `${baseUrl}/api/cart-abandonment/webhook`;
 

@@ -218,7 +218,7 @@ export default function Leads() {
 
             // Fazer requisição ao backend para buscar os leads pelos UUIDs
             const token = localStorage.getItem('token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/leads/by-uuids`, {
+            const response = await fetch('/api/leads/by-uuids', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

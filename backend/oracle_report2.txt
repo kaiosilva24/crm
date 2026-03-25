@@ -1,0 +1,32 @@
+﻿
+­ƒôï TABELAS NO ORACLE (27 tabelas):
+
+Ô£à api_settings                                  1 registros
+Ô£à backups                                     114 registros
+Ô£à campaign_groups                               2 registros
+Ô¼£ campaign_whatsapp_groups                      0 registros
+Ô£à cart_abandonment_events                      12 registros
+Ô£à cart_abandonment_logs                        38 registros
+Ô£à cart_abandonment_settings                     1 registros
+Ô£à distribution_control                          1 registros
+Ô£à exclusion_logs                             1078 registros
+Ô¼£ group_contacts_cache                          0 registros
+Ô¼£ group_participants                            0 registros
+Ô£à group_participants_cache                   1222 registros
+Ô£à group_sync_history                          584 registros
+Ô£à hotmart_settings                              1 registros
+Ô£à hotmart_webhook_configs                       3 registros
+Ô£à hotmart_webhook_logs                       3156 registros
+Ô£à lead_campaign_groups                       1148 registros
+Ô£à lead_statuses                                 3 registros
+Ô£à manychat_events                              80 registros
+Ô£à manychat_settings                             1 registros
+Ô¼£ schedules                                     0 registros
+Ô¼£ subcampaign_groups                            0 registros
+Ô¼£ subcampaigns                                  0 registros
+Ô£à wappi_settings                                2 registros
+Ô£à whatsapp_auth_state                           1 registros
+Ô£à whatsapp_connections                          1 registros
+Ô£à whatsapp_groups                              34 registros
+
+   TOTAL                                      7483 registros

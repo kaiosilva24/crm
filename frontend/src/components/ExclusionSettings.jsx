@@ -12,9 +12,8 @@ export default function ExclusionSettings() {
 
     const [logs, setLogs] = useState([]);
 
-    // Detectar ambiente automaticamente
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocal ? "http://localhost:3001" : window.location.origin;
+    // Webhooks devem sempre exibir o caminho absoluto real da produção 
+    const baseUrl = 'https://crm.discloud.app';
     const webhookUrl = `${baseUrl}/api/webhook/exclusion`;
 
     useEffect(() => {

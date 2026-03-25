@@ -38,7 +38,7 @@ export default defineConfig({
         host: true, // Enable network access
         port: 5174,
         proxy: {
-            '/api': 'http://localhost:3001'
+            '/api': 'http://localhost:8080'
         }
     }
 })

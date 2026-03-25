@@ -11,8 +11,9 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
     const [saving, setSaving] = useState(false);
     const [copied, setCopied] = useState(null);
 
-    // Use the API URL from environment variable, removing '/api' suffix for webhook URLs
-    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace('/api', '');
+    // Webhooks devem sempre exibir o caminho absoluto real da produção 
+    // para que possam ser copiados para plataformas externas (que não testam localhost)
+    const baseUrl = 'https://crm.discloud.app';
 
     useEffect(() => {
         loadData();
