@@ -232,45 +232,65 @@ router.post('/greatpages', async (req, res) => {
 
         // Verificar Campanha (Query Param) - ANTES de verificar lead existente
         let campaignId = null;
-        const campaignUuid = req.query.campaign || req.query.campaign_id;
+        let campaignUuid = req.query.campaign || req.query.campaign_id;
+        
         if (campaignUuid) {
             try {
                 const campaign = await db.getCampaignByUuid(campaignUuid);
                 if (campaign) {
                     campaignId = campaign.id;
-                    console.log(`   🎯 Campanha identificada: ${campaign.name} (${campaignId})`);
+                    console.log(`   🎯 Campanha identificada (URL): ${campaign.name} (${campaignId})`);
                 }
             } catch (err) {
-                console.error('Erro ao buscar campanha GreatPages:', err.message);
+                console.error('Erro ao buscar campanha GreatPages pela URL:', err.message);
             }
         }
 
-        // Verificar existência NA MESMA CAMPANHA
+        // Fallback para a Campanha Padrão configurada no Settings
+        if (!campaignId && settings && settings.greatpages_default_campaign_id) {
+            campaignId = settings.greatpages_default_campaign_id;
+            try {
+                // Necessário buscar a campanha pelo ID para obter log correto e o UUID para espelhamento depois
+                const defaultCampaign = await db.getCampaignById(campaignId);
+                if (defaultCampaign) {
+                    campaignUuid = defaultCampaign.uuid;
+                    console.log(`   🎯 Usando Campanha Padrão configurada: ${defaultCampaign.name} (${campaignId})`);
+                }
+            } catch (err) {
+                console.log(`   🎯 Usando Campanha Padrão configurada (ID: ${campaignId})`);
+            }
+        }
+
+        // Verificar existência NA MESMA CAMPANHA (ou nula se não for informada)
         let existing = null;
-        if (campaignId) {
-            // Buscar lead com mesmo email/telefone NA MESMA campanha
-            if (email) {
-                const { data, error } = await supabase
-                    .from('leads')
-                    .select('id, uuid, first_name, campaign_id')
-                    .eq('email', email.toLowerCase())
-                    .eq('campaign_id', campaignId)
-                    .single();
+        
+        if (email) {
+            let query = supabase
+                .from('leads')
+                .select('id, uuid, first_name, campaign_id')
+                .eq('email', email.toLowerCase())
+                .limit(1);
+                
+            if (campaignId) query = query.eq('campaign_id', campaignId);
+            else query = query.is('campaign_id', null);
 
-                if (data && !error) existing = data;
-            }
+            const { data } = await query;
+            if (data && data.length > 0) existing = data[0];
+        }
 
-            if (!existing && phone) {
-                const phoneEnd = phone.slice(-8);
-                const { data, error } = await supabase
-                    .from('leads')
-                    .select('id, uuid, first_name, campaign_id')
-                    .ilike('phone', `%${phoneEnd}`)
-                    .eq('campaign_id', campaignId)
-                    .single();
+        if (!existing && phone) {
+            const phoneEnd = phone.slice(-8);
+            let query = supabase
+                .from('leads')
+                .select('id, uuid, first_name, campaign_id')
+                .ilike('phone', `%${phoneEnd}`)
+                .limit(1);
+                
+            if (campaignId) query = query.eq('campaign_id', campaignId);
+            else query = query.is('campaign_id', null);
 
-                if (data && !error) existing = data;
-            }
+            const { data } = await query;
+            if (data && data.length > 0) existing = data[0];
         }
 
         if (existing) {
