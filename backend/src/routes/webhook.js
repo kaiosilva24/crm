@@ -327,9 +327,21 @@ router.post('/greatpages', async (req, res) => {
         if (campaignId) {
             const campaign = await db.getCampaignByUuid(campaignUuid);
             if (campaign && (campaign.mirror_campaign_id || (campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0))) {
-                const mirrorIds = campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0 
-                                  ? campaign.mirror_campaign_ids 
-                                  : [campaign.mirror_campaign_id];
+                let mirrorIds = [];
+                if (campaign.mirror_campaign_ids) {
+                    if (Array.isArray(campaign.mirror_campaign_ids)) {
+                        mirrorIds = campaign.mirror_campaign_ids;
+                    } else if (typeof campaign.mirror_campaign_ids === 'string') {
+                        try {
+                            mirrorIds = JSON.parse(campaign.mirror_campaign_ids);
+                        } catch(e) {
+                            mirrorIds = campaign.mirror_campaign_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                        }
+                    }
+                }
+                if (mirrorIds.length === 0 && campaign.mirror_campaign_id) {
+                    mirrorIds = [campaign.mirror_campaign_id];
+                }
                 console.log(`   🪞 Campanha espelha campanhas: [${mirrorIds.join(', ')}]. Buscando vendedora...`);
 
                 let sourceLead = null;
