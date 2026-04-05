@@ -333,11 +333,17 @@ router.post('/greatpages', async (req, res) => {
                         mirrorIds = campaign.mirror_campaign_ids;
                     } else if (typeof campaign.mirror_campaign_ids === 'string') {
                         try {
-                            mirrorIds = JSON.parse(campaign.mirror_campaign_ids);
+                            const parsed = JSON.parse(campaign.mirror_campaign_ids);
+                            mirrorIds = Array.isArray(parsed) ? parsed : [parsed];
                         } catch(e) {
                             mirrorIds = campaign.mirror_campaign_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
                         }
+                    } else if (typeof campaign.mirror_campaign_ids === 'number') {
+                        mirrorIds = [campaign.mirror_campaign_ids];
                     }
+                }
+                if (!Array.isArray(mirrorIds)) {
+                    mirrorIds = [];
                 }
                 if (mirrorIds.length === 0 && campaign.mirror_campaign_id) {
                     mirrorIds = [campaign.mirror_campaign_id];
@@ -397,11 +403,13 @@ router.post('/greatpages', async (req, res) => {
             }
         }
 
+        const generatedEmail = email ? email.toLowerCase() : `${(phone || '').replace(/\D/g, '') || uuidv4().substring(0, 8)}@lead-sem-email.com`;
+
         // Criar Lead (SEM status - deixar null para não vir como "Onboarding")
         const newLead = await db.createLead({
             uuid: uuidv4(),
             first_name: name,
-            email: email ? email.toLowerCase() : null,
+            email: generatedEmail,
             phone: phone,
             seller_id: sellerId,
             status_id: null, // NULL = sem status (não usar default)
