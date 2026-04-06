@@ -144,7 +144,8 @@ export default function ManychatSettings() {
         try {
             await api.updateManychatSettings({
                 ...settings,
-                webhook_config_id: settings.webhook_config_id ? parseInt(settings.webhook_config_id) : null
+                webhook_config_id: settings.webhook_config_id ? parseInt(settings.webhook_config_id) : null,
+                campaign_id: settings.campaign_id ? parseInt(settings.campaign_id) : null
             });
             alert('✅ Configurações salvas com sucesso!');
             loadData();

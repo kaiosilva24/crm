@@ -88,8 +88,7 @@ router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
 
         const { data: settings } = await supabase
             .from('manychat_settings')
-            .upsert({
-                id: 1,
+            .update({
                 webhook_config_id: webhook_config_id || null,
                 manychat_api_token,
                 manychat_tag_name,
@@ -99,6 +98,7 @@ router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
                 custom_name: custom_name || null,
                 updated_at: new Date().toISOString()
             })
+            .eq('id', 1)
             .select()
             .single();
 
