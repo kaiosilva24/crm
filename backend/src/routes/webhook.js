@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, supabase } from '../database/supabase.js';
 import { normalizePhone } from '../utils/phoneNormalizer.js';
 import { processSalesMirroring } from '../services/mirrorService.js';
+import { processManychatAutomation } from './manychat.js';
 import fs from 'fs';
 
 const router = Router();
@@ -418,6 +419,16 @@ router.post('/greatpages', async (req, res) => {
             checking: false,
             in_group: false,
             observations: `[Origem: GreatPages]\nPayload: ${JSON.stringify(body)}`
+        });
+
+        // Trigger ManyChat Automation asynchronously
+        processManychatAutomation(null, {
+            name,
+            email: generatedEmail,
+            phone: phone,
+            campaign_id: campaignId
+        }, true, { triggerCampaignId: campaignId }).catch(err => {
+            console.error('Error triggering Manychat for Greatpages lead:', err);
         });
 
         res.json({ success: true, id: newLead.uuid });

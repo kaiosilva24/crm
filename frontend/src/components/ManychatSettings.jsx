@@ -7,11 +7,15 @@ export default function ManychatSettings() {
         webhook_config_id: '',
         manychat_api_token: '',
         manychat_tag_name: '',
-        is_enabled: false
+        is_enabled: false,
+        campaign_id: '',
+        prepend_number: '',
+        custom_name: ''
     });
     
     // Webhooks loaded from hotmart_webhook_configs
     const [webhooks, setWebhooks] = useState([]);
+    const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testingConnection, setTestingConnection] = useState(false);
@@ -57,9 +61,10 @@ export default function ManychatSettings() {
 
     const loadData = async () => {
         try {
-            const [settingsData, webhooksData] = await Promise.all([
+            const [settingsData, webhooksData, campaignsData] = await Promise.all([
                 api.getManychatSettings(),
-                api.getHotmartConfigs()
+                api.getHotmartConfigs(),
+                api.getCampaigns()
             ]);
             
             if (settingsData.settings) {
@@ -67,12 +72,19 @@ export default function ManychatSettings() {
                     webhook_config_id: settingsData.settings.webhook_config_id || '',
                     manychat_api_token: settingsData.settings.manychat_api_token || '',
                     manychat_tag_name: settingsData.settings.manychat_tag_name || '',
-                    is_enabled: settingsData.settings.is_enabled || false
+                    is_enabled: settingsData.settings.is_enabled || false,
+                    campaign_id: settingsData.settings.campaign_id || '',
+                    prepend_number: settingsData.settings.prepend_number || '',
+                    custom_name: settingsData.settings.custom_name || ''
                 });
             }
 
             if (webhooksData.configs) {
                 setWebhooks(webhooksData.configs);
+            }
+
+            if (campaignsData) {
+                 setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData.campaigns || []));
             }
 
             // Load events initially
@@ -216,14 +228,13 @@ export default function ManychatSettings() {
 
                     {/* Webhook Selector */}
                     <div>
-                        <label className="label">Ouvir Eventos Deste Webhook</label>
+                        <label className="label">Opção 1: Ouvir Eventos Deste Webhook</label>
                         <select
                             className="input"
                             value={settings.webhook_config_id}
                             onChange={(e) => setSettings({ ...settings, webhook_config_id: e.target.value })}
-                            required={settings.is_enabled}
                         >
-                            <option value="">-- Selecione o Webhook --</option>
+                            <option value="">-- Ignorar Webhooks --</option>
                             {webhooks.map(webhook => (
                                 <option key={webhook.id} value={webhook.id}>
                                     Webhook #{webhook.webhook_number}
@@ -231,8 +242,60 @@ export default function ManychatSettings() {
                             ))}
                         </select>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                            A automação ManyChat só será disparada quando os leads vierem através do webhook configurado acima.
+                            A automação ManyChat será disparada quando os leads vierem através do webhook configurado acima.
                         </p>
+                    </div>
+
+                    {/* Campaign Selector */}
+                    <div>
+                        <label className="label">Opção 2: Ouvir Eventos Desta Campanha Específica (Ex: GreatPages)</label>
+                        <select
+                            className="input"
+                            value={settings.campaign_id}
+                            onChange={(e) => setSettings({ ...settings, campaign_id: e.target.value })}
+                        >
+                            <option value="">-- Ignorar Campanhas --</option>
+                            {campaigns.map(camp => (
+                                <option key={camp.id} value={camp.id}>
+                                    {camp.name}
+                                </option>
+                            ))}
+                        </select>
+                         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                            A automação ManyChat será disparada quando um lead for inserido na campanha configurada (Ideal para envios Webhook GreatPages/Landing pages manuais).
+                        </p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
+                         {/* Prepend Number */}
+                        <div>
+                            <label className="label">Número Adicional de Telefone (Opcional)</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={settings.prepend_number}
+                                onChange={(e) => setSettings({ ...settings, prepend_number: e.target.value })}
+                                placeholder="Ex: 55"
+                            />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                Se preenchido, o sistema irá concatenar este valor no telefone do Lead. Se a campanha trouxer telefone sem DDI ou você quiser forçar um inicio, coloque aqui.
+                            </p>
+                        </div>
+
+                         {/* Custom Name */}
+                        <div>
+                            <label className="label">Nome Personalizado Sequencial (Opcional)</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={settings.custom_name}
+                                onChange={(e) => setSettings({ ...settings, custom_name: e.target.value })}
+                                placeholder="Ex: Lead Campanha Alfa"
+                            />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                Se o campo estiver em branco, enviará o nome original. Se preencher "Teste", enviará "Teste 1", "Teste 2"... e assim por diante.
+                            </p>
+                        </div>
                     </div>
 
                     {/* API Token */}

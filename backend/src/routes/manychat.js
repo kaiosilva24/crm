@@ -80,7 +80,10 @@ router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
             webhook_config_id,
             manychat_api_token,
             manychat_tag_name,
-            is_enabled
+            is_enabled,
+            campaign_id,
+            prepend_number,
+            custom_name
         } = req.body;
 
         const { data: settings } = await supabase
@@ -91,6 +94,9 @@ router.put('/settings', authenticate, authorize('admin'), async (req, res) => {
                 manychat_api_token,
                 manychat_tag_name,
                 is_enabled,
+                campaign_id: campaign_id || null,
+                prepend_number: prepend_number || null,
+                custom_name: custom_name || null,
                 updated_at: new Date().toISOString()
             })
             .select()
@@ -260,11 +266,7 @@ router.post('/test-automation', authenticate, authorize('admin'), async (req, re
     }
 });
 
-/**
- * Process automation logic for an incoming webhook payload
- * Exported to be used in hotmart.js or other webhook handlers
- */
-export async function processManychatAutomation(webhookId, leadData) {
+export async function processManychatAutomation(webhookId, leadData, bypassWebhookIdCheck = false, options = {}) {
     try {
         console.log(`[ManyChat] Checking automation for webhook ID: ${webhookId}`);
 
@@ -280,8 +282,20 @@ export async function processManychatAutomation(webhookId, leadData) {
             return;
         }
 
-        if (settings.webhook_config_id !== webhookId && settings.webhook_config_id != webhookId) {
-            console.log(`[ManyChat] Webhook ID mismatch (Expected: ${settings.webhook_config_id}, Received: ${webhookId}). Skipping.`);
+        // Determinar se acionamento bateu com Configurada Webhook ou Campanha
+        const isWebhookMatch = settings.webhook_config_id && settings.webhook_config_id == webhookId;
+        const triggerCampaignId = options.triggerCampaignId || leadData.campaign_id;
+        const isCampaignMatch = settings.campaign_id && settings.campaign_id == triggerCampaignId;
+
+        // Se NÃO estamos ignorando o check e não bateu Webhook ou Campanha, pular.
+        if (!bypassWebhookIdCheck && !isWebhookMatch && !isCampaignMatch) {
+            console.log(`[ManyChat] Webhook ID mismatch and Campaign mismatch. Skipping.`);
+            return;
+        }
+        
+        // Se a gente ignorou o Webhook (via GreatPages) mas tbm não bateu a campanha, deve pular.
+        if (bypassWebhookIdCheck && !isCampaignMatch) {
+            console.log(`[ManyChat] Campaign mismatch (Expected: ${settings.campaign_id}, Received: ${triggerCampaignId}). Skipping.`);
             return;
         }
 
@@ -290,10 +304,27 @@ export async function processManychatAutomation(webhookId, leadData) {
             return;
         }
 
+        // Apply Custom Name Formatting
+        let finalName = leadData.name || 'Desconhecido';
+        if (settings.custom_name && settings.custom_name.trim() !== '') {
+            const currentCounter = settings.name_counter || 1;
+            finalName = `${settings.custom_name.trim()} ${currentCounter}`;
+            // Increment counter asynchronously
+            supabase.from('manychat_settings').update({ name_counter: currentCounter + 1 }).eq('id', 1).then();
+        }
+
+        // Apply Prepend Number Formatting
+        let finalPhone = leadData.phone;
+        if (settings.prepend_number && finalPhone) {
+            finalPhone = `${settings.prepend_number.trim()}${finalPhone}`;
+            // Previne falha no Manychat por causa do "+" que possa vir caso o cliente digite "+55"
+            finalPhone = finalPhone.replace(/\+/g, '');
+        }
+
         const apiToken = settings.manychat_api_token;
         const tagName = settings.manychat_tag_name;
         
-        console.log(`[ManyChat] Executing automation for lead: ${leadData.name} - ${leadData.phone}`);
+        console.log(`[ManyChat] Executing automation for lead: ${finalName} - ${finalPhone}`);
         
         let automationStatus = 'pending';
         let errorMessage = null;
@@ -302,9 +333,9 @@ export async function processManychatAutomation(webhookId, leadData) {
         const { data: eventRecord, error: insertError } = await supabase
             .from('manychat_events')
             .insert({
-                contact_name: leadData.name || 'Desconhecido',
+                contact_name: finalName,
                 contact_email: leadData.email || null,
-                contact_phone: leadData.phone || null,
+                contact_phone: finalPhone || null,
                 product_name: leadData.product || null,
                 status: 'processing',
                 automation_status: 'pending'
@@ -322,12 +353,12 @@ export async function processManychatAutomation(webhookId, leadData) {
             let subscriberId = null;
 
             // Try to find the subscriber
-            if (leadData.phone) {
-                subscriberId = await findSubscriberByWhatsApp(leadData.phone, apiToken) || await findSubscriberByPhone(leadData.phone, apiToken);
+            if (finalPhone) {
+                subscriberId = await findSubscriberByWhatsApp(finalPhone, apiToken) || await findSubscriberByPhone(finalPhone, apiToken);
             }
             
-            if (!subscriberId && leadData.name) {
-                const matches = await findSubscriberByName(leadData.name, apiToken);
+            if (!subscriberId && finalName) {
+                const matches = await findSubscriberByName(finalName, apiToken);
                 if (matches && matches.length > 0) {
                     subscriberId = matches[0];
                 }
@@ -336,8 +367,8 @@ export async function processManychatAutomation(webhookId, leadData) {
             // Se o contato existir, apenas garantimos o Opt-In do WhatsApp e adicionamos a tag
             if (subscriberId) {
                 console.log(`[ManyChat] Subscriber found (ID: ${subscriberId}). Applying WhatsApp Opt-in and Tag...`);
-                if (leadData.phone) {
-                    await setWhatsAppOptIn(subscriberId, leadData.phone, apiToken);
+                if (finalPhone) {
+                    await setWhatsAppOptIn(subscriberId, finalPhone, apiToken);
                 }
                 
                 // REMOVE A TAG SE ELA JÁ EXISTIR PARA FORÇAR O GATILHO NOVAMENTE
@@ -348,7 +379,7 @@ export async function processManychatAutomation(webhookId, leadData) {
                 automationStatus = 'success';
             } else {
                 // Se o contato NÃO existir, criamos um NOVO usando apenas WhatsApp para não dar erro de permissão SMS
-                const nameParts = (leadData.name || 'Lead').split(' ');
+                const nameParts = finalName.split(' ');
                 const firstName = nameParts[0];
                 const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
                 
@@ -356,7 +387,7 @@ export async function processManychatAutomation(webhookId, leadData) {
                 const newSubscriberId = await createWhatsAppSubscriber(
                     firstName,
                     lastName,
-                    leadData.phone || '',
+                    finalPhone || '',
                     leadData.email || '',
                     apiToken
                 );
