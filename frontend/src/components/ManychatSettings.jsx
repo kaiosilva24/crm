@@ -3,15 +3,7 @@ import { api } from '../api';
 import { Save, Activity, CheckCircle, XCircle, Zap, RefreshCw, Check, X, Calendar, AlertCircle, Download } from 'lucide-react';
 
 export default function ManychatSettings() {
-    const [settings, setSettings] = useState({
-        webhook_config_id: '',
-        manychat_api_token: '',
-        manychat_tag_name: '',
-        is_enabled: false,
-        campaign_id: '',
-        prepend_number: '',
-        custom_name: ''
-    });
+    const [automations, setAutomations] = useState([]);
     
     // Webhooks loaded from hotmart_webhook_configs
     const [webhooks, setWebhooks] = useState([]);
@@ -68,15 +60,11 @@ export default function ManychatSettings() {
             ]);
             
             if (settingsData.settings) {
-                setSettings({
-                    webhook_config_id: settingsData.settings.webhook_config_id || '',
-                    manychat_api_token: settingsData.settings.manychat_api_token || '',
-                    manychat_tag_name: settingsData.settings.manychat_tag_name || '',
-                    is_enabled: settingsData.settings.is_enabled || false,
-                    campaign_id: settingsData.settings.campaign_id || '',
-                    prepend_number: settingsData.settings.prepend_number || '',
-                    custom_name: settingsData.settings.custom_name || ''
-                });
+                setAutomations(
+                    Array.isArray(settingsData.settings) 
+                        ? settingsData.settings 
+                        : [settingsData.settings] // For backward compat with old endpoints if needed
+                );
             }
 
             if (webhooksData.configs) {
@@ -142,11 +130,7 @@ export default function ManychatSettings() {
         e.preventDefault();
         setSaving(true);
         try {
-            await api.updateManychatSettings({
-                ...settings,
-                webhook_config_id: settings.webhook_config_id ? parseInt(settings.webhook_config_id) : null,
-                campaign_id: settings.campaign_id ? parseInt(settings.campaign_id) : null
-            });
+            await api.updateManychatSettings({ settings: automations });
             alert('✅ Configurações salvas com sucesso!');
             loadData();
         } catch (error) {
@@ -157,8 +141,38 @@ export default function ManychatSettings() {
         }
     };
 
-    const handleTestConnection = async () => {
-        if (!settings.manychat_api_token) {
+    const updateAutomation = (index, field, value) => {
+        const newAutos = [...automations];
+        newAutos[index][field] = value;
+        setAutomations(newAutos);
+    }
+
+    const addAutomation = () => {
+        setAutomations([
+            ...automations, 
+            {
+                id: 'new_' + Date.now(),
+                is_enabled: true,
+                webhook_config_id: '',
+                campaign_id: '',
+                manychat_api_token: '',
+                manychat_tag_name: '',
+                prepend_number: '',
+                custom_name: ''
+            }
+        ]);
+    }
+
+    const removeAutomation = (index) => {
+        if(window.confirm('Tem certeza que deseja remover esta automação?')) {
+            const newAutos = [...automations];
+            newAutos.splice(index, 1);
+            setAutomations(newAutos);
+        }
+    }
+
+    const handleTestConnection = async (token) => {
+        if (!token) {
             alert('⚠️ Insira o API Token antes de testar a conexão');
             return;
         }
@@ -167,7 +181,7 @@ export default function ManychatSettings() {
         setConnectionStatus(null);
         
         try {
-            const response = await api.testManychatConnection(settings.manychat_api_token);
+            const response = await api.testManychatConnection(token);
             if (response.success) {
                 setConnectionStatus('success');
             } else {
@@ -203,162 +217,180 @@ export default function ManychatSettings() {
 
     return (
         <form onSubmit={handleSave} style={{ maxWidth: 800 }}>
-            <h2>Configurações ManyChat Automação</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2>Configurações ManyChat Automação</h2>
+                <button type="button" className="btn btn-primary" onClick={addAutomation} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    + Adicionar Automação
+                </button>
+            </div>
+            
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Configure integrações automáticas para serem disparadas ao receber Webhooks. 
-                Os contatos serão pesquisados, deletados (ou resetados) e recriados para acionar a respectiva tag e rodar a automação.
+                Configure múltiplas integrações para serem disparadas ao receber Webhooks ou eventos de Campanhas. 
+                Cada regra roda individualmente. Os contatos serão pesquisados, criados ou atualizados e a respectiva tag será aplicada.
             </p>
 
-            <div className="card" style={{ marginBottom: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-                    
-                    {/* Enable Toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                        <label className="switch">
-                            <input
-                                type="checkbox"
-                                checked={settings.is_enabled}
-                                onChange={(e) => setSettings({ ...settings, is_enabled: e.target.checked })}
-                            />
-                            <span className="slider round"></span>
-                        </label>
-                        <span style={{ fontWeight: 500 }}>
-                            {settings.is_enabled ? 'Automação ManyChat Ativada' : 'Automação ManyChat Desativada'}
-                        </span>
+            {automations.length === 0 && (
+                <div className="card" style={{ textAlign: 'center', padding: 48, marginBottom: 24 }}>
+                    <p style={{ color: 'var(--text-secondary)' }}>Nenhuma automação configurada.</p>
+                    <button type="button" className="btn btn-primary" onClick={addAutomation} style={{ marginTop: 16 }}>
+                        + Criar Primeira Automação
+                    </button>
+                </div>
+            )}
+
+            {automations.map((settings, index) => (
+                <div key={settings.id || index} className="card" style={{ marginBottom: 24, position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
+                        <h3 style={{ margin: 0 }}>Automação #{index + 1}</h3>
+                        <button type="button" className="btn btn-danger" onClick={() => removeAutomation(index)} style={{ padding: '6px 12px', fontSize: '0.875rem' }}>
+                            Remover Regra
+                        </button>
                     </div>
 
-                    {/* Webhook Selector */}
-                    <div>
-                        <label className="label">Opção 1: Ouvir Eventos Deste Webhook</label>
-                        <select
-                            className="input"
-                            value={settings.webhook_config_id}
-                            onChange={(e) => setSettings({ ...settings, webhook_config_id: e.target.value })}
-                        >
-                            <option value="">-- Ignorar Webhooks --</option>
-                            {webhooks.map(webhook => (
-                                <option key={webhook.id} value={webhook.id}>
-                                    Webhook #{webhook.webhook_number}
-                                </option>
-                            ))}
-                        </select>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                            A automação ManyChat será disparada quando os leads vierem através do webhook configurado acima.
-                        </p>
-                    </div>
-
-                    {/* Campaign Selector */}
-                    <div>
-                        <label className="label">Opção 2: Ouvir Eventos Desta Campanha Específica (Ex: GreatPages)</label>
-                        <select
-                            className="input"
-                            value={settings.campaign_id}
-                            onChange={(e) => setSettings({ ...settings, campaign_id: e.target.value })}
-                        >
-                            <option value="">-- Ignorar Campanhas --</option>
-                            {campaigns.map(camp => (
-                                <option key={camp.id} value={camp.id}>
-                                    {camp.name}
-                                </option>
-                            ))}
-                        </select>
-                         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                            A automação ManyChat será disparada quando um lead for inserido na campanha configurada (Ideal para envios Webhook GreatPages/Landing pages manuais).
-                        </p>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
-                         {/* Prepend Number */}
-                        <div>
-                            <label className="label">Número Adicional de Telefone (Opcional)</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={settings.prepend_number}
-                                onChange={(e) => setSettings({ ...settings, prepend_number: e.target.value })}
-                                placeholder="Ex: 55"
-                            />
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                                Se preenchido, o sistema irá concatenar este valor no telefone do Lead. Se a campanha trouxer telefone sem DDI ou você quiser forçar um inicio, coloque aqui.
-                            </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                        
+                        {/* Enable Toggle */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                            <label className="switch">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.is_enabled}
+                                    onChange={(e) => updateAutomation(index, 'is_enabled', e.target.checked)}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                            <span style={{ fontWeight: 500 }}>
+                                {settings.is_enabled ? 'Automação ManyChat Ativada' : 'Automação Muitos Desativada (Pausada)'}
+                            </span>
                         </div>
 
-                         {/* Custom Name */}
+                        {/* Webhook Selector */}
                         <div>
-                            <label className="label">Nome Personalizado Sequencial (Opcional)</label>
-                            <input
-                                type="text"
+                            <label className="label">Opção 1: Ouvir Eventos Deste Webhook</label>
+                            <select
                                 className="input"
-                                value={settings.custom_name}
-                                onChange={(e) => setSettings({ ...settings, custom_name: e.target.value })}
-                                placeholder="Ex: Lead Campanha Alfa"
-                            />
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                                Se o campo estiver em branco, enviará o nome original. Se preencher "Teste", enviará "Teste 1", "Teste 2"... e assim por diante.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* API Token */}
-                    <div style={{ marginTop: 8 }}>
-                        <label className="label">ManyChat API Token</label>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <input
-                                type="password"
-                                className="input"
-                                value={settings.manychat_api_token}
-                                onChange={(e) => {
-                                    setSettings({ ...settings, manychat_api_token: e.target.value });
-                                    setConnectionStatus(null);
-                                }}
-                                required={settings.is_enabled}
-                                placeholder="Insira o seu API Token..."
-                                style={{ flex: 1 }}
-                            />
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={handleTestConnection}
-                                disabled={testingConnection || !settings.manychat_api_token}
-                                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                value={settings.webhook_config_id || ''}
+                                onChange={(e) => updateAutomation(index, 'webhook_config_id', e.target.value)}
                             >
-                                <Activity size={16} />
-                                {testingConnection ? 'Testando...' : 'Testar Token'}
-                            </button>
+                                <option value="">-- Ignorar Webhooks --</option>
+                                {webhooks.map(webhook => (
+                                    <option key={webhook.id} value={webhook.id}>
+                                        Webhook #{webhook.webhook_number}
+                                    </option>
+                                ))}
+                            </select>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                A automação ManyChat será disparada quando os leads vierem através do webhook configurado acima.
+                            </p>
+                        </div>
+
+                        {/* Campaign Selector */}
+                        <div>
+                            <label className="label">Opção 2: Ouvir Eventos Desta Campanha Específica (Ex: GreatPages)</label>
+                            <select
+                                className="input"
+                                value={settings.campaign_id || ''}
+                                onChange={(e) => updateAutomation(index, 'campaign_id', e.target.value)}
+                            >
+                                <option value="">-- Ignorar Campanhas --</option>
+                                {campaigns.map(camp => (
+                                    <option key={camp.id} value={camp.id}>
+                                        {camp.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                A automação ManyChat será disparada quando um lead for inserido na campanha configurada (Ideal para envios Webhook GreatPages/Landing pages manuais).
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16 }}>
+                            {/* Prepend Number */}
+                            <div>
+                                <label className="label">Número Adicional de Telefone (Opcional)</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={settings.prepend_number || ''}
+                                    onChange={(e) => updateAutomation(index, 'prepend_number', e.target.value)}
+                                    placeholder="Ex: 55"
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                    Se preenchido, o sistema concatenará este valor. Ex: forçar DDI.
+                                </p>
+                            </div>
+
+                            {/* Custom Name */}
+                            <div>
+                                <label className="label">Nome Personalizado Sequencial (Opcional)</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={settings.custom_name || ''}
+                                    onChange={(e) => updateAutomation(index, 'custom_name', e.target.value)}
+                                    placeholder="Ex: Lead Campanha Alfa"
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                    Se em branco enviará nome original. Ex: preencher "Teste" ➜ "Teste 1".
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* API Token */}
+                        <div style={{ marginTop: 8 }}>
+                            <label className="label">ManyChat API Token</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                    type="password"
+                                    className="input"
+                                    value={settings.manychat_api_token || ''}
+                                    onChange={(e) => {
+                                        updateAutomation(index, 'manychat_api_token', e.target.value);
+                                        setConnectionStatus(null);
+                                    }}
+                                    required={settings.is_enabled}
+                                    placeholder="Insira o seu API Token..."
+                                    style={{ flex: 1 }}
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => handleTestConnection(settings.manychat_api_token)}
+                                    disabled={testingConnection || !settings.manychat_api_token}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                >
+                                    <Activity size={16} />
+                                    Testar
+                                </button>
+                            </div>
+                            
+                            {/* Simple visual connection status trick for the last tested index */}
+                            {connectionStatus === 'success' && (
+                                <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <CheckCircle size={16} /> Conectado com sucesso!
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Tag Name */}
+                        <div style={{ marginTop: 8 }}>
+                            <label className="label">Nome da Tag (Para Disparar Automação)</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={settings.manychat_tag_name || ''}
+                                onChange={(e) => updateAutomation(index, 'manychat_tag_name', e.target.value)}
+                                required={settings.is_enabled}
+                                placeholder="ex: automacao_zap"
+                            />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                A tag para forçar o disparo do evento.
+                            </p>
                         </div>
                         
-                        {/* Status da Conexão */}
-                        {connectionStatus === 'success' && (
-                            <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <CheckCircle size={16} /> Conectado com sucesso ao ManyChat!
-                            </p>
-                        )}
-                        {connectionStatus === 'error' && (
-                            <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <XCircle size={16} /> Falha ao conectar ao ManyChat. Verifique o token.
-                            </p>
-                        )}
                     </div>
-
-                    {/* Tag Name */}
-                    <div style={{ marginTop: 8 }}>
-                        <label className="label">Nome da Tag (Para Disparar Automação)</label>
-                        <input
-                            type="text"
-                            className="input"
-                            value={settings.manychat_tag_name}
-                            onChange={(e) => setSettings({ ...settings, manychat_tag_name: e.target.value })}
-                            required={settings.is_enabled}
-                            placeholder="ex: automacao_zap"
-                        />
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                            A configuração irá encontrar o contato, removê-lo (ou resetá-lo) e em seguida aplicar 
-                            esta exata tag para forçar o disparo do evento no ManyChat.
-                        </p>
-                    </div>
-                    
                 </div>
-            </div>
+            ))}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 32 }}>
                 <button
