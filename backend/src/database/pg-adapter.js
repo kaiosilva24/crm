@@ -25,18 +25,28 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// ─── POOL DE CONEXÕES ────────────────────────────────────────
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+// ─── POOL DE CONEXÕES (LAZY INIT) ────────────────────────────────────────
+let poolInstance = null;
 
-pool.on('error', (err) => {
-  console.error('❌ [pg-pool] Unexpected error:', err.message);
-});
+function getPool() {
+  if (!poolInstance) {
+    if (!process.env.DATABASE_URL) {
+      console.error('CRITICAL: process.env.DATABASE_URL is undefined when creating pg Pool!');
+    }
+    poolInstance = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+
+    poolInstance.on('error', (err) => {
+      console.error('❌ [pg-pool] Unexpected error:', err.message);
+    });
+  }
+  return poolInstance;
+}
 
 // ─── QUERY BUILDER ───────────────────────────────────────────
 class QueryBuilder {
