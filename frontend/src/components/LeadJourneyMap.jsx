@@ -25,15 +25,18 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
         try {
             const token = localStorage.getItem('token');
             const baseUrl = import.meta.env.VITE_API_URL || '/api';
-            const res = await fetch(`${baseUrl}/leads/${leadId}/journey${phone ? `?phone=${encodeURIComponent(phone)}` : ''}`, {
+            const res = await fetch(`${baseUrl}/journey/lead/${leadId}${phone ? `?phone=${encodeURIComponent(phone)}` : ''}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const data = await res.json();
-            
-            if (data.events) {
-                // Remove the start/end fake nodes and sort by created_at asc
-                const dbEvents = data.events.filter(e => !e.is_fake).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-                setEvents(dbEvents);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.events) {
+                    // Remove the start/end fake nodes and sort by created_at asc
+                    const dbEvents = data.events.filter(e => !e.is_fake).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                    setEvents(dbEvents);
+                }
+            } else {
+                setEvents([]);
             }
         } catch (error) {
             console.error('Erro ao carregar jornada no map:', error);
