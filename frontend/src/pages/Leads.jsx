@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Maximize } from 'lucide-react';
 import { useGroupSync } from '../hooks/useGroupSync';
 import LeadJourney from '../components/LeadJourney';
+import LeadJourneyMap from '../components/LeadJourneyMap';
 
 export default function Leads() {
     const { isAdmin, user } = useAuth();
@@ -82,6 +83,7 @@ export default function Leads() {
 
     // Jornada do Lead — toggle por UUID
     const [expandedJourneys, setExpandedJourneys] = useState(new Set());
+    const [mapLeadData, setMapLeadData] = useState(null);
 
     const toggleJourney = (uuid) => {
         setExpandedJourneys(prev => {
@@ -1240,6 +1242,20 @@ export default function Leads() {
                                                     >
                                                         {isJourneyOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                                                     </button>
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        onClick={() => setMapLeadData({ id: lead.id, phone: lead.phone })}
+                                                        title="Ver Mapa Completo"
+                                                        style={{
+                                                            padding: 2,
+                                                            color: 'var(--text-secondary)',
+                                                            opacity: 0.7,
+                                                            border: '1px solid var(--border)',
+                                                            borderRadius: 4
+                                                        }}
+                                                    >
+                                                        <Maximize size={12} />
+                                                    </button>
                                                 </div>
                                             </td>
                                             <td>
@@ -1848,6 +1864,14 @@ export default function Leads() {
                     </div>
                 )
             }
+            {/* Journey Map Modal */}
+            {mapLeadData && (
+                <LeadJourneyMap
+                    leadId={mapLeadData.id}
+                    phone={mapLeadData.phone}
+                    onClose={() => setMapLeadData(null)}
+                />
+            )}
         </div >
     );
 }

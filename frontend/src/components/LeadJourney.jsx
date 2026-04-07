@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Ícones por tipo de evento
-const EVENT_ICONS = {
+export const EVENT_ICONS = {
     entry: '🔵',
     re_entry: '🔄',
     seller_assigned: '👤',
@@ -17,7 +17,7 @@ const EVENT_ICONS = {
 };
 
 // Cores por tipo de evento
-const EVENT_COLORS = {
+export const EVENT_COLORS = {
     entry: '#6366f1',
     re_entry: '#f59e0b',
     seller_assigned: '#3b82f6',
@@ -32,7 +32,7 @@ const EVENT_COLORS = {
     default: '#94a3b8'
 };
 
-const EVENT_LABELS_PT = {
+export const EVENT_LABELS_PT = {
     entry: 'Entrada',
     re_entry: 'Re-entrada',
     seller_assigned: 'Atribuição',
@@ -46,7 +46,7 @@ const EVENT_LABELS_PT = {
     note: 'Nota',
 };
 
-function formatDateShort(dateStr) {
+export function formatDateShort(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' +
