@@ -609,6 +609,54 @@ function GreatPagesSettings() {
                 </small>
             </div>
 
+            {/* SEÇÃO UTM — Configuração de Rastreamento */}
+            <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <h4 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    📣 Rastreamento UTM (Meta Ads / Google Ads)
+                </h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+                    O Meta Ads entrega automaticamente os parâmetros UTM no payload do webhook do GreatPages.
+                    O CRM já os captura nos campos abaixo. Configure os nomes dos parâmetros conforme sua conta do Meta.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+                    {[
+                        { key: 'utm_source', label: 'utm_source', desc: 'Plataforma (ex: facebook)', example: 'facebook' },
+                        { key: 'utm_medium', label: 'utm_medium', desc: 'Tipo de tráfego (ex: cpc)', example: 'paid' },
+                        { key: 'utm_campaign', label: 'utm_campaign', desc: 'Nome da campanha no Meta', example: 'LP11ABRIL26-Vendas' },
+                        { key: 'utm_content', label: 'utm_content', desc: 'Anúncio específico', example: 'Video-Depoimento-1' },
+                        { key: 'utm_term', label: 'utm_term', desc: 'Conjunto de anúncios', example: 'Conjunto-Interesses-01' },
+                    ].map(({ key, label, desc, example }) => (
+                        <div key={key}>
+                            <label className="form-label" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#6366f1' }}>
+                                {label}
+                            </label>
+                            <input
+                                className="form-input"
+                                readOnly
+                                value={key}
+                                style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'var(--bg-primary)', cursor: 'default' }}
+                            />
+                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginTop: 4 }}>
+                                {desc} — ex: <em>{example}</em>
+                            </small>
+                        </div>
+                    ))}
+                </div>
+
+                <div style={{ padding: 12, borderRadius: 6, background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#6366f1', margin: 0, lineHeight: 1.6 }}>
+                        💡 <strong>Como funciona:</strong> Ao criar um anúncio no Meta Ads, adicione os parâmetros UTM na URL de destino da landing page GreatPages.
+                        O GreatPages os repassa no payload do webhook e o CRM os armazena automaticamente na <strong>Jornada do Lead</strong>,
+                        permitindo rastrear de qual campanha, conjunto e anúncio cada lead veio.
+                    </p>
+                    <div style={{ marginTop: 10, padding: 10, background: 'rgba(0,0,0,0.15)', borderRadius: 4, fontFamily: 'monospace', fontSize: '0.75rem', color: '#a5b4fc', wordBreak: 'break-all' }}>
+                        {`https://suapagina.com/?utm_source=facebook&utm_medium=paid`}<br />
+                        {`&utm_campaign=NomeDaCampanha&utm_content=NomeDoAnuncio&utm_term=NomeDoConjunto`}
+                    </div>
+                </div>
+            </div>
+
             {/* BOTÃO SALVAR CONFIGURAÇÕES */}
             <div style={{ marginBottom: 24 }}>
                 <button

@@ -1290,6 +1290,81 @@ export const db = {
             .eq('in_group', inGroup);
         if (error) throw error;
         return data || [];
+    },
+
+
+    // ==================== LEAD JOURNEY ====================
+
+    async createJourneyEvent(eventData) {
+        try {
+            const { data, error } = await supabase
+                .from('lead_journey_events')
+                .insert({
+                    lead_id: eventData.lead_id || null,
+                    lead_phone: eventData.lead_phone || null,
+                    lead_email: eventData.lead_email || null,
+                    event_type: eventData.event_type,
+                    event_label: eventData.event_label || null,
+                    campaign_id: eventData.campaign_id || null,
+                    campaign_name: eventData.campaign_name || null,
+                    seller_id: eventData.seller_id || null,
+                    seller_name: eventData.seller_name || null,
+                    status_id: eventData.status_id || null,
+                    status_name: eventData.status_name || null,
+                    utm_source: eventData.utm_source || null,
+                    utm_medium: eventData.utm_medium || null,
+                    utm_campaign: eventData.utm_campaign || null,
+                    utm_content: eventData.utm_content || null,
+                    utm_term: eventData.utm_term || null,
+                    metadata: eventData.metadata || null,
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('createJourneyEvent error:', error.message);
+                return null; // Não propaga erro — jornada é opcional
+            }
+            return data;
+        } catch (err) {
+            console.error('createJourneyEvent exception:', err.message);
+            return null;
+        }
+    },
+
+    async getJourneyByLeadId(leadId) {
+        try {
+            const { data, error } = await supabase
+                .from('lead_journey_events')
+                .select('*')
+                .eq('lead_id', parseInt(leadId))
+                .order('created_at', { ascending: true });
+
+            if (error) return [];
+            return data || [];
+        } catch (err) {
+            console.error('getJourneyByLeadId exception:', err.message);
+            return [];
+        }
+    },
+
+    async getJourneyByPhone(phone) {
+        if (!phone || phone.length < 8) return [];
+        try {
+            const phoneEnd = phone.replace(/\D/g, '').slice(-8);
+            const { data, error } = await supabase
+                .from('lead_journey_events')
+                .select('*')
+                .ilike('lead_phone', `%${phoneEnd}`)
+                .order('created_at', { ascending: true });
+
+            if (error) return [];
+            return data || [];
+        } catch (err) {
+            console.error('getJourneyByPhone exception:', err.message);
+            return [];
+        }
     }
 };
 

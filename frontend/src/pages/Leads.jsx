@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown } from 'lucide-react';
+import { MessageSquare, Phone, Search, X, Send, UserX, UserCheck, Trash2, CheckSquare, Square, ChevronLeft, ChevronRight, MessageCircle, Copy, Calendar, FileText, RefreshCw, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { useGroupSync } from '../hooks/useGroupSync';
+import LeadJourney from '../components/LeadJourney';
 
 export default function Leads() {
     const { isAdmin, user } = useAuth();
@@ -78,6 +79,18 @@ export default function Leads() {
     const [showMirrorModal, setShowMirrorModal] = useState(false);
     const [mirrorTargetCampaign, setMirrorTargetCampaign] = useState('');
     const [mirroring, setMirroring] = useState(false);
+
+    // Jornada do Lead — toggle por UUID
+    const [expandedJourneys, setExpandedJourneys] = useState(new Set());
+
+    const toggleJourney = (uuid) => {
+        setExpandedJourneys(prev => {
+            const next = new Set(prev);
+            if (next.has(uuid)) next.delete(uuid);
+            else next.add(uuid);
+            return next;
+        });
+    };
 
     // Edit Lead Details
     const [editMode, setEditMode] = useState(false);
@@ -1201,17 +1214,33 @@ export default function Leads() {
                                     // Vendedora só pode editar seus próprios leads
                                     const isOwner = isAdmin || lead.seller_id === user?.id;
                                     const rowOpacity = isOwner ? 1 : 0.6;
+                                    const isJourneyOpen = expandedJourneys.has(lead.uuid);
 
                                     return (
+                                        <>
                                         <tr key={lead.uuid} style={{ background: selectedUuids.has(lead.uuid) ? 'rgba(99, 102, 241, 0.1)' : undefined, opacity: rowOpacity }}>
                                             <td>
-                                                <button
-                                                    className="btn btn-ghost btn-sm"
-                                                    onClick={() => toggleSelect(lead.uuid)}
-                                                    style={{ padding: 4 }}
-                                                >
-                                                    {selectedUuids.has(lead.uuid) ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} />}
-                                                </button>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        onClick={() => toggleSelect(lead.uuid)}
+                                                        style={{ padding: 4 }}
+                                                    >
+                                                        {selectedUuids.has(lead.uuid) ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} />}
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        onClick={() => toggleJourney(lead.uuid)}
+                                                        title={isJourneyOpen ? 'Fechar jornada' : 'Ver jornada do lead'}
+                                                        style={{
+                                                            padding: 3,
+                                                            color: isJourneyOpen ? '#6366f1' : 'var(--text-secondary)',
+                                                            opacity: 0.7
+                                                        }}
+                                                    >
+                                                        {isJourneyOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                                    </button>
+                                                </div>
                                             </td>
                                             <td>
                                                 {lead.subcampaign_color && (
@@ -1377,6 +1406,14 @@ export default function Leads() {
                                                 </button>
                                             </td>
                                         </tr>
+                                        {isJourneyOpen && (
+                                            <tr key={`${lead.uuid}-journey`} style={{ background: 'rgba(99, 102, 241, 0.02)' }}>
+                                                <td colSpan={isAdmin ? 11 : 10} style={{ padding: 0, border: 'none' }}>
+                                                    <LeadJourney leadId={lead.id} phone={lead.phone} />
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </>
                                     );
                                 })}
                             </tbody>

@@ -12,8 +12,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Carregar variáveis de ambiente PRIMEIRO - caminho relativo ao arquivo
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Carregar variáveis de ambiente - caminho relativo para backend/.env
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Importar cliente Supabase e rotas
 import { initializeDatabase } from './database/supabase.js';
@@ -36,6 +36,7 @@ import hotmartRoutes from './routes/hotmart.js';
 import exclusionLogsRoutes from './routes/exclusionLogs.js';
 import cartAbandonmentRoutes from './routes/cartAbandonment.js';
 import manychatRoutes from './routes/manychat.js';
+import journeyRoutes from './routes/journey.js';
 import { restoreSessions } from './services/whatsappService.js';
 
 const PORT = process.env.PORT || 8080;
@@ -110,6 +111,7 @@ app.use('/api/hotmart', hotmartRoutes);
 app.use('/api/exclusion-logs', exclusionLogsRoutes);
 app.use('/api/cart-abandonment', cartAbandonmentRoutes);
 app.use('/api/manychat', manychatRoutes);
+app.use('/api/journey', journeyRoutes);
 
 // ======== Front-End Integration ========
 // Serve os arquivos estáticos do frontend

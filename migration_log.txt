@@ -1,0 +1,28 @@
+=== MIGRATION LOG ===
+[2026-04-07T11:47:05.767Z] Iniciando conexao com o banco...
+[2026-04-07T11:47:05.926Z] Conectado!
+[2026-04-07T11:47:05.926Z] Lendo SQL: C:\Users\kaiob\Downloads\CRM-main - Copia\CRM-main\backend\src\database\migrations\create_lead_journey_events.sql
+[2026-04-07T11:47:05.927Z] Executando SQL...
+[2026-04-07T11:47:06.027Z]   OK
+[2026-04-07T11:47:06.028Z] Verificando tabela...
+[2026-04-07T11:47:06.071Z] SUCESSO! Tabela lead_journey_events tem 19 colunas:
+[2026-04-07T11:47:06.073Z]   - id (integer)
+[2026-04-07T11:47:06.074Z]   - lead_phone (text)
+[2026-04-07T11:47:06.075Z]   - lead_email (text)
+[2026-04-07T11:47:06.077Z]   - lead_id (integer)
+[2026-04-07T11:47:06.077Z]   - event_type (text)
+[2026-04-07T11:47:06.078Z]   - event_label (text)
+[2026-04-07T11:47:06.079Z]   - campaign_id (integer)
+[2026-04-07T11:47:06.079Z]   - campaign_name (text)
+[2026-04-07T11:47:06.080Z]   - seller_id (integer)
+[2026-04-07T11:47:06.081Z]   - seller_name (text)
+[2026-04-07T11:47:06.082Z]   - status_id (integer)
+[2026-04-07T11:47:06.083Z]   - status_name (text)
+[2026-04-07T11:47:06.083Z]   - utm_source (text)
+[2026-04-07T11:47:06.084Z]   - utm_medium (text)
+[2026-04-07T11:47:06.084Z]   - utm_campaign (text)
+[2026-04-07T11:47:06.084Z]   - utm_content (text)
+[2026-04-07T11:47:06.085Z]   - utm_term (text)
+[2026-04-07T11:47:06.085Z]   - metadata (jsonb)
+[2026-04-07T11:47:06.086Z]   - created_at (timestamp with time zone)
+[2026-04-07T11:47:06.087Z] Conexao encerrada.

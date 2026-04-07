@@ -122,4 +122,7 @@ export const api = {
     testManychatConnection: (api_token) => request('/manychat/test-connection', { method: 'POST', body: JSON.stringify({ api_token }) }),
     sendManychatTestAutomation: (leadData) => request('/manychat/test-automation', { method: 'POST', body: JSON.stringify({ leadData }) }),
     getManychatEvents: (params = {}) => request(`/manychat/events?${new URLSearchParams(params)}`),
+    // Lead Journey
+    getLeadJourney: (leadId) => request(`/journey/lead/${leadId}`),
+    getLeadJourneyByPhone: (phone) => request(`/journey/phone/${encodeURIComponent(phone)}`),
 };

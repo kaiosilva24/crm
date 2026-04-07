@@ -215,7 +215,15 @@ router.post('/greatpages', async (req, res) => {
         const name = body.NOME || body.nome || body.name || body.Nome || body.first_name || 'Lead GreatPages';
         let phone = body.TELEFONE || body.telefone || body.phone || body.Phone || body.whatsapp || body.WhatsApp || body.celular;
 
+        // Extrair UTMs (Meta Ads, Google Ads, etc.)
+        const utm_source   = body.utm_source   || body.UTM_SOURCE   || body['utm-source']   || null;
+        const utm_medium   = body.utm_medium   || body.UTM_MEDIUM   || body['utm-medium']   || null;
+        const utm_campaign = body.utm_campaign || body.UTM_CAMPAIGN || body['utm-campaign'] || null;
+        const utm_content  = body.utm_content  || body.UTM_CONTENT  || body['utm-content']  || null;
+        const utm_term     = body.utm_term     || body.UTM_TERM     || body['utm-term']     || null;
+
         console.log(`   📋 Dados extraídos: Nome="${name}", Email="${email}", Telefone="${phone}"`);
+        if (utm_campaign) console.log(`   📣 UTM: source=${utm_source} | medium=${utm_medium} | campaign=${utm_campaign} | content=${utm_content} | term=${utm_term}`);
 
         if (!email && !phone) {
             console.log('   ❌ Nenhum email ou telefone encontrado no payload');
@@ -296,7 +304,20 @@ router.post('/greatpages', async (req, res) => {
 
         if (existing) {
             console.log(`⚠️ Lead já existe na campanha ${campaignId}: ${existing.id}`);
-            // Lead já existe na mesma campanha, apenas retornar
+
+            // Mesmo existindo, registrar evento de re-entrada na jornada
+            db.createJourneyEvent({
+                lead_id: existing.id,
+                lead_phone: phone,
+                lead_email: email ? email.toLowerCase() : null,
+                event_type: 're_entry',
+                event_label: `Re-entrada via GreatPages (já existe na campanha)`,
+                campaign_id: campaignId,
+                campaign_name: null,
+                utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+                metadata: { original_payload: body, note: 'duplicate_in_same_campaign' }
+            }).catch(err => console.error('Journey re_entry error:', err));
+
             return res.json({ message: 'Lead já existe nesta campanha', id: existing.uuid });
         }
 
@@ -404,6 +425,28 @@ router.post('/greatpages', async (req, res) => {
             }
         }
 
+        // Verificar se o lead existe em OUTRA campanha (re-entrada cross-campanha)
+        let existingInOtherCampaign = null;
+        if (phone && phone.length >= 8) {
+            const phoneEnd = phone.replace(/\D/g, '').slice(-8);
+            let crossQuery = supabase
+                .from('leads')
+                .select('id, uuid, first_name, campaign_id, phone')
+                .ilike('phone', `%${phoneEnd}`);
+            if (campaignId) crossQuery = crossQuery.neq('campaign_id', campaignId);
+            const { data: crossLeads } = await crossQuery.limit(1);
+            if (crossLeads && crossLeads.length > 0) existingInOtherCampaign = crossLeads[0];
+        }
+        if (!existingInOtherCampaign && email) {
+            let crossQuery = supabase
+                .from('leads')
+                .select('id, uuid, first_name, campaign_id, email')
+                .eq('email', email.toLowerCase());
+            if (campaignId) crossQuery = crossQuery.neq('campaign_id', campaignId);
+            const { data: crossLeads } = await crossQuery.limit(1);
+            if (crossLeads && crossLeads.length > 0) existingInOtherCampaign = crossLeads[0];
+        }
+
         const generatedEmail = email ? email.toLowerCase() : `${(phone || '').replace(/\D/g, '') || uuidv4().substring(0, 8)}@lead-sem-email.com`;
 
         // Criar Lead (SEM status - deixar null para não vir como "Onboarding")
@@ -420,6 +463,72 @@ router.post('/greatpages', async (req, res) => {
             in_group: false,
             observations: `[Origem: GreatPages]\nPayload: ${JSON.stringify(body)}`
         });
+
+        // Buscar nome da vendedora para log da jornada
+        let sellerName = null;
+        if (sellerId) {
+            try {
+                const sellerInfo = await db.getUserById(sellerId);
+                sellerName = sellerInfo?.name || null;
+            } catch (e) { /* silencioso */ }
+        }
+
+        // Buscar nome da campanha para log da jornada
+        let campaignName = null;
+        if (campaignId) {
+            try {
+                const campInfo = await db.getCampaignById(campaignId);
+                campaignName = campInfo?.name || null;
+            } catch (e) { /* silencioso */ }
+        }
+
+        // Criar evento de ENTRADA na jornada
+        const journeyEventType = existingInOtherCampaign ? 're_entry' : 'entry';
+        const journeyLabel = existingInOtherCampaign
+            ? `Re-entrada via GreatPages → Campanha: ${campaignName || campaignId}`
+            : `Entrada via GreatPages → Campanha: ${campaignName || 'sem campanha'}`;
+
+        db.createJourneyEvent({
+            lead_id: newLead.id,
+            lead_phone: phone,
+            lead_email: generatedEmail,
+            event_type: journeyEventType,
+            event_label: journeyLabel,
+            campaign_id: campaignId,
+            campaign_name: campaignName,
+            seller_id: sellerId,
+            seller_name: sellerName,
+            utm_source,
+            utm_medium,
+            utm_campaign,
+            utm_content,
+            utm_term,
+            metadata: {
+                original_payload: body,
+                previous_lead_id: existingInOtherCampaign?.id || null,
+                previous_campaign_id: existingInOtherCampaign?.campaign_id || null
+            }
+        }).catch(err => console.error('Journey entry event error:', err));
+
+        // Se re-entrada: registrar evento no lead anterior também
+        if (existingInOtherCampaign) {
+            console.log(`   🔄 Re-entrada detectada: Lead anterior ID ${existingInOtherCampaign.id} em campanha ${existingInOtherCampaign.campaign_id}`);
+            db.createJourneyEvent({
+                lead_id: existingInOtherCampaign.id,
+                lead_phone: phone,
+                lead_email: generatedEmail,
+                event_type: 're_entry',
+                event_label: `Lead re-entrou → Nova campanha: ${campaignName || campaignId || 'desconhecida'}`,
+                campaign_id: campaignId,
+                campaign_name: campaignName,
+                utm_source,
+                utm_medium,
+                utm_campaign,
+                utm_content,
+                utm_term,
+                metadata: { new_lead_id: newLead.id }
+            }).catch(err => console.error('Journey re_entry (previous lead) error:', err));
+        }
 
         // Trigger ManyChat Automation asynchronously
         processManychatAutomation(null, {
