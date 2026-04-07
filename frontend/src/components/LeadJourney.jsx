@@ -358,7 +358,7 @@ export default function LeadJourney({ leadId, phone }) {
     );
 }
 
-function formatUtmValue(key, value) {
+export function formatUtmValue(key, value) {
     if (!value) return '';
     const v = String(value).toLowerCase().trim();
     

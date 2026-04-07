@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { EVENT_ICONS, EVENT_COLORS, EVENT_LABELS_PT, formatDateShort } from './LeadJourney';
+import { EVENT_ICONS, EVENT_COLORS, EVENT_LABELS_PT, formatDateShort, formatUtmValue } from './LeadJourney';
 import { X, ZoomIn, ZoomOut, Move, MousePointerClick } from 'lucide-react';
 
 const NODE_WIDTH = 260;
@@ -51,21 +51,70 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
 
     // Calcular as posições dos nós na grade (Zigue-Zague)
     const getLayout = () => {
-        const nodes = [];
-        const edges = [];
-        
-        events.forEach((ev, index) => {
-            const rowIndex = Math.floor(index / NODES_PER_ROW);
-            const isLeftToRight = rowIndex % 2 === 0;
-            const indexInRow = index % NODES_PER_ROW;
-            
-            const colIndex = isLeftToRight ? indexInRow : (NODES_PER_ROW - 1 - indexInRow);
+        const visualEvents = [];
+        events.forEach(ev => {
+            if (ev.event_type === 'entry' || ev.event_type === 're_entry') {
+                visualEvents.push({
+                    id: ev.id + '_base',
+                    data: ev,
+                    event_type: ev.event_type,
+                    icon: EVENT_ICONS[ev.event_type] || EVENT_ICONS.default,
+                    color: EVENT_COLORS[ev.event_type] || EVENT_COLORS.default,
+                    label: EVENT_LABELS_PT[ev.event_type] || ev.event_type,
+                    date: ev.created_at,
+                    subLabel: ev.event_type.toUpperCase()
+                });
 
-            const x = colIndex * (NODE_WIDTH + GAP_X);
-            const y = rowIndex * (NODE_HEIGHT + GAP_Y);
-
-            // Determinar o event label fallback igual ao LeadJourney original
-            const label = (ev.event_type === 'seller_assigned' || ev.event_type === 'seller_changed' || ev.event_type === 'seller_historical') && ev.seller_name 
+                if (ev.utm_source) {
+                    visualEvents.push({
+                        id: ev.id + '_source', data: ev, icon: '🌐', color: '#6366f1',
+                        label: formatUtmValue('source', ev.utm_source), date: ev.created_at, subLabel: 'SOURCE'
+                    });
+                }
+                if (ev.utm_medium) {
+                    visualEvents.push({
+                        id: ev.id + '_medium', data: ev, icon: '📊', color: '#8b5cf6',
+                        label: formatUtmValue('medium', ev.utm_medium), date: ev.created_at, subLabel: 'MEDIUM'
+                    });
+                }
+                if (ev.campaign_name) {
+                    visualEvents.push({
+                        id: ev.id + '_crm_campaign', data: ev, icon: '📣', color: '#ec4899',
+                        label: ev.campaign_name, date: ev.created_at, subLabel: 'Campanha CRM'
+                    });
+                }
+                if (ev.utm_campaign) {
+                    visualEvents.push({
+                        id: ev.id + '_campaign', data: ev, icon: '🎯', color: '#dc2626',
+                        label: ev.utm_campaign, date: ev.created_at, subLabel: 'Campanha UTM'
+                    });
+                }
+                if (ev.utm_term) {
+                    visualEvents.push({
+                        id: ev.id + '_term', data: ev, icon: '👥', color: '#f59e0b',
+                        label: ev.utm_term, date: ev.created_at, subLabel: 'Conjunto'
+                    });
+                }
+                if (ev.utm_content) {
+                    visualEvents.push({
+                        id: ev.id + '_content', data: ev, icon: '🖼️', color: '#10b981',
+                        label: ev.utm_content, date: ev.created_at, subLabel: 'Anúncio'
+                    });
+                }
+                if (ev.seller_name) {
+                    visualEvents.push({
+                        id: ev.id + '_seller', data: ev, icon: '👤', color: '#3b82f6',
+                        label: ev.seller_name, date: ev.created_at, subLabel: 'Vendedora'
+                    });
+                }
+                if (ev.status_name) {
+                    visualEvents.push({
+                        id: ev.id + '_status', data: ev, icon: '🏷️', color: '#8b5cf6',
+                        label: ev.status_name, date: ev.created_at, subLabel: 'Status'
+                    });
+                }
+            } else {
+                const label = (ev.event_type === 'seller_assigned' || ev.event_type === 'seller_changed' || ev.event_type === 'seller_historical') && ev.seller_name 
                     ? ev.seller_name 
                     : ev.event_type === 'seller_removed'
                         ? 'Sem Vendedora'
@@ -75,14 +124,40 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
                                 ? ev.status_name 
                                 : (EVENT_LABELS_PT[ev.event_type] || ev.event_type);
 
-            nodes.push({ id: ev.id, index, x, y, data: ev, label });
+                visualEvents.push({
+                    id: ev.id,
+                    data: ev,
+                    event_type: ev.event_type,
+                    icon: EVENT_ICONS[ev.event_type] || EVENT_ICONS.default,
+                    color: EVENT_COLORS[ev.event_type] || EVENT_COLORS.default,
+                    label: label,
+                    date: ev.created_at,
+                    subLabel: EVENT_LABELS_PT[ev.event_type]
+                });
+            }
+        });
+
+        const nodes = [];
+        const edges = [];
+        
+        visualEvents.forEach((vEv, index) => {
+            const rowIndex = Math.floor(index / NODES_PER_ROW);
+            const isLeftToRight = rowIndex % 2 === 0;
+            const indexInRow = index % NODES_PER_ROW;
+            
+            const colIndex = isLeftToRight ? indexInRow : (NODES_PER_ROW - 1 - indexInRow);
+
+            const x = colIndex * (NODE_WIDTH + GAP_X);
+            const y = rowIndex * (NODE_HEIGHT + GAP_Y);
+
+            nodes.push({ ...vEv, index, x, y });
 
             if (index > 0) {
                 const prevNode = nodes[index - 1];
                 edges.push({
                     id: `e-${index-1}-${index}`,
                     source: prevNode,
-                    target: { id: ev.id, index, x, y, data: ev }
+                    target: { ...vEv, index, x, y }
                 });
             }
         });
@@ -267,10 +342,8 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
 
                         {/* Nodes HTML */}
                         {nodes.map((node) => {
-                            const ev = node.data;
-                            const evType = ev.event_type;
-                            const evIcon = EVENT_ICONS[evType] || EVENT_ICONS.default;
-                            const evColor = EVENT_COLORS[evType] || EVENT_COLORS.default;
+                            const evIcon = node.icon;
+                            const evColor = node.color;
                             
                             return (
                                 <div 
@@ -309,19 +382,21 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
                                             <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                 {node.label}
                                             </h4>
-                                            <span style={{ fontSize: '0.75rem', color: evColor, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                                {EVENT_LABELS_PT[evType]}
-                                            </span>
+                                            {node.subLabel && (
+                                                <span style={{ fontSize: '0.75rem', color: evColor, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                    {node.subLabel}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: 8, marginTop: 'auto' }}>
                                         <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                            {formatDateShort(ev.created_at)}
+                                            {formatDateShort(node.date)}
                                         </span>
-                                        {ev.campaign_name && (
+                                        {node.data?.campaign_name && node.id.includes('_base') && (
                                             <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: '#334155', borderRadius: 4, color: '#cbd5e1', maxWidth: 100, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {ev.campaign_name}
+                                                {node.data.campaign_name}
                                             </span>
                                         )}
                                     </div>
