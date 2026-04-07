@@ -191,27 +191,42 @@ router.patch('/bulk/reassign', authorize('admin'), async (req, res) => {
             targetSellers = [seller_id];
         }
 
-        // Validação de vendedoras
-        if (targetSellers.length > 0) {
-            for (const s_id of targetSellers) {
-                const seller = await db.getUserById(s_id);
-                if (!seller || seller.role !== 'seller' || !seller.is_active) {
-                    return res.status(400).json({ error: `Vendedora (ID: ${s_id}) não encontrada ou inativa` });
-                }
+        // Pré-carregar dados das vendedoras
+        const sellerCache = {};
+        for (const s_id of targetSellers) {
+            const seller = await db.getUserById(s_id);
+            if (!seller || seller.role !== 'seller' || !seller.is_active) {
+                return res.status(400).json({ error: `Vendedora (ID: ${s_id}) não encontrada ou inativa` });
             }
+            sellerCache[s_id] = seller;
         }
 
-        // Atribuir leads
+        // Atribuir leads e registrar jornada
         for (let i = 0; i < lead_uuids.length; i++) {
             const uuid = lead_uuids[i];
 
             let assignedSellerId = null;
+            let assignedSellerName = null;
             if (targetSellers.length > 0) {
-                // Round-robin distribution
                 assignedSellerId = targetSellers[i % targetSellers.length];
+                assignedSellerName = sellerCache[assignedSellerId]?.name || null;
             }
 
+            const lead = await db.getLeadByUuid(uuid);
             await db.updateLead(uuid, { seller_id: assignedSellerId });
+
+            // Log na jornada
+            if (lead) {
+                db.createJourneyEvent({
+                    lead_id: lead.id,
+                    lead_phone: lead.phone,
+                    lead_email: lead.email,
+                    event_type: 'seller_assigned',
+                    event_label: `Vendedora atribuída por Admin: ${assignedSellerName || 'Nenhuma'}`,
+                    seller_id: assignedSellerId,
+                    seller_name: assignedSellerName
+                }).catch(e => console.error('Erro ao logar jornada bulk seller:', e));
+            }
         }
 
         res.json({ message: `${lead_uuids.length} leads reatribuídos` });
