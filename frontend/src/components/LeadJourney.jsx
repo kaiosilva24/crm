@@ -147,14 +147,24 @@ export default function LeadJourney({ leadId, phone }) {
                                     date: ev.created_at,
                                 });
                             }
-                            if (ev.utm_campaign || ev.campaign_name) {
+                            if (ev.campaign_name) {
+                                nodes.push({
+                                    id: ev.id + '_crm_campaign',
+                                    icon: '📣',
+                                    color: '#ec4899',
+                                    label: ev.campaign_name,
+                                    date: ev.created_at,
+                                    subLabel: 'Campanha CRM'
+                                });
+                            }
+                            if (ev.utm_campaign) {
                                 nodes.push({
                                     id: ev.id + '_campaign',
                                     icon: '🎯',
-                                    color: '#ec4899',
-                                    label: ev.utm_campaign || ev.campaign_name,
+                                    color: '#dc2626', // Vermelho para diferenciar da CRM
+                                    label: ev.utm_campaign,
                                     date: ev.created_at,
-                                    subLabel: 'Campanha'
+                                    subLabel: 'Campanha UTM'
                                 });
                             }
                             if (ev.utm_term) {
@@ -175,6 +185,26 @@ export default function LeadJourney({ leadId, phone }) {
                                     label: ev.utm_content,
                                     date: ev.created_at,
                                     subLabel: 'Anúncio'
+                                });
+                            }
+                            if (ev.seller_name) {
+                                nodes.push({
+                                    id: ev.id + '_seller',
+                                    icon: '👤',
+                                    color: '#3b82f6',
+                                    label: ev.seller_name,
+                                    date: ev.created_at,
+                                    subLabel: 'Vendedora'
+                                });
+                            }
+                            if (ev.status_name) {
+                                nodes.push({
+                                    id: ev.id + '_status',
+                                    icon: '🏷️',
+                                    color: '#8b5cf6',
+                                    label: ev.status_name,
+                                    date: ev.created_at,
+                                    subLabel: 'Status'
                                 });
                             }
                         } else {
