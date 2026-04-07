@@ -496,8 +496,8 @@ router.post('/greatpages', async (req, res) => {
             event_label: journeyLabel,
             campaign_id: campaignId,
             campaign_name: campaignName,
-            seller_id: sellerId,
-            seller_name: sellerName,
+            seller_id: null, // Deixamos nulo aqui pois vamos criar um nó isolado da vendedora logo abaixo (se tiver)
+            seller_name: null,
             utm_source,
             utm_medium,
             utm_campaign,
@@ -509,6 +509,30 @@ router.post('/greatpages', async (req, res) => {
                 previous_campaign_id: existingInOtherCampaign?.campaign_id || null
             }
         }).catch(err => console.error('Journey entry event error:', err));
+
+        // Se herdou vendedora de uma campanha anterior, logar como vendedora histórica
+        if (sellerId && sourceLead && sourceLead.seller_id === sellerId) {
+            db.createJourneyEvent({
+                lead_id: newLead.id,
+                lead_phone: phone,
+                lead_email: generatedEmail,
+                event_type: 'seller_historical',
+                event_label: `Vendedora Histórica: ${sellerName}`,
+                seller_id: sellerId,
+                seller_name: sellerName
+            }).catch(err => console.error('Journey historical seller event error:', err));
+        } else if (sellerId) {
+            // Se foi round-robin normal
+            db.createJourneyEvent({
+                lead_id: newLead.id,
+                lead_phone: phone,
+                lead_email: generatedEmail,
+                event_type: 'seller_assigned',
+                event_label: `Vendedora Atribuída via Roleta: ${sellerName}`,
+                seller_id: sellerId,
+                seller_name: sellerName
+            }).catch(err => console.error('Journey assigned seller event error:', err));
+        }
 
         // Se re-entrada: registrar evento no lead anterior também
         if (existingInOtherCampaign) {

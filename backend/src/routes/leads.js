@@ -213,19 +213,34 @@ router.patch('/bulk/reassign', authorize('admin'), async (req, res) => {
             }
 
             const lead = await db.getLeadByUuid(uuid);
+            const previousSellerId = lead?.seller_id || null;
+            let previousSellerName = null;
+            if (previousSellerId && sellerCache[previousSellerId]) {
+                previousSellerName = sellerCache[previousSellerId].name;
+            } else if (previousSellerId) {
+                try { const s = await db.getUserById(previousSellerId); previousSellerName = s?.name || null; } catch(e) {}
+            }
+
             await db.updateLead(uuid, { seller_id: assignedSellerId });
 
-            // Log na jornada
+            // Log na jornada - mostra transição se havia vendedora anterior
             if (lead) {
-                db.createJourneyEvent({
-                    lead_id: lead.id,
-                    lead_phone: lead.phone,
-                    lead_email: lead.email,
-                    event_type: 'seller_assigned',
-                    event_label: `Vendedora atribuída por Admin: ${assignedSellerName || 'Nenhuma'}`,
-                    seller_id: assignedSellerId,
-                    seller_name: assignedSellerName
-                }).catch(e => console.error('Erro ao logar jornada bulk seller:', e));
+                const isSame = previousSellerId == assignedSellerId;
+                if (!isSame) {
+                    const label = previousSellerName
+                        ? `Vendedora transferida: ${previousSellerName} → ${assignedSellerName || 'Nenhuma'}`
+                        : `Vendedora atribuída: ${assignedSellerName || 'Nenhuma'}`;
+                    db.createJourneyEvent({
+                        lead_id: lead.id,
+                        lead_phone: lead.phone,
+                        lead_email: lead.email,
+                        event_type: previousSellerId ? 'seller_changed' : 'seller_assigned',
+                        event_label: label,
+                        seller_id: assignedSellerId,
+                        seller_name: assignedSellerName,
+                        metadata: { previous_seller_id: previousSellerId, previous_seller_name: previousSellerName }
+                    }).catch(e => console.error('Erro ao logar jornada bulk seller:', e));
+                }
             }
         }
 
@@ -563,18 +578,28 @@ router.patch('/:uuid/reassign', authorize('admin'), async (req, res) => {
         }
 
         const lead = await db.getLeadByUuid(uuid);
+        const previousSellerId = lead?.seller_id || null;
+        let previousSellerName = null;
+        if (previousSellerId) {
+            try { const s = await db.getUserById(previousSellerId); previousSellerName = s?.name || null; } catch(e) {}
+        }
+
         await db.updateLead(uuid, { seller_id: seller_id || null });
 
         try {
-            if (lead) {
+            if (lead && previousSellerId != seller_id) {
+                const label = previousSellerName
+                    ? `Vendedora transferida: ${previousSellerName} → ${sellerName || 'Nenhuma'}`
+                    : `Vendedora atribuída: ${sellerName || 'Nenhuma'}`;
                 await db.createJourneyEvent({
                     lead_id: lead.id,
                     lead_phone: lead.phone,
                     lead_email: lead.email,
-                    event_type: 'seller_assigned',
-                    event_label: `Vendedora reatribuída por Admin para: ${sellerName || 'Nenhuma'}`,
-                    seller_id: seller_id,
-                    seller_name: sellerName
+                    event_type: previousSellerId ? 'seller_changed' : 'seller_assigned',
+                    event_label: label,
+                    seller_id: seller_id || null,
+                    seller_name: sellerName,
+                    metadata: { previous_seller_id: previousSellerId, previous_seller_name: previousSellerName }
                 });
             }
         } catch(e) { console.error('Erro ao logar jornada seller:', e); }
