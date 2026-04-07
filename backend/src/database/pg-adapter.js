@@ -374,7 +374,7 @@ class QueryBuilder {
           );
           const placeholders = vals.map((_, i) => `$${i + 1}`);
           const sql = `INSERT INTO "${this._table}" (${cols.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
-          const res = await pool.query(sql, vals);
+          const res = await getPool().query(sql, vals);
           results.push(res.rows[0]);
         }
         const data = results.length === 1 ? results[0] : results;
@@ -394,7 +394,7 @@ class QueryBuilder {
         const where = this._buildWhere(allParams.length);
         allParams = [...allParams, ...this._params];
         const sql = `UPDATE "${this._table}" SET ${sets}${where} RETURNING *`;
-        const res = await pool.query(sql, allParams);
+        const res = await getPool().query(sql, allParams);
         if (this._isSingle || this._isMaybeSingle) {
           return { data: res.rows[0] || null, error: null };
         }
@@ -425,7 +425,7 @@ class QueryBuilder {
             conflictClause = ` ON CONFLICT DO NOTHING`;
           }
           const sql = `INSERT INTO "${this._table}" (${cols.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')})${conflictClause} RETURNING *`;
-          const res = await pool.query(sql, vals);
+          const res = await getPool().query(sql, vals);
           if (res.rows[0]) results.push(res.rows[0]);
         }
         if (this._isSingle || this._isMaybeSingle) return { data: results[0] || null, error: null };
@@ -436,7 +436,7 @@ class QueryBuilder {
       if (this._deleteFlag) {
         const where = this._buildWhere(0);
         const sql = `DELETE FROM "${this._table}"${where} RETURNING *`;
-        const res = await pool.query(sql, this._params);
+        const res = await getPool().query(sql, this._params);
         return { data: res.rows, error: null, count: res.rowCount };
       }
 
@@ -444,7 +444,7 @@ class QueryBuilder {
       if (this._isCount && this._isHead) {
         const where = this._buildWhere(0);
         const sql = `SELECT COUNT(*) FROM "${this._table}"${where}`;
-        const res = await pool.query(sql, this._params);
+        const res = await getPool().query(sql, this._params);
         return { count: parseInt(res.rows[0].count), data: null, error: null };
       }
 
@@ -455,7 +455,7 @@ class QueryBuilder {
 
       const selectCols = this._select || '*';
       const sql = `SELECT ${selectCols} FROM "${this._table}"${where}${order}${limit}${offset}`;
-      const res = await pool.query(sql, this._params);
+      const res = await getPool().query(sql, this._params);
 
       if (this._isSingle) {
         if (res.rows.length === 0) return { data: null, error: { code: 'PGRST116', message: 'No rows found' } };
@@ -470,7 +470,7 @@ class QueryBuilder {
       // Calcular o count ignorando LIMIT / OFFSET como o Supabase SDK faz
       if (this._isCount) {
         const countSql = `SELECT COUNT(*) FROM "${this._table}"${where}`;
-        const countRes = await pool.query(countSql, this._params);
+        const countRes = await getPool().query(countSql, this._params);
         result.count = parseInt(countRes.rows[0].count, 10);
       }
       
