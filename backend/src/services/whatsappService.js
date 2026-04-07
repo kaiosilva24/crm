@@ -370,14 +370,29 @@ export async function initializeWhatsAppConnection(connectionId, usePairingCode 
     }
 }
 
+// Map para controlar o tempo da última sincronização de grupos por conexão
+const lastGroupSync = new Map();
+
 /**
- * Sincronizar grupos do WhatsApp
+ * Função para buscar e salvar grupos do WhatsApp
  */
-async function syncWhatsAppGroups(connectionId, sock) {
+export async function syncWhatsAppGroups(connectionId, sock) {
     try {
-        console.log('🔄 Sincronizando grupos...');
-        console.log('📱 Connection ID:', connectionId);
+        console.log(`\n🔄 Sincronizando grupos...`);
+        console.log(`📱 Connection ID: ${connectionId}`);
         console.log('🔌 Socket ativo:', !!sock);
+
+        const now = Date.now();
+        const lastSyncTime = lastGroupSync.get(connectionId) || 0;
+        
+        // Se tentou sincronizar há menos de 15 minutos, ignora para evitar Rate Limit ban
+        if (now - lastSyncTime < 15 * 60 * 1000) {
+            console.log('⏳ Sincronização de grupos ignorada (Rate limit protection - aguarde 15min entre sincronizações)');
+            return;
+        }
+
+        // Atualiza a tentativa
+        lastGroupSync.set(connectionId, now);
 
         // Aguardar 2 segundos antes de buscar grupos (evitar rate-limit)
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -432,7 +447,8 @@ async function syncWhatsAppGroups(connectionId, sock) {
 
         // Se for rate-limit, avisar e NÃO tentar reconectar imediatamente
         if (error.message?.includes('rate-overlimit') || error.data === 429) {
-            console.log('⏰ Rate limit atingido. Aguarde 60 segundos antes de tentar novamente.');
+            console.log('⏰ Rate limit atingido. Sincronização bloqueada por 1 hora.');
+            lastGroupSync.set(connectionId, Date.now() + (60 * 60 * 1000)); // Punição de 1 hora
             throw error; // Propagar erro para evitar reconexão automática
         }
     }
