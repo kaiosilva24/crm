@@ -114,155 +114,186 @@ export default function LeadJourney({ leadId, phone }) {
                 paddingBottom: 4,
                 scrollbarWidth: 'thin',
             }}>
-                {events.map((event, idx) => {
-                    const color = EVENT_COLORS[event.event_type] || EVENT_COLORS.default;
-                    const icon = EVENT_ICONS[event.event_type] || EVENT_ICONS.default;
-                    const label = EVENT_LABELS_PT[event.event_type] || event.event_type;
-                    const isExpanded = expandedEvent === event.id;
-                    const hasUtm = event.utm_campaign || event.utm_content || event.utm_source;
+                {(() => {
+                    const nodes = [];
+                    events.forEach(ev => {
+                        // Se for entrada ou re-entrada, podemos quebrar em vários
+                        if (ev.event_type === 'entry' || ev.event_type === 're_entry') {
+                            nodes.push({
+                                id: ev.id + '_base',
+                                originalId: ev.id,
+                                icon: EVENT_ICONS[ev.event_type] || EVENT_ICONS.default,
+                                color: EVENT_COLORS[ev.event_type] || EVENT_COLORS.default,
+                                label: EVENT_LABELS_PT[ev.event_type] || ev.event_type,
+                                date: ev.created_at,
+                                details: [{ label: 'Evento', value: ev.event_label }]
+                            });
+            
+                            if (ev.utm_source) {
+                                nodes.push({
+                                    id: ev.id + '_source',
+                                    icon: '🌐',
+                                    color: '#6366f1',
+                                    label: formatUtmValue('source', ev.utm_source),
+                                    date: ev.created_at,
+                                });
+                            }
+                            if (ev.utm_medium) {
+                                nodes.push({
+                                    id: ev.id + '_medium',
+                                    icon: '📊',
+                                    color: '#8b5cf6',
+                                    label: formatUtmValue('medium', ev.utm_medium),
+                                    date: ev.created_at,
+                                });
+                            }
+                            if (ev.utm_campaign || ev.campaign_name) {
+                                nodes.push({
+                                    id: ev.id + '_campaign',
+                                    icon: '🎯',
+                                    color: '#ec4899',
+                                    label: ev.utm_campaign || ev.campaign_name,
+                                    date: ev.created_at,
+                                    subLabel: 'Campanha'
+                                });
+                            }
+                            if (ev.utm_term) {
+                                nodes.push({
+                                    id: ev.id + '_term',
+                                    icon: '👥',
+                                    color: '#f59e0b',
+                                    label: ev.utm_term,
+                                    date: ev.created_at,
+                                    subLabel: 'Conjunto'
+                                });
+                            }
+                            if (ev.utm_content) {
+                                nodes.push({
+                                    id: ev.id + '_content',
+                                    icon: '🖼️',
+                                    color: '#10b981',
+                                    label: ev.utm_content,
+                                    date: ev.created_at,
+                                    subLabel: 'Anúncio'
+                                });
+                            }
+                        } else {
+                            // Qualquer outro evento (vendedora, status, nota)
+                            nodes.push({
+                                id: ev.id,
+                                originalId: ev.id,
+                                icon: EVENT_ICONS[ev.event_type] || EVENT_ICONS.default,
+                                color: EVENT_COLORS[ev.event_type] || EVENT_COLORS.default,
+                                label: ev.event_type === 'seller_assigned' && ev.seller_name 
+                                        ? ev.seller_name 
+                                        : ev.event_type === 'status_change' && ev.status_name 
+                                            ? ev.status_name 
+                                            : (EVENT_LABELS_PT[ev.event_type] || ev.event_type),
+                                subLabel: EVENT_LABELS_PT[ev.event_type],
+                                date: ev.created_at,
+                                details: [
+                                    ev.event_label && { label: 'Detalhes', value: ev.event_label }
+                                ].filter(Boolean)
+                            });
+                        }
+                    });
 
-                    return (
-                        <div key={event.id} style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
-                            {/* Dot + Card */}
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                {/* Card de evento */}
-                                <div
-                                    onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
-                                    title={event.event_label || label}
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'flex-start',
-                                        gap: 2,
-                                        padding: '4px 8px',
-                                        borderRadius: 6,
-                                        background: isExpanded
-                                            ? `rgba(${hexToRgb(color)}, 0.15)`
-                                            : `rgba(${hexToRgb(color)}, 0.08)`,
-                                        border: `1px solid rgba(${hexToRgb(color)}, ${isExpanded ? 0.5 : 0.25})`,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.15s ease',
-                                        minWidth: 100,
-                                        maxWidth: 220,
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span style={{ fontSize: '0.7rem' }}>{icon}</span>
-                                        <span style={{
-                                            fontSize: '0.7rem',
-                                            fontWeight: 600,
-                                            color,
-                                            whiteSpace: 'nowrap'
-                                        }}>
-                                            {label}
-                                        </span>
-                                    </div>
-                                    <span style={{
-                                        fontSize: '0.65rem',
-                                        color: 'var(--text-secondary)',
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        {formatDateShort(event.created_at)}
-                                    </span>
-
-                                    {/* UTMs sempre visíveis no formato Minimalista */}
-                                    {hasUtm && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6, width: '100%' }}>
-                                            {event.utm_source && (
-                                                <div style={{
-                                                    fontSize: '0.6rem',
-                                                    background: `rgba(${hexToRgb(color)}, 0.2)`,
-                                                    color: color,
-                                                    padding: '2px 6px',
-                                                    borderRadius: 4,
-                                                    fontWeight: 600,
-                                                    display: 'inline-block',
-                                                    whiteSpace: 'nowrap',
-                                                    textOverflow: 'ellipsis',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    {formatUtmValue('source', event.utm_source)}
-                                                </div>
-                                            )}
-                                            {event.utm_medium && (
-                                                <div style={{
-                                                    fontSize: '0.6rem',
-                                                    background: `rgba(${hexToRgb(color)}, 0.1)`,
-                                                    border: `1px solid rgba(${hexToRgb(color)}, 0.3)`,
-                                                    color: 'var(--text-secondary)',
-                                                    padding: '1px 5px',
-                                                    borderRadius: 4,
-                                                    fontWeight: 500,
-                                                    display: 'inline-block',
-                                                    whiteSpace: 'nowrap',
-                                                    textOverflow: 'ellipsis',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    {formatUtmValue('medium', event.utm_medium)}
-                                                </div>
-                                            )}
+                    return nodes.map((node, idx) => {
+                        const isExpanded = expandedEvent === node.id;
+                        
+                        return (
+                            <div key={node.id} style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div
+                                        onClick={() => setExpandedEvent(isExpanded ? null : node.id)}
+                                        style={{
+                                            padding: '4px 8px',
+                                            borderRadius: 6,
+                                            background: isExpanded
+                                                ? `rgba(${hexToRgb(node.color)}, 0.15)`
+                                                : `rgba(${hexToRgb(node.color)}, 0.08)`,
+                                            border: `1px solid rgba(${hexToRgb(node.color)}, ${isExpanded ? 0.5 : 0.25})`,
+                                            cursor: node.details && node.details.length > 0 ? 'pointer' : 'default',
+                                            transition: 'all 0.15s ease',
+                                            minWidth: 80,
+                                            maxWidth: 180,
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <span style={{ fontSize: '0.7rem' }}>{node.icon}</span>
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                fontWeight: 600,
+                                                color: node.color,
+                                                whiteSpace: 'nowrap',
+                                                textOverflow: 'ellipsis',
+                                                overflow: 'hidden'
+                                            }}>
+                                                {node.label}
+                                            </span>
                                         </div>
-                                    )}
-
-                                    {/* Detalhes expandidos */}
-                                    {isExpanded && (
-                                        <div style={{
-                                            marginTop: 6,
-                                            borderTop: `1px solid rgba(${hexToRgb(color)}, 0.2)`,
-                                            paddingTop: 6,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 3,
-                                        }}>
-                                            {event.event_label && (
-                                                <InfoLine label="Evento" value={event.event_label} />
-                                            )}
-                                            {event.campaign_name && (
-                                                <InfoLine label="Campanha" value={event.campaign_name} />
-                                            )}
-                                            {event.seller_name && (
-                                                <InfoLine label="Vendedora" value={event.seller_name} />
-                                            )}
-                                            {event.status_name && (
-                                                <InfoLine label="Status" value={event.status_name} />
-                                            )}
-                                            {hasUtm && (
-                                                <div style={{ marginTop: 4 }}>
+                                        {(node.subLabel || node.date) && (
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                flexDirection: 'column', 
+                                                marginTop: 2 
+                                            }}>
+                                                {node.subLabel && (
+                                                    <span style={{
+                                                        fontSize: '0.55rem',
+                                                        color: node.color,
+                                                        opacity: 0.8,
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.02em',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {node.subLabel}
+                                                    </span>
+                                                )}
+                                                {node.date && (
                                                     <span style={{
                                                         fontSize: '0.6rem',
-                                                        fontWeight: 700,
-                                                        color,
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.05em'
+                                                        color: 'var(--text-secondary)',
+                                                        whiteSpace: 'nowrap'
                                                     }}>
-                                                        UTMs
+                                                        {formatDateShort(node.date)}
                                                     </span>
-                                                    {event.utm_source && <InfoLine label="Fonte" value={formatUtmValue('source', event.utm_source)} />}
-                                                    {event.utm_medium && <InfoLine label="Meio" value={formatUtmValue('medium', event.utm_medium)} />}
-                                                    {event.utm_campaign && <InfoLine label="Campanha" value={event.utm_campaign} />}
-                                                    {event.utm_content && <InfoLine label="Anúncio" value={event.utm_content} />}
-                                                    {event.utm_term && <InfoLine label="Conjunto" value={event.utm_term} />}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                                )}
+                                            </div>
+                                        )}
 
-                            {/* Linha conectora */}
-                            {idx < events.length - 1 && (
-                                <div style={{
-                                    width: 14,
-                                    height: 1,
-                                    background: 'rgba(148, 163, 184, 0.35)',
-                                    alignSelf: 'center',
-                                    flexShrink: 0,
-                                    marginTop: -8
-                                }} />
-                            )}
-                        </div>
-                    );
-                })}
+                                        {isExpanded && node.details && node.details.length > 0 && (
+                                            <div style={{
+                                                marginTop: 6,
+                                                borderTop: `1px solid rgba(${hexToRgb(node.color)}, 0.2)`,
+                                                paddingTop: 6,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 3,
+                                            }}>
+                                                {node.details.map((det, i) => (
+                                                    <InfoLine key={i} label={det.label} value={det.value} />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Linha conectora */}
+                                {idx < nodes.length - 1 && (
+                                    <div style={{
+                                        width: 20,
+                                        height: 1,
+                                        background: 'rgba(148, 163, 184, 0.35)',
+                                        alignSelf: 'center',
+                                        flexShrink: 0,
+                                        marginTop: -8
+                                    }} />
+                                )}
+                            </div>
+                        );
+                    });
+                })()}
             </div>
         </div>
     );
