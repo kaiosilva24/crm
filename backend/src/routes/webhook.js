@@ -431,13 +431,14 @@ router.post('/greatpages', async (req, res) => {
         let isHistorical = false;
         if (!sellerId && phone && phone.length >= 8) {
             const phoneEnd = phone.replace(/\D/g, '').slice(-8);
-            const { data: histEvents } = await supabase
-                .from('journey_events')
+            const { data: histEvents, error: histErr } = await supabase
+                .from('lead_journey_events')
                 .select('seller_id, seller_name')
                 .ilike('lead_phone', `%${phoneEnd}`)
                 .not('seller_id', 'is', null)
                 .order('created_at', { ascending: false })
                 .limit(1);
+            if (histErr) console.error('   ❌ Erro ao buscar histórico global:', histErr);
             
             if (histEvents && histEvents.length > 0) {
                 sellerId = histEvents[0].seller_id;
@@ -446,13 +447,14 @@ router.post('/greatpages', async (req, res) => {
             }
         }
         if (!sellerId && !isHistorical && email) {
-            const { data: histEvents } = await supabase
-                .from('journey_events')
+            const { data: histEvents, error: histErr } = await supabase
+                .from('lead_journey_events')
                 .select('seller_id, seller_name')
                 .eq('lead_email', email.toLowerCase())
                 .not('seller_id', 'is', null)
                 .order('created_at', { ascending: false })
                 .limit(1);
+            if (histErr) console.error('   ❌ Erro ao buscar histórico global por email:', histErr);
             if (histEvents && histEvents.length > 0) {
                 sellerId = histEvents[0].seller_id;
                 isHistorical = true;
