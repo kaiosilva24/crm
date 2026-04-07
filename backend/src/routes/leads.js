@@ -884,6 +884,18 @@ router.delete('/bulk', authorize('admin'), async (req, res) => {
         }
 
         for (const uuid of lead_uuids) {
+            const lead = await db.getLeadByUuid(uuid);
+            if (lead) {
+                await db.createJourneyEvent({
+                    lead_id: lead.id,
+                    lead_phone: lead.phone,
+                    lead_email: lead.email,
+                    event_type: 'lead_deleted',
+                    event_label: `Lead excluído do CRM via ação em massa`,
+                    seller_id: lead.seller_id,
+                    seller_name: lead.seller_name
+                }).catch(e => console.error('Error logging lead_deleted bulk', e));
+            }
             await db.deleteLead(uuid);
         }
 
@@ -899,6 +911,19 @@ router.delete('/bulk', authorize('admin'), async (req, res) => {
  */
 router.delete('/:uuid', authorize('admin'), async (req, res) => {
     try {
+        const lead = await db.getLeadByUuid(req.params.uuid);
+        if (lead) {
+            db.createJourneyEvent({
+                lead_id: lead.id,
+                lead_phone: lead.phone,
+                lead_email: lead.email,
+                event_type: 'lead_deleted',
+                event_label: `Lead excluído do CRM`,
+                seller_id: lead.seller_id,
+                seller_name: lead.seller_name
+            }).catch(e => console.error('Error logging lead_deleted', e));
+        }
+
         const result = await db.deleteLead(req.params.uuid);
         if (result.changes === 0) {
             return res.status(404).json({ error: 'Lead não encontrado' });

@@ -1409,7 +1409,9 @@ export default function Leads() {
                                         {isJourneyOpen && (
                                             <tr key={`${lead.uuid}-journey`} style={{ background: 'rgba(99, 102, 241, 0.02)' }}>
                                                 <td colSpan={isAdmin ? 11 : 10} style={{ padding: 0, border: 'none' }}>
-                                                    <LeadJourney leadId={lead.id} phone={lead.phone} />
+                                                    <div style={{ width: 0, minWidth: '100%', overflowX: 'auto' }}>
+                                                        <LeadJourney leadId={lead.id} phone={lead.phone} />
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )}
