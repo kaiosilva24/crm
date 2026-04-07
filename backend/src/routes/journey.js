@@ -19,7 +19,6 @@ router.get('/lead/:leadId', async (req, res) => {
     try {
         const { leadId } = req.params;
 
-        // Buscar o lead para obter telefone e email
         const { data: lead, error: leadError } = await supabase
             .from('leads')
             .select('id, phone, email, first_name')
@@ -30,38 +29,38 @@ router.get('/lead/:leadId', async (req, res) => {
             return res.status(404).json({ error: 'Lead não encontrado' });
         }
 
-        // Buscar eventos da jornada unificados (por telefone OU por lead_id)
-        let events = [];
+        let allEvents = [];
 
-        if (lead.phone && lead.phone.length >= 8) {
-            // Buscar por telefone (normalizar para últimos 8 dígitos)
+        // Query 1: por lead_id diretamente
+        const { data: byId } = await supabase
+            .from('lead_journey_events')
+            .select('*')
+            .eq('lead_id', lead.id)
+            .order('created_at', { ascending: true });
+
+        if (byId) allEvents.push(...byId);
+
+        // Query 2: por telefone (últimos 8 dígitos)
+        if (lead.phone && lead.phone.replace(/\D/g, '').length >= 8) {
             const phoneEnd = lead.phone.replace(/\D/g, '').slice(-8);
-
-            const { data, error } = await supabase
+            const { data: byPhone } = await supabase
                 .from('lead_journey_events')
                 .select('*')
-                .or(`lead_id.eq.${lead.id},lead_phone.ilike.%${phoneEnd}`)
+                .ilike('lead_phone', `%${phoneEnd}`)
                 .order('created_at', { ascending: true });
 
-            if (!error) events = data || [];
-        } else {
-            // Fallback: buscar só por lead_id
-            const { data, error } = await supabase
-                .from('lead_journey_events')
-                .select('*')
-                .eq('lead_id', lead.id)
-                .order('created_at', { ascending: true });
-
-            if (!error) events = data || [];
+            if (byPhone) allEvents.push(...byPhone);
         }
 
-        // Remover duplicatas por ID
+        // Remover duplicatas por ID e ordenar por data
         const seen = new Set();
-        const uniqueEvents = events.filter(e => {
-            if (seen.has(e.id)) return false;
-            seen.add(e.id);
-            return true;
-        });
+        const uniqueEvents = allEvents
+            .filter(e => {
+                if (seen.has(e.id)) return false;
+                seen.add(e.id);
+                return true;
+            })
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         res.json({
             lead_id: lead.id,
@@ -74,6 +73,7 @@ router.get('/lead/:leadId', async (req, res) => {
         res.status(500).json({ error: 'Erro ao buscar jornada do lead' });
     }
 });
+
 
 /**
  * GET /api/journey/phone/:phone
