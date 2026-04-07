@@ -508,7 +508,7 @@ export const supabase = {
     getUser: async () => ({ data: { user: null }, error: null }),
   },
   // Acesso ao pool direto se necessário
-  _pool: pool,
+  get _pool() { return getPool(); },
 };
 
 export default supabase;
