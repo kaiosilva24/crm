@@ -6,6 +6,7 @@ const EVENT_ICONS = {
     re_entry: '🔄',
     seller_assigned: '👤',
     seller_changed: '👥',
+    seller_removed: '❌',
     seller_historical: '⏳',
     status_change: '🏷️',
     campaign_change: '📣',
@@ -20,6 +21,7 @@ const EVENT_COLORS = {
     re_entry: '#f59e0b',
     seller_assigned: '#3b82f6',
     seller_changed: '#2563eb',
+    seller_removed: '#ef4444',
     seller_historical: '#64748b',
     status_change: '#8b5cf6',
     campaign_change: '#ec4899',
@@ -33,6 +35,7 @@ const EVENT_LABELS_PT = {
     re_entry: 'Re-entrada',
     seller_assigned: 'Atribuição',
     seller_changed: 'Transf. de Vendedora',
+    seller_removed: 'Vendedora Removida',
     seller_historical: 'Vendedora Histórica',
     status_change: 'Status',
     campaign_change: 'Campanha',
@@ -235,9 +238,11 @@ export default function LeadJourney({ leadId, phone }) {
                                 color: EVENT_COLORS[ev.event_type] || EVENT_COLORS.default,
                                 label: (ev.event_type === 'seller_assigned' || ev.event_type === 'seller_changed' || ev.event_type === 'seller_historical') && ev.seller_name 
                                         ? ev.seller_name 
-                                        : ev.event_type === 'status_change' && ev.status_name 
-                                            ? ev.status_name 
-                                            : (EVENT_LABELS_PT[ev.event_type] || ev.event_type),
+                                        : ev.event_type === 'seller_removed'
+                                            ? 'Sem Vendedora'
+                                            : ev.event_type === 'status_change' && ev.status_name 
+                                                ? ev.status_name 
+                                                : (EVENT_LABELS_PT[ev.event_type] || ev.event_type),
                                 subLabel: EVENT_LABELS_PT[ev.event_type],
                                 date: ev.created_at,
                                 details: [

@@ -227,14 +227,21 @@ router.patch('/bulk/reassign', authorize('admin'), async (req, res) => {
             if (lead) {
                 const isSame = previousSellerId == assignedSellerId;
                 if (!isSame) {
+                    let eventType = 'seller_assigned';
+                    if (!assignedSellerId && previousSellerId) {
+                        eventType = 'seller_removed';
+                    } else if (previousSellerId && assignedSellerId) {
+                        eventType = 'seller_changed';
+                    }
+
                     const label = previousSellerName
-                        ? `Vendedora transferida: ${previousSellerName} → ${assignedSellerName || 'Nenhuma'}`
+                        ? (assignedSellerId ? `Vendedora transferida: ${previousSellerName} → ${assignedSellerName || 'Nenhuma'}` : `Vendedora removida (era ${previousSellerName})`)
                         : `Vendedora atribuída: ${assignedSellerName || 'Nenhuma'}`;
                     db.createJourneyEvent({
                         lead_id: lead.id,
                         lead_phone: lead.phone,
                         lead_email: lead.email,
-                        event_type: previousSellerId ? 'seller_changed' : 'seller_assigned',
+                        event_type: eventType,
                         event_label: label,
                         seller_id: assignedSellerId,
                         seller_name: assignedSellerName,
@@ -591,11 +598,18 @@ router.patch('/:uuid/reassign', authorize('admin'), async (req, res) => {
                 const label = previousSellerName
                     ? `Vendedora transferida: ${previousSellerName} → ${sellerName || 'Nenhuma'}`
                     : `Vendedora atribuída: ${sellerName || 'Nenhuma'}`;
+                let eventType = 'seller_assigned';
+                if (!seller_id && previousSellerId) {
+                    eventType = 'seller_removed';
+                } else if (previousSellerId && seller_id) {
+                    eventType = 'seller_changed';
+                }
+
                 await db.createJourneyEvent({
                     lead_id: lead.id,
                     lead_phone: lead.phone,
                     lead_email: lead.email,
-                    event_type: previousSellerId ? 'seller_changed' : 'seller_assigned',
+                    event_type: eventType,
                     event_label: label,
                     seller_id: seller_id || null,
                     seller_name: sellerName,

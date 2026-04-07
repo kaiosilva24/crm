@@ -425,6 +425,41 @@ router.post('/greatpages', async (req, res) => {
             }
         }
 
+        // --- BUSCA HISTÓRICA GLOBAL DE VENDEDORA ---
+        // Se a campanha não espelha, ou espelha mas o lead anterior estava sem vendedora,
+        // vamos olhar para TODO o histórico do CRM para este número e puxar a última vendedora que ele teve.
+        let isHistorical = false;
+        if (!sellerId && phone && phone.length >= 8) {
+            const phoneEnd = phone.replace(/\D/g, '').slice(-8);
+            const { data: histEvents } = await supabase
+                .from('journey_events')
+                .select('seller_id, seller_name')
+                .ilike('lead_phone', `%${phoneEnd}`)
+                .not('seller_id', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            if (histEvents && histEvents.length > 0) {
+                sellerId = histEvents[0].seller_id;
+                isHistorical = true;
+                console.log(`   ⏳ Vendedora resgatada do histórico global da jornada: ID ${sellerId}`);
+            }
+        }
+        if (!sellerId && !isHistorical && email) {
+            const { data: histEvents } = await supabase
+                .from('journey_events')
+                .select('seller_id, seller_name')
+                .eq('lead_email', email.toLowerCase())
+                .not('seller_id', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (histEvents && histEvents.length > 0) {
+                sellerId = histEvents[0].seller_id;
+                isHistorical = true;
+                console.log(`   ⏳ Vendedora resgatada do histórico global por email: ID ${sellerId}`);
+            }
+        }
+
         // Verificar se o lead existe em OUTRA campanha (re-entrada cross-campanha)
         let existingInOtherCampaign = null;
         if (phone && phone.length >= 8) {
@@ -510,8 +545,8 @@ router.post('/greatpages', async (req, res) => {
             }
         }).catch(err => console.error('Journey entry event error:', err));
 
-        // Se herdou vendedora de uma campanha anterior, logar como vendedora histórica
-        if (sellerId && sourceLead && sourceLead.seller_id === sellerId) {
+        // Se herdou vendedora de uma campanha anterior local OU do histórico global, logar como vendedora histórica
+        if (sellerId && (isHistorical || (sourceLead && sourceLead.seller_id === sellerId))) {
             db.createJourneyEvent({
                 lead_id: newLead.id,
                 lead_phone: phone,
