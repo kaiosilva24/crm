@@ -142,8 +142,8 @@ export default function LeadJourney({ leadId, phone }) {
                                         border: `1px solid rgba(${hexToRgb(color)}, ${isExpanded ? 0.5 : 0.25})`,
                                         cursor: 'pointer',
                                         transition: 'all 0.15s ease',
-                                        minWidth: 80,
-                                        maxWidth: 160,
+                                        minWidth: 100,
+                                        maxWidth: 220,
                                     }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -164,6 +164,45 @@ export default function LeadJourney({ leadId, phone }) {
                                     }}>
                                         {formatDateShort(event.created_at)}
                                     </span>
+
+                                    {/* UTMs sempre visíveis no formato Minimalista */}
+                                    {hasUtm && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6, width: '100%' }}>
+                                            {event.utm_source && (
+                                                <div style={{
+                                                    fontSize: '0.6rem',
+                                                    background: `rgba(${hexToRgb(color)}, 0.2)`,
+                                                    color: color,
+                                                    padding: '2px 6px',
+                                                    borderRadius: 4,
+                                                    fontWeight: 600,
+                                                    display: 'inline-block',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    {formatUtmValue('source', event.utm_source)}
+                                                </div>
+                                            )}
+                                            {event.utm_medium && (
+                                                <div style={{
+                                                    fontSize: '0.6rem',
+                                                    background: `rgba(${hexToRgb(color)}, 0.1)`,
+                                                    border: `1px solid rgba(${hexToRgb(color)}, 0.3)`,
+                                                    color: 'var(--text-secondary)',
+                                                    padding: '1px 5px',
+                                                    borderRadius: 4,
+                                                    fontWeight: 500,
+                                                    display: 'inline-block',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    {formatUtmValue('medium', event.utm_medium)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Detalhes expandidos */}
                                     {isExpanded && (
