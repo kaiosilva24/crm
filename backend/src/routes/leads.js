@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Leads Routes - Supabase Version
  */
 
@@ -394,8 +394,6 @@ router.patch('/:uuid/status', async (req, res) => {
         const { uuid } = req.params;
         const { status_id } = req.body;
 
-        // status_id pode ser null para limpar o status
-
         const lead = await db.getLeadByUuid(uuid);
         if (!lead) {
             return res.status(404).json({ error: 'Lead não encontrado' });
@@ -406,6 +404,26 @@ router.patch('/:uuid/status', async (req, res) => {
         }
 
         await db.updateLead(uuid, { status_id: status_id || null });
+
+        // Log na jornada
+        try {
+            let statusName = 'Sem Status';
+            if (status_id) {
+                const statuses = await db.getStatuses();
+                const st = statuses.find(s => s.id == status_id);
+                if (st) statusName = st.name;
+            }
+            
+            await db.createJourneyEvent({
+                lead_id: lead.id,
+                lead_phone: lead.phone,
+                lead_email: lead.email,
+                event_type: 'status_change',
+                event_label: `Status alterado para: ${statusName} por ${req.user.name}`,
+                status_name: statusName
+            });
+        } catch(e) { console.error('Erro ao logar jornada status:', e); }
+
         res.json({ message: 'Status atualizado com sucesso' });
     } catch (error) {
         console.error('Error updating lead status:', error);
@@ -423,7 +441,6 @@ router.patch('/:uuid/details', async (req, res) => {
         const { uuid } = req.params;
         const { first_name, email, phone } = req.body;
 
-        // Validate at least one field is provided
         if (!first_name && !email && !phone) {
             return res.status(400).json({ error: 'Pelo menos um campo deve ser fornecido' });
         }
@@ -433,12 +450,10 @@ router.patch('/:uuid/details', async (req, res) => {
             return res.status(404).json({ error: 'Lead não encontrado' });
         }
 
-        // Permission check: sellers can only edit their own leads
         if (req.user.role === 'seller' && lead.seller_id !== req.user.id) {
             return res.status(403).json({ error: 'Sem permissão para atualizar este lead' });
         }
 
-        // Validate email format if provided
         if (email !== undefined && email !== null && email.trim() !== '') {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email.trim())) {
@@ -446,7 +461,6 @@ router.patch('/:uuid/details', async (req, res) => {
             }
         }
 
-        // Build update object with only provided fields
         const updateData = {};
         if (first_name !== undefined) updateData.first_name = first_name?.trim() || null;
         if (email !== undefined) updateData.email = email?.trim()?.toLowerCase() || null;
@@ -454,25 +468,19 @@ router.patch('/:uuid/details', async (req, res) => {
 
         await db.updateLead(uuid, updateData);
 
-        // Return updated lead
         const updatedLead = await db.getLeadByUuid(uuid);
         res.json({
             message: 'Lead atualizado com sucesso',
             lead: updatedLead
         });
     } catch (error) {
-        console.error('Error updating lead details:', error);
-
-        // Handle Unique Violation
         if (error.code === '23505') {
             return res.status(409).json({
                 error: 'Este email ou telefone já está cadastrado em outro lead.',
                 details: 'Duplicidade encontrada'
             });
         }
-
-        const errorMessage = error.message || 'Erro ao atualizar lead';
-        res.status(500).json({ error: errorMessage });
+        res.status(500).json({ error: error.message || 'Erro ao atualizar lead' });
     }
 });
 
@@ -504,6 +512,17 @@ router.patch('/:uuid/observation', async (req, res) => {
             : newObservation;
 
         await db.updateLead(uuid, { observations: updatedObservations });
+
+        try {
+            await db.createJourneyEvent({
+                lead_id: lead.id,
+                lead_phone: lead.phone,
+                lead_email: lead.email,
+                event_type: 'note',
+                event_label: observation.trim()
+            });
+        } catch(e) { console.error('Erro ao logar jornada observacao:', e); }
+
         res.json({ message: 'Observação adicionada com sucesso', observations: updatedObservations });
     } catch (error) {
         console.error('Error adding observation:', error);
@@ -519,14 +538,32 @@ router.patch('/:uuid/reassign', authorize('admin'), async (req, res) => {
         const { uuid } = req.params;
         const { seller_id } = req.body;
 
+        let sellerName = null;
         if (seller_id) {
             const seller = await db.getUserById(seller_id);
             if (!seller || seller.role !== 'seller' || !seller.is_active) {
                 return res.status(400).json({ error: 'Vendedora não encontrada ou inativa' });
             }
+            sellerName = seller.name;
         }
 
+        const lead = await db.getLeadByUuid(uuid);
         await db.updateLead(uuid, { seller_id: seller_id || null });
+
+        try {
+            if (lead) {
+                await db.createJourneyEvent({
+                    lead_id: lead.id,
+                    lead_phone: lead.phone,
+                    lead_email: lead.email,
+                    event_type: 'seller_assigned',
+                    event_label: `Vendedora reatribuída por Admin para: ${sellerName || 'Nenhuma'}`,
+                    seller_id: seller_id,
+                    seller_name: sellerName
+                });
+            }
+        } catch(e) { console.error('Erro ao logar jornada seller:', e); }
+
         res.json({ message: 'Lead reatribuído com sucesso' });
     } catch (error) {
         console.error('Error reassigning lead:', error);
@@ -547,13 +584,24 @@ router.patch('/:uuid/self-assign', async (req, res) => {
             return res.status(404).json({ error: 'Lead não encontrado' });
         }
 
-        // Only allow if lead is currently unassigned
         if (lead.seller_id !== null) {
             return res.status(400).json({ error: 'Lead já está atribuído' });
         }
 
-        // Assign to current user (seller)
         await db.updateLead(uuid, { seller_id: req.user.id });
+
+        try {
+            await db.createJourneyEvent({
+                lead_id: lead.id,
+                lead_phone: lead.phone,
+                lead_email: lead.email,
+                event_type: 'seller_assigned',
+                event_label: `Auto-atribuído para vendedora: ${req.user.name}`,
+                seller_id: req.user.id,
+                seller_name: req.user.name
+            });
+        } catch(e) { console.error('Erro ao logar jornada seller:', e); }
+
         res.json({ message: 'Lead atribuído com sucesso' });
     } catch (error) {
         console.error('Error self-assigning lead:', error);

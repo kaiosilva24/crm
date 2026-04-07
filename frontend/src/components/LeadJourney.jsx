@@ -104,16 +104,29 @@ export default function LeadJourney({ leadId, phone }) {
             padding: '6px 12px 10px 52px',
             background: 'rgba(99, 102, 241, 0.03)',
             borderTop: '1px dashed rgba(99, 102, 241, 0.15)',
+            /* Previne que o scroll horizontal vaze para a linha do lead */
+            contain: 'layout',
         }}>
-            {/* Timeline horizontal em linha */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 0,
-                overflowX: 'auto',
-                paddingBottom: 4,
-                scrollbarWidth: 'thin',
-            }}>
+            {/* Timeline horizontal em linha com scroll próprio */}
+            <div
+                className="lead-journey-scroll"
+                style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0,
+                    overflowX: 'auto',
+                    overflowY: 'visible',
+                    paddingBottom: 6,
+                    /* Permite que cards expandidos não sejam cortados */
+                    paddingTop: 2,
+                    /* Scrollbar personalizada via webkit */
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(99,102,241,0.35) transparent',
+                    // Garante que a área de scroll não cruze com colunas da tabela
+                    maxWidth: '100%',
+                    width: 'max-content',
+                    minWidth: '100%',
+                }}>
                 {(() => {
                     const nodes = [];
                     events.forEach(ev => {
