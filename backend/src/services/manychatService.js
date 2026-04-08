@@ -387,6 +387,37 @@ export async function setWhatsAppOptIn(subscriberId, phone, apiToken) {
     }
 }
 
+// Cache em memória para evitar chamadas repetidas à API
+const _customFieldCache = {};
+
+/**
+ * Buscar ID real do campo personalizado pelo nome (via /fb/page/getCustomFields)
+ * O ID do tooltip no ManyChat UI pode differ do ID real da API
+ */
+export async function getCustomFieldIdByName(fieldName, apiToken) {
+    if (_customFieldCache[fieldName]) return _customFieldCache[fieldName];
+    try {
+        const response = await axios.get(`${MANYCHAT_API_BASE}/fb/page/getCustomFields`, {
+            headers: { 'Authorization': `Bearer ${apiToken}` }
+        });
+        if (response.data?.data) {
+            const field = response.data.data.find(f =>
+                f.name.toLowerCase().trim() === fieldName.toLowerCase().trim()
+            );
+            if (field) {
+                console.log(`✅ Campo "${fieldName}" encontrado com ID: ${field.id}`);
+                _customFieldCache[fieldName] = field.id;
+                return field.id;
+            }
+        }
+        console.warn(`⚠️ Campo personalizado "${fieldName}" não encontrado no ManyChat`);
+        return null;
+    } catch (err) {
+        console.error('Erro ao buscar campos personalizados:', err.message);
+        return null;
+    }
+}
+
 /**
  * Find subscriber by Custom Field
  * UPDATED: Tries multiple formats for phone numbers (with/without +)

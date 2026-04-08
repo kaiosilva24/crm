@@ -6,6 +6,7 @@ import {
     findSubscriberByPhone,
     findSubscriberByWhatsApp,
     findSubscriberByCustomField,
+    getCustomFieldIdByName,
     findSubscriberByName,
     deleteSubscriber,
     createSubscriber,
@@ -15,9 +16,9 @@ import {
     removeTagByName
 } from '../services/manychatService.js';
 
-// ID do campo personalizado "Telefone WhatsApp" no ManyChat
-// Configurado para armazenar o WhatsApp ID de contatos orgânicos
-const WA_CUSTOM_FIELD_ID = 14465258;
+// Nome do campo personalizado criado no ManyChat para armazenar o WhatsApp ID
+// O ID real é resolvido dinamicamente via /fb/page/getCustomFields
+const WA_CUSTOM_FIELD_NAME = 'Telefone WhatsApp';
 
 const router = Router();
 
@@ -385,8 +386,11 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                         
                         // Fallback: buscar pelo campo personalizado "Telefone WhatsApp" (wa_id orgânico)
                         if (!subscriberId) {
-                            console.log(`[ManyChat] Tentando campo personalizado WA_ID: ${WA_CUSTOM_FIELD_ID} = ${cleanPhone}`);
-                            subscriberId = await findSubscriberByCustomField(WA_CUSTOM_FIELD_ID, cleanPhone, apiToken);
+                            const waFieldId = await getCustomFieldIdByName(WA_CUSTOM_FIELD_NAME, apiToken);
+                            if (waFieldId) {
+                                console.log(`[ManyChat] Tentando campo "${WA_CUSTOM_FIELD_NAME}" (ID: ${waFieldId}) = ${cleanPhone}`);
+                                subscriberId = await findSubscriberByCustomField(waFieldId, cleanPhone, apiToken);
+                            }
                         }
                     }
                     
@@ -438,8 +442,11 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                                 // Último recurso: campo personalizado "Telefone WhatsApp" (wa_id)
                                 if (!newSubscriberId) {
                                     const cleanExisting = existingPhone.replace(/\D/g, '');
-                                    console.log(`[ManyChat] Buscando por campo personalizado WA_ID (${WA_CUSTOM_FIELD_ID}): ${cleanExisting}`);
-                                    newSubscriberId = await findSubscriberByCustomField(WA_CUSTOM_FIELD_ID, cleanExisting, apiToken);
+                                    const waFieldId = await getCustomFieldIdByName(WA_CUSTOM_FIELD_NAME, apiToken);
+                                    if (waFieldId) {
+                                        console.log(`[ManyChat] Buscando por campo "${WA_CUSTOM_FIELD_NAME}" (ID: ${waFieldId}): ${cleanExisting}`);
+                                        newSubscriberId = await findSubscriberByCustomField(waFieldId, cleanExisting, apiToken);
+                                    }
                                 }
                                 if (newSubscriberId) {
                                     console.log(`[ManyChat] Contato existente localizado: ${newSubscriberId}. Aplicando tag.`);
