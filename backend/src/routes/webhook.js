@@ -351,24 +351,34 @@ router.post('/greatpages', async (req, res) => {
             if (campaign && (campaign.mirror_campaign_id || (campaign.mirror_campaign_ids && campaign.mirror_campaign_ids.length > 0))) {
                 let mirrorIds = [];
                 if (campaign.mirror_campaign_ids) {
+                    let parsedIds = [];
                     if (Array.isArray(campaign.mirror_campaign_ids)) {
-                        mirrorIds = campaign.mirror_campaign_ids;
+                        parsedIds = campaign.mirror_campaign_ids;
                     } else if (typeof campaign.mirror_campaign_ids === 'string') {
                         try {
                             const parsed = JSON.parse(campaign.mirror_campaign_ids);
-                            mirrorIds = Array.isArray(parsed) ? parsed : [parsed];
+                            parsedIds = Array.isArray(parsed) ? parsed : [parsed];
                         } catch(e) {
-                            mirrorIds = campaign.mirror_campaign_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                            parsedIds = campaign.mirror_campaign_ids.split(',');
                         }
                     } else if (typeof campaign.mirror_campaign_ids === 'number') {
-                        mirrorIds = [campaign.mirror_campaign_ids];
+                        parsedIds = [campaign.mirror_campaign_ids];
                     }
+                    
+                    // Extrair ID seja primitivo ou objeto (como {value: 12} ou {id: 12})
+                    mirrorIds = parsedIds.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            return Number(item.value || item.id || item.campaign_id);
+                        }
+                        return Number(item);
+                    }).filter(id => !isNaN(id) && id > 0);
                 }
+                
                 if (!Array.isArray(mirrorIds)) {
                     mirrorIds = [];
                 }
                 if (mirrorIds.length === 0 && campaign.mirror_campaign_id) {
-                    mirrorIds = [campaign.mirror_campaign_id];
+                    mirrorIds = [Number(campaign.mirror_campaign_id)];
                 }
                 console.log(`   🪞 Campanha espelha campanhas: [${mirrorIds.join(', ')}]. Buscando vendedora...`);
 
