@@ -417,15 +417,20 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                             // Se o ManyChat disser que o contato JÁ EXISTE, buscar e usar o ID existente
                             if (createErr.message && createErr.message.startsWith('ALREADY_EXISTS:')) {
                                 const existingPhone = createErr.message.split(':')[1];
-                                console.log(`[ManyChat] Contato já existe no ManyChat. Buscando por WhatsApp: ${existingPhone}`);
+                                console.log(`[ManyChat] Contato já existe no ManyChat. Buscando por phone: +${existingPhone}`);
+                                // findSubscriberByWhatsApp e findSubscriberByPhone agora usam phone=+XXX
                                 newSubscriberId = await findSubscriberByWhatsApp(existingPhone, apiToken);
                                 if (!newSubscriberId) {
                                     newSubscriberId = await findSubscriberByPhone(existingPhone, apiToken);
                                 }
                                 if (newSubscriberId) {
-                                    console.log(`[ManyChat] Contato existente localizado: ${newSubscriberId}. Aplicando tag diretamente.`);
+                                    console.log(`[ManyChat] Contato existente localizado via phone: ${newSubscriberId}. Aplicando tag.`);
                                 } else {
-                                    console.error(`[ManyChat] Não foi possível localizar o contato existente.`);
+                                    // Contato orgânico (só wa_id internamente): ManyChat API pública 
+                                    // não tem endpoint para buscar por wa_id - limitação da plataforma
+                                    console.warn(`[ManyChat] ⚠️ Contato já existe no ManyChat mas não é localizável via API pública (contato orgânico com apenas wa_id). Número: ${existingPhone}`);
+                                    automationStatus = 'warning';
+                                    errorMessage = `Contato (${existingPhone}) já existe no ManyChat mas não é localizável via API — aplique a tag manualmente.`;
                                 }
                             } else {
                                 throw createErr;
@@ -438,7 +443,7 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                             await addTagByName(newSubscriberId, tagName, apiToken);
                             console.log(`[ManyChat] Automation completed successfully for new/found lead.`);
                             automationStatus = 'success';
-                        } else {
+                        } else if (automationStatus !== 'warning') {
                             console.error(`[ManyChat] Failed to create or find subscriber. Automation aborted.`);
                             automationStatus = 'error';
                             errorMessage = 'Falha ao criar contato na API ManyChat.';

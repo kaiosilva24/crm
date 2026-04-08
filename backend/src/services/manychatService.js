@@ -75,18 +75,38 @@ export async function findSubscriberByPhone(phone, apiToken) {
     if (!phone) return null;
 
     let cleanPhone = phone.replace(/\D/g, '');
-    let formats = [phone, `+${cleanPhone}`, cleanPhone];
 
-    const uniqueFormats = [...new Set(formats)];
+    // CONFIRMADO: ManyChat findBySystemField aceita APENAS phone ou email
+    // O formato +55... é o que funciona para números brasileiros
+    const formats = new Set();
+    formats.add(`+${cleanPhone}`); // sempre tentar com + primeiro
+    formats.add(cleanPhone);
 
-    for (const ph of uniqueFormats) {
+    // Permutações do 9° dígito para números brasileiros
+    if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) {
+        const semPais = cleanPhone.slice(2);
+        formats.add(`+${semPais}`);
+        formats.add(semPais);
+
+        if (cleanPhone.length === 13) {
+            const sem9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
+            formats.add(`+${sem9}`);
+            formats.add(sem9);
+        } else if (cleanPhone.length === 12) {
+            const ddd = parseInt(cleanPhone.slice(2, 4));
+            if (ddd >= 11) {
+                const com9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
+                formats.add(`+${com9}`);
+                formats.add(com9);
+            }
+        }
+    }
+
+    for (const ph of formats) {
         try {
             console.log(`[ManyChat] Looking up subscriber by phone: ${ph}`);
-            // Correct API: /fb/subscriber/findBySystemField?phone=...
             const response = await axios.get(`${MANYCHAT_API_BASE}/fb/subscriber/findBySystemField`, {
-                params: {
-                    phone: ph
-                },
+                params: { phone: ph },
                 headers: {
                     'Authorization': `Bearer ${apiToken}`,
                     'Content-Type': 'application/json'
@@ -95,21 +115,15 @@ export async function findSubscriberByPhone(phone, apiToken) {
 
             if (response.data && response.data.data) {
                 const resData = response.data.data;
-                // API typically returns an array for this endpoint search, but sometimes object
                 const candidates = Array.isArray(resData) ? resData : [resData];
-
                 for (const sub of candidates) {
                     if (sub.id && sub.status !== 'deleted') {
                         console.log(`✅ Found ACTIVE ID: ${sub.id} (Format: ${ph})`);
                         return sub.id;
-                    } else if (sub.id) {
-                        console.log(`⚠️ Found ID ${sub.id} but status is '${sub.status}'. Ignoring.`);
                     }
                 }
             }
         } catch (error) {
-            // If 404 or empty, just continue to next format
-            // If 400 (Validation), it might mean bad format, also continue
             if (error.response && error.response.status !== 404 && error.response.status !== 400) {
                 console.error(`Error checking phone ${ph}:`, error.message);
             }
