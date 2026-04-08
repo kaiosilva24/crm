@@ -17,6 +17,7 @@ import {
 } from '../services/manychatService.js';
 
 // Nome do campo personalizado criado no ManyChat para armazenar o WhatsApp ID
+// Campo ID 14465258 confirmado pelo teste na conta de produção (token 563759373725607:...)
 // O ID real é resolvido dinamicamente via /fb/page/getCustomFields
 const WA_CUSTOM_FIELD_NAME = 'Telefone WhatsApp';
 
