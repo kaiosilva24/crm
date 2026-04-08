@@ -266,8 +266,9 @@ export default function Leads() {
                 a.click();
                 alert(`✅ ${selectedLeads.length} leads exportados em formato vCard!`);
             } else if (format === 'csv') {
-                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
+                const headers = ['Data', 'Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
                 const rows = selectedLeads.map(l => [
+                    l.created_at ? formatDate(l.created_at) : '',
                     l.first_name || '',
                     l.email || '',
                     l.phone || '',
@@ -327,8 +328,9 @@ export default function Leads() {
                 a.click();
                 alert(`✅ ${allLeads.length} leads exportados em formato vCard!`);
             } else if (format === 'csv') {
-                const headers = ['Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
+                const headers = ['Data', 'Nome', 'Email', 'Telefone', 'Produto', 'Campanha', 'Status', 'Vendedora', 'Check-in', 'Venda'];
                 const rows = allLeads.map(l => [
+                    l.created_at ? formatDate(l.created_at) : '',
                     l.first_name || '',
                     l.email || '',
                     l.phone || '',
