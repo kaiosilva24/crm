@@ -5,6 +5,7 @@ import {
     testConnection,
     findSubscriberByPhone,
     findSubscriberByWhatsApp,
+    findSubscriberByCustomField,
     findSubscriberByName,
     deleteSubscriber,
     createSubscriber,
@@ -13,6 +14,10 @@ import {
     addTagByName,
     removeTagByName
 } from '../services/manychatService.js';
+
+// ID do campo personalizado "Telefone WhatsApp" no ManyChat
+// Configurado para armazenar o WhatsApp ID de contatos orgânicos
+const WA_CUSTOM_FIELD_ID = 14465258;
 
 const router = Router();
 
@@ -374,7 +379,15 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
 
                     // Try to find the subscriber
                     if (finalPhone) {
-                        subscriberId = await findSubscriberByWhatsApp(finalPhone, apiToken) || await findSubscriberByPhone(finalPhone, apiToken);
+                        const cleanPhone = finalPhone.replace(/\D/g, '');
+                        subscriberId = await findSubscriberByWhatsApp(finalPhone, apiToken)
+                            || await findSubscriberByPhone(finalPhone, apiToken);
+                        
+                        // Fallback: buscar pelo campo personalizado "Telefone WhatsApp" (wa_id orgânico)
+                        if (!subscriberId) {
+                            console.log(`[ManyChat] Tentando campo personalizado WA_ID: ${WA_CUSTOM_FIELD_ID} = ${cleanPhone}`);
+                            subscriberId = await findSubscriberByCustomField(WA_CUSTOM_FIELD_ID, cleanPhone, apiToken);
+                        }
                     }
                     
                     if (!subscriberId && finalName) {
@@ -418,13 +431,18 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                             if (createErr.message && createErr.message.startsWith('ALREADY_EXISTS:')) {
                                 const existingPhone = createErr.message.split(':')[1];
                                 console.log(`[ManyChat] Contato já existe no ManyChat. Buscando por phone: +${existingPhone}`);
-                                // findSubscriberByWhatsApp e findSubscriberByPhone agora usam phone=+XXX
                                 newSubscriberId = await findSubscriberByWhatsApp(existingPhone, apiToken);
                                 if (!newSubscriberId) {
                                     newSubscriberId = await findSubscriberByPhone(existingPhone, apiToken);
                                 }
+                                // Último recurso: campo personalizado "Telefone WhatsApp" (wa_id)
+                                if (!newSubscriberId) {
+                                    const cleanExisting = existingPhone.replace(/\D/g, '');
+                                    console.log(`[ManyChat] Buscando por campo personalizado WA_ID (${WA_CUSTOM_FIELD_ID}): ${cleanExisting}`);
+                                    newSubscriberId = await findSubscriberByCustomField(WA_CUSTOM_FIELD_ID, cleanExisting, apiToken);
+                                }
                                 if (newSubscriberId) {
-                                    console.log(`[ManyChat] Contato existente localizado via phone: ${newSubscriberId}. Aplicando tag.`);
+                                    console.log(`[ManyChat] Contato existente localizado: ${newSubscriberId}. Aplicando tag.`);
                                 } else {
                                     // Contato orgânico (só wa_id internamente): ManyChat API pública 
                                     // não tem endpoint para buscar por wa_id - limitação da plataforma
