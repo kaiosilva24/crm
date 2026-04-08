@@ -129,42 +129,61 @@ export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
     let cleanPhone = whatsappPhone.replace(/\D/g, '');
     let formats = [whatsappPhone, `+${cleanPhone}`, cleanPhone];
 
+    // Lidar com o 9º dígito no Brasil para não enganar a busca
+    if (cleanPhone.startsWith('55') && cleanPhone.length === 13) {
+        // Ex: 55 11 9 9999-9999 -> Remover o 9
+        const without9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
+        formats.push(without9);
+        formats.push(`+${without9}`);
+    } else if (cleanPhone.startsWith('55') && cleanPhone.length === 12) {
+        // Ex: 55 11 9999-9999 -> Adicionar o 9
+        const ddd = cleanPhone.slice(2, 4);
+        if (parseInt(ddd) >= 11) {
+            const with9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
+            formats.push(with9);
+            formats.push(`+${with9}`);
+        }
+    }
+
     const uniqueFormats = [...new Set(formats)];
 
     for (const ph of uniqueFormats) {
-        try {
-            console.log(`🔍 Finding ManyChat subscriber by WhatsApp: ${ph}`);
-            const response = await axios.get(`${MANYCHAT_API_BASE}/fb/subscriber/findBySystemField`, {
-                params: {
-                    whatsapp_phone: ph
-                },
-                headers: {
-                    'Authorization': `Bearer ${apiToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+        // ManyChat uses either `whatsapp_phone` or `wa_id`
+        for (const field of ['whatsapp_phone', 'wa_id']) {
+            try {
+                console.log(`🔍 Finding ManyChat subscriber by ${field}: ${ph}`);
+                const response = await axios.get(`${MANYCHAT_API_BASE}/fb/subscriber/findBySystemField`, {
+                    params: {
+                        [field]: ph
+                    },
+                    headers: {
+                        'Authorization': `Bearer ${apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            if (response.data && response.data.data) {
-                const resData = response.data.data;
-                const candidates = Array.isArray(resData) ? resData : [resData];
+                if (response.data && response.data.data) {
+                    const resData = response.data.data;
+                    const candidates = Array.isArray(resData) ? resData : [resData];
 
-                for (const sub of candidates) {
-                    if (sub.id && sub.status !== 'deleted') {
-                        console.log(`✅ Found ACTIVE ID by WhatsApp: ${sub.id} (Format: ${ph})`);
-                        return sub.id;
-                    } else if (sub.id) {
-                        console.log(`⚠️ Found ID ${sub.id} by WhatsApp but status is '${sub.status}'. Ignoring.`);
+                    for (const sub of candidates) {
+                        if (sub.id && sub.status !== 'deleted') {
+                            console.log(`✅ Found ACTIVE ID by ${field}: ${sub.id} (Format: ${ph})`);
+                            return sub.id;
+                        } else if (sub.id) {
+                            console.log(`⚠️ Found ID ${sub.id} by ${field} but status is '${sub.status}'. Ignoring.`);
+                        }
                     }
                 }
-            }
-        } catch (error) {
-            // If 404 or empty, just continue to next format
-            if (error.response && error.response.status !== 404 && error.response.status !== 400) {
-                console.error(`Error checking WhatsApp ${ph}:`, error.message);
+            } catch (error) {
+                // If 404 or empty, just continue to next format
+                if (error.response && error.response.status !== 404 && error.response.status !== 400) {
+                    console.error(`Error checking ${field} ${ph}:`, error.message);
+                }
             }
         }
     }
-    console.log(`[ManyChat] Subscriber not found by WhatsApp`);
+    console.log(`[ManyChat] Subscriber not found by WhatsApp fields`);
     return null;
 }
 
@@ -256,6 +275,11 @@ export async function createWhatsAppSubscriber(firstName, lastName, whatsappPhon
             ? JSON.stringify(error.response.data)
             : error.message;
         console.error('❌ Error creating WhatsApp subscriber:', detail);
+        
+        // Se Manychat acusar que o contato já existe através do número do whatsapp:
+        if (detail.includes("already exists")) {
+             throw new Error(`ALREADY_EXISTS:${whatsappPhone}`);
+        }
         throw new Error(detail);
     }
 }

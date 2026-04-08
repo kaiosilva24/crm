@@ -404,21 +404,42 @@ export async function processManychatAutomation(webhookId, leadData, bypassWebho
                         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
                         
                         console.log(`[ManyChat] Creating new WhatsApp-only subscriber...`);
-                        const newSubscriberId = await createWhatsAppSubscriber(
-                            firstName,
-                            lastName,
-                            finalPhone || '',
-                            leadData.email || '',
-                            apiToken
-                        );
+                        let newSubscriberId = null;
+                        try {
+                            newSubscriberId = await createWhatsAppSubscriber(
+                                firstName,
+                                lastName,
+                                finalPhone || '',
+                                leadData.email || '',
+                                apiToken
+                            );
+                        } catch (createErr) {
+                            // Se o ManyChat disser que o contato JÁ EXISTE, buscar e usar o ID existente
+                            if (createErr.message && createErr.message.startsWith('ALREADY_EXISTS:')) {
+                                const existingPhone = createErr.message.split(':')[1];
+                                console.log(`[ManyChat] Contato já existe no ManyChat. Buscando por WhatsApp: ${existingPhone}`);
+                                newSubscriberId = await findSubscriberByWhatsApp(existingPhone, apiToken);
+                                if (!newSubscriberId) {
+                                    newSubscriberId = await findSubscriberByPhone(existingPhone, apiToken);
+                                }
+                                if (newSubscriberId) {
+                                    console.log(`[ManyChat] Contato existente localizado: ${newSubscriberId}. Aplicando tag diretamente.`);
+                                } else {
+                                    console.error(`[ManyChat] Não foi possível localizar o contato existente.`);
+                                }
+                            } else {
+                                throw createErr;
+                            }
+                        }
 
                         if (newSubscriberId) {
                             console.log(`[ManyChat] Applying tag '${tagName}'...`);
+                            await removeTagByName(newSubscriberId, tagName, apiToken);
                             await addTagByName(newSubscriberId, tagName, apiToken);
-                            console.log(`[ManyChat] Automation completed successfully for new lead.`);
+                            console.log(`[ManyChat] Automation completed successfully for new/found lead.`);
                             automationStatus = 'success';
                         } else {
-                            console.error(`[ManyChat] Failed to create subscriber. Automation aborted.`);
+                            console.error(`[ManyChat] Failed to create or find subscriber. Automation aborted.`);
                             automationStatus = 'error';
                             errorMessage = 'Falha ao criar contato na API ManyChat.';
                         }
