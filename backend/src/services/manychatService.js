@@ -127,35 +127,43 @@ export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
     if (!whatsappPhone) return null;
 
     let cleanPhone = whatsappPhone.replace(/\D/g, '');
-    let formats = [whatsappPhone, `+${cleanPhone}`, cleanPhone];
+    
+    // Gerar todas as variações possíveis do número
+    const formats = new Set();
+    formats.add(cleanPhone);
+    formats.add(`+${cleanPhone}`);
 
-    // Lidar com o 9º dígito no Brasil para não enganar a busca
-    if (cleanPhone.startsWith('55') && cleanPhone.length === 13) {
-        // Ex: 55 11 9 9999-9999 -> Remover o 9
-        const without9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
-        formats.push(without9);
-        formats.push(`+${without9}`);
-    } else if (cleanPhone.startsWith('55') && cleanPhone.length === 12) {
-        // Ex: 55 11 9999-9999 -> Adicionar o 9
-        const ddd = cleanPhone.slice(2, 4);
-        if (parseInt(ddd) >= 11) {
-            const with9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
-            formats.push(with9);
-            formats.push(`+${with9}`);
+    // Para números brasileiros (55 + DDD + número)
+    if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) {
+        const semPais = cleanPhone.slice(2); // Remove "55"
+        formats.add(semPais);
+        formats.add(`+${semPais}`);
+
+        if (cleanPhone.length === 13) {
+            // 55 + DDD(2) + 9 + número(8) = 13 dígitos -> remover o 9
+            const sem9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
+            formats.add(sem9);
+            formats.add(`+${sem9}`);
+            const sem9SemPais = semPais.slice(0, 2) + semPais.slice(3);
+            formats.add(sem9SemPais);
+        } else if (cleanPhone.length === 12) {
+            // 55 + DDD(2) + número(8) = 12 dígitos -> adicionar o 9
+            const ddd = cleanPhone.slice(2, 4);
+            if (parseInt(ddd) >= 11) {
+                const com9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
+                formats.add(com9);
+                formats.add(`+${com9}`);
+            }
         }
     }
 
-    const uniqueFormats = [...new Set(formats)];
-
-    for (const ph of uniqueFormats) {
-        // ManyChat uses either `whatsapp_phone` or `wa_id`
-        for (const field of ['whatsapp_phone', 'wa_id']) {
+    // Buscar apenas com campos válidos da API do ManyChat: whatsapp_phone e phone
+    for (const ph of formats) {
+        for (const field of ['whatsapp_phone', 'phone']) {
             try {
                 console.log(`🔍 Finding ManyChat subscriber by ${field}: ${ph}`);
                 const response = await axios.get(`${MANYCHAT_API_BASE}/fb/subscriber/findBySystemField`, {
-                    params: {
-                        [field]: ph
-                    },
+                    params: { [field]: ph },
                     headers: {
                         'Authorization': `Bearer ${apiToken}`,
                         'Content-Type': 'application/json'
@@ -165,25 +173,21 @@ export async function findSubscriberByWhatsApp(whatsappPhone, apiToken) {
                 if (response.data && response.data.data) {
                     const resData = response.data.data;
                     const candidates = Array.isArray(resData) ? resData : [resData];
-
                     for (const sub of candidates) {
                         if (sub.id && sub.status !== 'deleted') {
                             console.log(`✅ Found ACTIVE ID by ${field}: ${sub.id} (Format: ${ph})`);
                             return sub.id;
-                        } else if (sub.id) {
-                            console.log(`⚠️ Found ID ${sub.id} by ${field} but status is '${sub.status}'. Ignoring.`);
                         }
                     }
                 }
             } catch (error) {
-                // If 404 or empty, just continue to next format
                 if (error.response && error.response.status !== 404 && error.response.status !== 400) {
                     console.error(`Error checking ${field} ${ph}:`, error.message);
                 }
             }
         }
     }
-    console.log(`[ManyChat] Subscriber not found by WhatsApp fields`);
+    console.log(`[ManyChat] Subscriber not found by WhatsApp/phone fields`);
     return null;
 }
 
