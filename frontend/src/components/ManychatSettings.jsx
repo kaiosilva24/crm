@@ -157,6 +157,7 @@ export default function ManychatSettings() {
                 campaign_id: '',
                 manychat_api_token: '',
                 manychat_tag_name: '',
+                manychat_custom_field_name: '',
                 prepend_number: '',
                 custom_name: ''
             }
@@ -372,20 +373,37 @@ export default function ManychatSettings() {
                             )}
                         </div>
 
-                        {/* Tag Name */}
-                        <div style={{ marginTop: 8 }}>
-                            <label className="label">Nome da Tag (Para Disparar Automação)</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={settings.manychat_tag_name || ''}
-                                onChange={(e) => updateAutomation(index, 'manychat_tag_name', e.target.value)}
-                                required={settings.is_enabled}
-                                placeholder="ex: automacao_zap"
-                            />
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                                A tag para forçar o disparo do evento.
-                            </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16, marginTop: 8 }}>
+                            {/* Tag Name */}
+                            <div>
+                                <label className="label">Nome da Tag (Para Disparar Automação)</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={settings.manychat_tag_name || ''}
+                                    onChange={(e) => updateAutomation(index, 'manychat_tag_name', e.target.value)}
+                                    required={settings.is_enabled}
+                                    placeholder="Ex: [LEAD]-[SONO]"
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                    A tag para forçar o disparo do evento.
+                                </p>
+                            </div>
+
+                            {/* Custom Field Name */}
+                            <div>
+                                <label className="label">Nome do Campo Personalizado (Fallback Busca)</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={settings.manychat_custom_field_name || ''}
+                                    onChange={(e) => updateAutomation(index, 'manychat_custom_field_name', e.target.value)}
+                                    placeholder="Ex: Telefone WhatsApp"
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                    Campo de usuário. Deixe em branco para usar "Telefone WhatsApp".
+                                </p>
+                            </div>
                         </div>
                         
                     </div>
