@@ -371,17 +371,16 @@ function onSubmit(e) {
 function GreatPagesSettings() {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [copied, setCopied] = useState(false);
     const [campaigns, setCampaigns] = useState([]);
-    const [selectedCampaign, setSelectedCampaign] = useState('');
 
-    // Detectar ambiente automaticamente e definir estado inicial
+    // Multi-integration state
+    const [integrations, setIntegrations] = useState([]);
+
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const [baseUrl, setBaseUrl] = useState(
         isLocal ? "" : `${window.location.protocol}//${window.location.host}`
     );
 
-    // GreatPages Logs State
     const [greatPagesLogs, setGreatPagesLogs] = useState([]);
     const [savingUrl, setSavingUrl] = useState(false);
     const [urlSaved, setUrlSaved] = useState(false);
@@ -392,17 +391,20 @@ function GreatPagesSettings() {
                 const apiSettings = await api.getApiSettings();
                 setSettings(apiSettings);
 
-                // Carregar URL do ngrok salva (se houver)
                 if (isLocal && apiSettings.greatpages_ngrok_url) {
                     setBaseUrl(apiSettings.greatpages_ngrok_url);
                 }
 
-                // Carregar campanha padrão salva (se houver)
-                if (apiSettings.greatpages_default_campaign_id) {
-                    console.log('📥 Carregando campanha salva:', apiSettings.greatpages_default_campaign_id);
-                    setSelectedCampaign(String(apiSettings.greatpages_default_campaign_id));
-                } else {
-                    console.log('⚠️ Nenhuma campanha salva encontrada');
+                // Load multi-integrations or migrate from legacy single-config
+                if (apiSettings.greatpages_integrations && apiSettings.greatpages_integrations.length > 0) {
+                    setIntegrations(apiSettings.greatpages_integrations);
+                } else if (apiSettings.greatpages_default_campaign_id) {
+                    // Migrate legacy single campaign
+                    setIntegrations([{
+                        id: 'migrated_default',
+                        name: 'Integração Principal (Legado)',
+                        campaign_id: String(apiSettings.greatpages_default_campaign_id)
+                    }]);
                 }
 
                 const campsData = await api.getCampaigns({ active_only: true });
@@ -415,7 +417,6 @@ function GreatPagesSettings() {
         };
         load();
 
-        // Start polling for GreatPages logs
         const fetchLogs = async () => {
             try {
                 const data = await api.getGreatPagesLogs();
@@ -426,68 +427,66 @@ function GreatPagesSettings() {
         };
 
         fetchLogs();
-        const interval = setInterval(fetchLogs, 5000); // Poll every 5 seconds
+        const interval = setInterval(fetchLogs, 5000);
         return () => clearInterval(interval);
     }, []);
-
-    const saveNgrokUrl = async () => {
-        setSavingUrl(true);
-        try {
-            await api.updateApiSettings({ greatpages_ngrok_url: baseUrl });
-            setUrlSaved(true);
-            setTimeout(() => setUrlSaved(false), 2000);
-        } catch (e) {
-            console.error('Erro ao salvar URL:', e);
-            alert('Erro ao salvar URL do ngrok');
-        } finally {
-            setSavingUrl(false);
-        }
-    };
 
     const toggleSetting = async (key, value) => {
         try {
             await api.updateApiSettings({ [key]: value });
             setSettings({ ...settings, [key]: value });
         } catch (e) {
-            console.error('Erro ao atualizar configuração:', e);
             alert('Erro ao atualizar configuração');
         }
     };
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        alert('URL copiada!');
     };
 
-    let webhookUrl = `${baseUrl}/api/webhook/greatpages`;
+    const addIntegration = () => {
+        setIntegrations([...integrations, { id: 'new_' + Date.now(), name: '', campaign_id: '' }]);
+    };
 
-    // Adicionar campanha se selecionada
-    if (selectedCampaign) {
-        const campaign = campaigns.find(c => c.id == selectedCampaign);
-        if (campaign && campaign.uuid) {
-            webhookUrl += `?campaign=${campaign.uuid}`;
+    const updateIntegration = (index, field, value) => {
+        const updated = [...integrations];
+        updated[index][field] = value;
+        setIntegrations(updated);
+    };
+
+    const removeIntegration = (index) => {
+        if (window.confirm('Remover esta integração do GreatPages?')) {
+            const updated = [...integrations];
+            updated.splice(index, 1);
+            setIntegrations(updated);
         }
-    }
+    };
 
     if (loading) return <div className="card">Carregando...</div>;
 
-    // Adicionar campanha se selecionada (já tratado acima)
+    const baseWebhookUrl = `${baseUrl}/api/webhook/greatpages`;
 
     return (
         <div className="card">
-            <h3><Plug size={20} style={{ marginRight: 8 }} /> Integração GreatPages</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h3 style={{ margin: 0 }}><Plug size={20} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} /> Integração GreatPages</h3>
+                <button type="button" className="btn btn-primary" onClick={addIntegration} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    + Adicionar Integração
+                </button>
+            </div>
+
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Receba leads automaticamente das suas landing pages criadas no GreatPages via Webhook.
+                Receba leads automaticamente das suas landing pages criadas no GreatPages via Webhook. Crie quantas integrações precisar, cada uma com sua própria campanha e URL exclusiva.
             </p>
 
-            {/* CONFIGURAÇÃO ROUND-ROBIN */}
+            {/* ROUND-ROBIN */}
             <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                 <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <RefreshCw size={18} />
-                    Configurações de Distribuição
+                    Configurações Globais de Distribuição
                 </h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <label className="toggle">
                         <input
                             type="checkbox"
@@ -498,192 +497,121 @@ function GreatPagesSettings() {
                     </label>
                     <span style={{ fontWeight: 500 }}>Distribuição Automática (Round-Robin)</span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '8px 0 0', lineHeight: 1.6 }}>
                     {settings?.round_robin_enabled !== false ? (
-                        <>
-                            ✅ <strong>Ativado:</strong> Leads recebidos do GreatPages serão distribuídos automaticamente para vendedores ativos de forma sequencial.
-                        </>
+                        <>✅ <strong>Ativado:</strong> Leads serão distribuídos automaticamente para vendedores ativos.</>
                     ) : (
-                        <>
-                            ⚠️ <strong>Desativado:</strong> Leads recebidos do GreatPages serão criados sem vendedor atribuído. Você precisará atribuir manualmente.
-                        </>
+                        <>⚠️ <strong>Desativado:</strong> Leads serão criados sem vendedor atribuído. Você precisará atribuir manualmente.</>
                     )}
                 </p>
             </div>
 
-            {/* WEBHOOK URL - DESTAQUE NO INÍCIO */}
-            <div style={{
-                marginBottom: 24,
-                padding: 20,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))',
-                border: '2px solid rgba(99, 102, 241, 0.3)',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.1)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <Plug size={20} color="#6366f1" />
-                    <h4 style={{ margin: 0, color: '#6366f1', fontSize: '1rem', fontWeight: 600 }}>
-                        URL do Webhook para GreatPages
-                    </h4>
+            {/* LISTA DE INTEGRAÇÕES */}
+            {integrations.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 48, marginBottom: 24, border: '2px dashed var(--border)', borderRadius: 12 }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>Nenhuma integração GreatPages configurada ainda.</p>
+                    <button type="button" className="btn btn-primary" onClick={addIntegration}>
+                        + Criar Primeira Integração
+                    </button>
                 </div>
+            )}
 
-                {!baseUrl && isLocal ? (
-                    <div style={{
-                        background: 'rgba(234, 179, 8, 0.1)',
-                        borderRadius: 8,
-                        padding: 16,
-                        border: '1px solid rgba(234, 179, 8, 0.3)',
-                        textAlign: 'center'
+            {integrations.map((intg, index) => {
+                let currentWebhookUrl = baseWebhookUrl;
+                if (intg.campaign_id) {
+                    const matchedCamp = campaigns.find(c => String(c.id) === String(intg.campaign_id));
+                    if (matchedCamp && matchedCamp.uuid) {
+                        currentWebhookUrl += `?campaign=${matchedCamp.uuid}`;
+                    }
+                }
+
+                return (
+                    <div key={intg.id || index} style={{
+                        marginBottom: 24,
+                        padding: 20,
+                        border: '1px solid var(--border)',
+                        borderRadius: 12,
+                        background: 'var(--bg-secondary)'
                     }}>
-                        <p style={{ color: '#ca8a04', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>
-                            ⚠️ <strong>Configure sua URL do Ngrok abaixo</strong> para gerar a URL do webhook
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        <div style={{
-                            background: 'var(--bg-primary)',
-                            borderRadius: 8,
-                            padding: 12,
-                            border: '1px solid var(--border)',
-                            marginBottom: 12
-                        }}>
-                            <div style={{
-                                fontFamily: 'monospace',
-                                fontSize: '0.9rem',
-                                color: 'var(--text-primary)',
-                                wordBreak: 'break-all',
-                                lineHeight: 1.6,
-                                marginBottom: 8
-                            }}>
-                                {webhookUrl}
-                            </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
+                            <h4 style={{ margin: 0, color: 'var(--accent)' }}>Integração #{index + 1}</h4>
                             <button
-                                className="btn btn-primary"
-                                onClick={() => copyToClipboard(webhookUrl)}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                type="button"
+                                className="btn btn-danger"
+                                onClick={() => removeIntegration(index)}
+                                style={{ padding: '6px 12px', fontSize: '0.875rem' }}
                             >
-                                {copied ? (
-                                    <>
-                                        <Check size={16} />
-                                        URL Copiada!
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy size={16} />
-                                        Copiar URL do Webhook
-                                    </>
-                                )}
+                                Remover
                             </button>
                         </div>
 
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            📋 <strong>Copie esta URL</strong> e cole no campo de Webhook do seu formulário no GreatPages.
-                            {selectedCampaign && (
-                                <div style={{ marginTop: 8, padding: 8, borderRadius: 6, background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
-                                    ✓ URL inclui a campanha selecionada
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <div>
+                                <label className="label">Nome de Identificação</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={intg.name || ''}
+                                    onChange={(e) => updateIntegration(index, 'name', e.target.value)}
+                                    placeholder="Ex: LP Black Friday"
+                                />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>Nome para uso interno.</p>
+                            </div>
+                            <div>
+                                <label className="label">Campanha do Lead</label>
+                                <select
+                                    className="input"
+                                    value={intg.campaign_id || ''}
+                                    onChange={(e) => updateIntegration(index, 'campaign_id', e.target.value)}
+                                >
+                                    <option value="">-- Global (sem campanha específica) --</option>
+                                    {campaigns.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>Leads desta URL entrarão nesta campanha.</p>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: 16, borderRadius: 8, background: 'var(--bg-primary)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                            <label className="label" style={{ color: '#6366f1', fontWeight: 600 }}>URL do Webhook</label>
+                            {!baseUrl && isLocal ? (
+                                <p style={{ color: '#ca8a04', fontSize: '0.85rem' }}>⚠️ Configure a URL do ngrok abaixo para gerar o link.</p>
+                            ) : (
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                    <input
+                                        readOnly
+                                        value={currentWebhookUrl}
+                                        className="input"
+                                        style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', background: 'var(--bg-secondary)' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={() => copyToClipboard(currentWebhookUrl)}
+                                    >
+                                        <Copy size={16} /> Copiar
+                                    </button>
                                 </div>
                             )}
                         </div>
-                    </>
-                )}
-            </div>
-
-            {/* SELEÇÃO DE CAMPANHA */}
-            <div className="form-group" style={{ marginBottom: 24, maxWidth: 400 }}>
-                <label className="form-label">Selecionar Campanha (Opcional)</label>
-                <select
-                    className="form-select"
-                    value={selectedCampaign}
-                    onChange={(e) => setSelectedCampaign(e.target.value)}
-                >
-                    <option value="">-- Sem Campanha Específica --</option>
-                    {campaigns.map(c => (
-                        <option key={c.id} value={c.id}>
-                            {c.name}
-                        </option>
-                    ))}
-                </select>
-                <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: 8 }}>
-                    Ao selecionar uma campanha, todos os leads recebidos do GreatPages serão vinculados a ela.
-                </small>
-            </div>
-
-            {/* SEÇÃO UTM — Configuração de Rastreamento */}
-            <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                <h4 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    📣 Rastreamento UTM (Meta Ads / Google Ads)
-                </h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
-                    O Meta Ads entrega automaticamente os parâmetros UTM no payload do webhook do GreatPages.
-                    O CRM já os captura nos campos abaixo. Configure os nomes dos parâmetros conforme sua conta do Meta.
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
-                    {[
-                        { key: 'utm_source', label: 'utm_source', desc: 'Plataforma (ex: facebook)', example: 'facebook' },
-                        { key: 'utm_medium', label: 'utm_medium', desc: 'Tipo de tráfego (ex: cpc)', example: 'paid' },
-                        { key: 'utm_campaign', label: 'utm_campaign', desc: 'Nome da campanha no Meta', example: 'LP11ABRIL26-Vendas' },
-                        { key: 'utm_content', label: 'utm_content', desc: 'Anúncio específico', example: 'Video-Depoimento-1' },
-                        { key: 'utm_term', label: 'utm_term', desc: 'Conjunto de anúncios', example: 'Conjunto-Interesses-01' },
-                    ].map(({ key, label, desc, example }) => (
-                        <div key={key}>
-                            <label className="form-label" style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#6366f1' }}>
-                                {label}
-                            </label>
-                            <input
-                                className="form-input"
-                                readOnly
-                                value={key}
-                                style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'var(--bg-primary)', cursor: 'default' }}
-                            />
-                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginTop: 4 }}>
-                                {desc} — ex: <em>{example}</em>
-                            </small>
-                        </div>
-                    ))}
-                </div>
-
-                <div style={{ padding: 12, borderRadius: 6, background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#6366f1', margin: 0, lineHeight: 1.6 }}>
-                        💡 <strong>Como funciona:</strong> Ao criar um anúncio no Meta Ads, adicione os parâmetros UTM na URL de destino da landing page GreatPages.
-                        O GreatPages os repassa no payload do webhook e o CRM os armazena automaticamente na <strong>Jornada do Lead</strong>,
-                        permitindo rastrear de qual campanha, conjunto e anúncio cada lead veio.
-                    </p>
-                    <div style={{ marginTop: 10, padding: 10, background: 'rgba(0,0,0,0.15)', borderRadius: 4, fontFamily: 'monospace', fontSize: '0.75rem', color: '#a5b4fc', wordBreak: 'break-all' }}>
-                        {`https://suapagina.com/?utm_source=facebook&utm_medium=paid`}<br />
-                        {`&utm_campaign=NomeDaCampanha&utm_content=NomeDoAnuncio&utm_term=NomeDoConjunto`}
                     </div>
-                </div>
-            </div>
+                );
+            })}
 
-            {/* BOTÃO SALVAR CONFIGURAÇÕES */}
-            <div style={{ marginBottom: 24 }}>
+            {/* BOTÃO SALVAR */}
+            <div style={{ marginBottom: 32 }}>
                 <button
                     className="btn btn-primary"
                     onClick={async () => {
                         setSavingUrl(true);
                         try {
-                            const configToSave = {
-                                greatpages_default_campaign_id: selectedCampaign ? parseInt(selectedCampaign) : null,
-                                greatpages_ngrok_url: baseUrl || null
-                            };
-
-                            console.log('💾 Salvando configurações do GreatPages:', configToSave);
-
+                            const configToSave = { greatpages_integrations: integrations };
                             await api.updateApiSettings(configToSave);
-
-                            // Atualizar o state local para refletir o salvamento
-                            setSettings({
-                                ...settings,
-                                ...configToSave
-                            });
-
-                            console.log('✅ Configurações salvas com sucesso!');
+                            setSettings({ ...settings, ...configToSave });
                             setUrlSaved(true);
                             setTimeout(() => setUrlSaved(false), 3000);
                         } catch (err) {
-                            console.error('❌ Erro ao salvar configurações:', err);
                             alert('❌ Erro ao salvar configurações: ' + err.message);
                         } finally {
                             setSavingUrl(false);
@@ -691,103 +619,65 @@ function GreatPagesSettings() {
                     }}
                     disabled={savingUrl}
                     style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '12px 24px',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        background: urlSaved ? '#10b981' : undefined,
-                        minWidth: 200
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '12px 24px', fontSize: '1rem', fontWeight: 600,
+                        background: urlSaved ? '#10b981' : undefined, minWidth: 200
                     }}
                 >
-                    {urlSaved ? (
-                        <>
-                            <Check size={20} />
-                            Configurações Salvas!
-                        </>
-                    ) : savingUrl ? (
-                        <>
-                            <RefreshCw size={20} className="spinning" />
-                            Salvando...
-                        </>
-                    ) : (
-                        <>
-                            <Download size={20} />
-                            Salvar Configurações
-                        </>
-                    )}
+                    {urlSaved ? (<><Check size={20} /> Salvo!</>) : savingUrl ? (<><RefreshCw size={20} className="spinning" /> Salvando...</>) : (<><Download size={20} /> Salvar Integrações</>)}
                 </button>
-                <small style={{ display: 'block', marginTop: 8, color: 'var(--text-secondary)' }}>
-                    💡 Clique em "Salvar Configurações" para aplicar as mudanças e começar a receber leads do GreatPages.
-                </small>
             </div>
 
-            {/* CONFIGURAÇÃO NGROK (AMBIENTE LOCAL) */}
+            {/* SEÇÃO UTM */}
+            <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <h4 style={{ marginBottom: 8 }}>📣 Rastreamento UTM (Meta Ads / Google Ads)</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+                    O Meta Ads entrega automaticamente os parâmetros UTM no payload do webhook do GreatPages. O CRM já os captura automaticamente.
+                </p>
+                <div style={{ padding: 10, background: 'rgba(0,0,0,0.15)', borderRadius: 4, fontFamily: 'monospace', fontSize: '0.75rem', color: '#a5b4fc', wordBreak: 'break-all' }}>
+                    {`https://suapagina.com/?utm_source=facebook&utm_medium=paid`}<br />
+                    {`&utm_campaign=NomeDaCampanha&utm_content=NomeDoAnuncio&utm_term=NomeDoConjunto`}
+                </div>
+            </div>
+
+            {/* NGROK (LOCAL) */}
             {isLocal && (
                 <div style={{ marginBottom: 24, padding: 16, borderRadius: 8, background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <RefreshCw size={18} color="#ca8a04" />
-                        <h4 style={{ margin: 0, color: '#ca8a04', fontSize: '0.95rem', fontWeight: 600 }}>
-                            ⚠️ Configuração de Desenvolvimento (Ngrok)
-                        </h4>
-                    </div>
-                    <p style={{ color: '#ca8a04', fontSize: '0.85rem', marginBottom: 12, lineHeight: 1.5 }}>
-                        Você está em ambiente local. Configure sua URL do ngrok abaixo:
-                    </p>
+                    <h4 style={{ margin: '0 0 12px', color: '#ca8a04', fontSize: '0.95rem' }}>⚠️ Configuração de Desenvolvimento (Ngrok)</h4>
                     <input
-                        className="form-input"
+                        className="input"
                         style={{ borderColor: '#fde047' }}
                         value={baseUrl}
                         onChange={(e) => setBaseUrl(e.target.value)}
                         placeholder="Ex: https://0b081c480a0e.ngrok-free.app"
                     />
-                    <small style={{ display: 'block', color: '#92400e', fontSize: '0.8rem', marginTop: 8 }}>
-                        💡 Clique em "Salvar Configurações" acima para salvar a URL do ngrok.
-                    </small>
+                    <button className="btn btn-secondary" style={{ marginTop: 8 }} onClick={async () => {
+                        await api.updateApiSettings({ greatpages_ngrok_url: baseUrl });
+                        alert('URL do Ngrok salva!');
+                    }}>
+                        Salvar URL do Ngrok
+                    </button>
                 </div>
             )}
 
-            {/* INSTRUÇÕES DE CONFIGURAÇÃO */}
-
+            {/* INSTRUÇÕES */}
             <div style={{ marginTop: 24, padding: 16, background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
                 <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FileText size={18} />
-                    Como configurar no GreatPages:
+                    <FileText size={18} /> Como configurar no GreatPages:
                 </h4>
                 <ol style={{ paddingLeft: 20, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.8 }}>
                     <li>Acesse o <strong>editor da sua página</strong> no GreatPages.</li>
                     <li>Clique no <strong>formulário</strong> onde deseja capturar os leads.</li>
                     <li>No menu lateral, vá em <strong>Integrações</strong> → <strong>Webhook</strong>.</li>
-                    <li>Cole a <strong>URL copiada acima</strong> no campo "URL do Webhook".</li>
+                    <li>Cole a <strong>URL copiada de uma das integrações acima</strong> no campo "URL do Webhook".</li>
                     <li>Selecione o método <strong>POST</strong>.</li>
-                    <li>Certifique-se que os campos do formulário tenham nomes como:
-                        <ul style={{ marginTop: 8, listStyleType: 'disc', paddingLeft: 20 }}>
-                            <li><code>nome</code> ou <code>name</code></li>
-                            <li><code>email</code> ou <code>e-mail</code></li>
-                            <li><code>telefone</code>, <code>whatsapp</code> ou <code>phone</code></li>
-                        </ul>
-                    </li>
-                    <li><strong>Publique a página</strong> e faça um teste de envio.</li>
                 </ol>
             </div>
 
-            <div style={{ marginTop: 16, padding: 16, background: 'rgba(37, 211, 102, 0.1)', borderRadius: 8, border: '1px solid rgba(37, 211, 102, 0.2)' }}>
-                <p style={{ fontSize: '0.85rem', color: '#15803d', margin: 0, lineHeight: 1.6 }}>
-                    💡 <strong>Dica:</strong> O CRM identifica automaticamente os campos do formulário. Se o lead não aparecer, verifique:
-                </p>
-                <ul style={{ fontSize: '0.85rem', color: '#15803d', marginTop: 8, paddingLeft: 20, marginBottom: 0 }}>
-                    <li>Se os nomes dos campos estão corretos</li>
-                    <li>Se o webhook está configurado como POST</li>
-                    <li>Se a URL foi copiada corretamente (sem espaços extras)</li>
-                </ul>
-            </div>
-
-            {/* LOGS DE ATIVIDADE */}
+            {/* LOGS */}
             <div style={{ marginTop: 24 }}>
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <History size={20} />
-                    Logs de Atividade (Últimos Leads Recebidos)
+                    <History size={20} /> Logs de Atividade (Últimos Leads Recebidos)
                 </h4>
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
                     {greatPagesLogs.length === 0 ? (
@@ -811,13 +701,7 @@ function GreatPagesSettings() {
                                         <td style={{ padding: '8px 16px' }}>{log.email || log.phone || '-'}</td>
                                         <td style={{ padding: '8px 16px' }}>
                                             {log.campaign_name ? (
-                                                <span style={{
-                                                    background: 'rgba(99, 102, 241, 0.1)',
-                                                    color: '#6366f1',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 4,
-                                                    fontSize: '0.8rem'
-                                                }}>
+                                                <span style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', padding: '2px 8px', borderRadius: 4, fontSize: '0.8rem' }}>
                                                     {log.campaign_name}
                                                 </span>
                                             ) : (
