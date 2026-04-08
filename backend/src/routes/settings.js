@@ -43,6 +43,7 @@ router.get('/api', async (req, res) => {
             round_robin_enabled: settings.round_robin_enabled,
             greatpages_ngrok_url: settings.greatpages_ngrok_url,
             greatpages_default_campaign_id: settings.greatpages_default_campaign_id,
+            greatpages_integrations: settings.greatpages_integrations || [],
             exclusion_enabled: settings.exclusion_enabled,
             exclusion_token: settings.exclusion_token,
             exclusion_group_ids: settings.exclusion_group_ids || []
@@ -65,6 +66,7 @@ router.patch('/api', async (req, res) => {
             round_robin_enabled,
             greatpages_ngrok_url,
             greatpages_default_campaign_id,
+            greatpages_integrations,
             exclusion_enabled,
             exclusion_token,
             exclusion_group_ids
@@ -78,6 +80,7 @@ router.patch('/api', async (req, res) => {
         if (typeof round_robin_enabled === 'boolean') updateData.round_robin_enabled = round_robin_enabled;
         if (greatpages_ngrok_url !== undefined) updateData.greatpages_ngrok_url = greatpages_ngrok_url;
         if (greatpages_default_campaign_id !== undefined) updateData.greatpages_default_campaign_id = greatpages_default_campaign_id;
+        if (greatpages_integrations !== undefined) updateData.greatpages_integrations = greatpages_integrations;
 
         // Exclusion API updates
         if (typeof exclusion_enabled === 'boolean') updateData.exclusion_enabled = exclusion_enabled;
