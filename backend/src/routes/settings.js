@@ -80,12 +80,12 @@ router.patch('/api', async (req, res) => {
         if (typeof round_robin_enabled === 'boolean') updateData.round_robin_enabled = round_robin_enabled;
         if (greatpages_ngrok_url !== undefined) updateData.greatpages_ngrok_url = greatpages_ngrok_url;
         if (greatpages_default_campaign_id !== undefined) updateData.greatpages_default_campaign_id = greatpages_default_campaign_id;
-        if (greatpages_integrations !== undefined) updateData.greatpages_integrations = greatpages_integrations;
+        if (greatpages_integrations !== undefined) updateData.greatpages_integrations = JSON.stringify(greatpages_integrations);
 
         // Exclusion API updates
         if (typeof exclusion_enabled === 'boolean') updateData.exclusion_enabled = exclusion_enabled;
         if (exclusion_token !== undefined) updateData.exclusion_token = exclusion_token;
-        if (exclusion_group_ids !== undefined) updateData.exclusion_group_ids = exclusion_group_ids;
+        if (exclusion_group_ids !== undefined) updateData.exclusion_group_ids = Array.isArray(exclusion_group_ids) ? JSON.stringify(exclusion_group_ids) : exclusion_group_ids;
 
         if (regenerate_token) updateData.webhook_token = uuidv4();
 
