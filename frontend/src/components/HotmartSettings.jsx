@@ -1,19 +1,186 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Copy, RefreshCw, Zap, Check, X, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { Copy, RefreshCw, Check, X, AlertCircle, Plus, Trash2, Save } from 'lucide-react';
 
-export default function HotmartSettings() {  // Webhook Settings (manteve nome do componente para não quebrar importação)
-    const [settings, setSettings] = useState(null);
+// Componente isolado para cada card de webhook — evita re-render global ao digitar
+function WebhookCard({ config, campaigns, onSave, onDelete }) {
+    const baseUrl = 'https://crm.discloud.app';
+
+    // Estado local do card (não dispara reload global ao digitar)
+    const [local, setLocal] = useState({
+        platform_name: config.platform_name || 'hotmart',
+        campaign_id: config.campaign_id || '',
+        webhook_secret: config.webhook_secret || '',
+        is_enabled: config.is_enabled ?? true,
+        enable_round_robin: config.enable_round_robin ?? false,
+    });
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    // URL dinâmica baseada no platform_name digitado
+    const platformSlug = (local.platform_name || 'hotmart').trim().toLowerCase().replace(/\s+/g, '-');
+    const webhookUrl = `${baseUrl}/api/webhook/gateway/${platformSlug}`;
+
+    const handleChange = (field, value) => {
+        setLocal(prev => ({ ...prev, [field]: value }));
+        setSaved(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave(config.id, { ...local });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const copyUrl = () => {
+        navigator.clipboard.writeText(webhookUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="card" style={{ background: 'var(--bg-secondary)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <h4 style={{ margin: 0 }}>Webhook #{config.webhook_number}</h4>
+                    {local.is_enabled
+                        ? <span style={{ fontSize: '0.7rem', background: '#10b981', color: '#fff', padding: '2px 8px', borderRadius: 99, fontWeight: 600 }}>ATIVO</span>
+                        : <span style={{ fontSize: '0.7rem', background: '#6b7280', color: '#fff', padding: '2px 8px', borderRadius: 99, fontWeight: 600 }}>INATIVO</span>
+                    }
+                </div>
+                <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => onDelete(config.id)}
+                    style={{ color: '#ef4444' }}
+                >
+                    <Trash2 size={16} />
+                </button>
+            </div>
+
+            {/* Nome da Plataforma */}
+            <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 6, display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🏷️ Nome da Plataforma
+                </label>
+                <input
+                    type="text"
+                    className="input"
+                    value={local.platform_name}
+                    onChange={(e) => handleChange('platform_name', e.target.value)}
+                    placeholder="Ex: looma, kiwify, hotmart, appmax..."
+                    style={{ fontWeight: 600 }}
+                />
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Este nome aparecerá no filtro "Gateway (Origem)" na aba de Leads automaticamente.
+                </p>
+            </div>
+
+            {/* URL do Webhook — muda conforme nome digitado */}
+            <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 6, display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🔗 URL do Webhook
+                </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                        type="text"
+                        value={webhookUrl}
+                        readOnly
+                        className="input"
+                        style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(139,92,246,0.08)', color: 'var(--accent)' }}
+                    />
+                    <button className="btn btn-secondary btn-sm" onClick={copyUrl}>
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                </div>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Cole este link na plataforma de checkout. Ele muda automaticamente conforme o nome acima.
+                </p>
+            </div>
+
+            {/* Campanha */}
+            <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 6, display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📁 Campanha
+                </label>
+                <select
+                    value={local.campaign_id}
+                    onChange={(e) => handleChange('campaign_id', parseInt(e.target.value) || null)}
+                    className="input"
+                >
+                    <option value="">Sem campanha</option>
+                    {campaigns.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Webhook Secret */}
+            <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 6, display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🔑 Webhook Secret (opcional)
+                </label>
+                <input
+                    type="text"
+                    value={local.webhook_secret}
+                    onChange={(e) => handleChange('webhook_secret', e.target.value)}
+                    className="input"
+                    placeholder="Deixe vazio para desabilitar validação"
+                />
+            </div>
+
+            {/* Toggles */}
+            <div style={{ display: 'flex', gap: 24, marginBottom: 20 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={local.is_enabled}
+                        onChange={(e) => handleChange('is_enabled', e.target.checked)}
+                    />
+                    <span style={{ fontSize: '0.875rem' }}>Ativo</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={local.enable_round_robin}
+                        onChange={(e) => handleChange('enable_round_robin', e.target.checked)}
+                    />
+                    <span style={{ fontSize: '0.875rem' }}>Distribuição Round-Robin</span>
+                </label>
+            </div>
+
+            {/* Botão Salvar */}
+            <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                disabled={saving}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 700 }}
+            >
+                {saving ? (
+                    <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : saved ? (
+                    <Check size={16} />
+                ) : (
+                    <Save size={16} />
+                )}
+                {saving ? 'Salvando...' : saved ? 'Salvo com sucesso!' : 'Salvar Webhook'}
+            </button>
+        </div>
+    );
+}
+
+export default function HotmartSettings() {
     const [configs, setConfigs] = useState([]);
     const [campaigns, setCampaigns] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [copied, setCopied] = useState(null);
-
-    // Webhooks devem sempre exibir o caminho absoluto real da produção 
-    // para que possam ser copiados para plataformas externas (que não testam localhost)
-    const baseUrl = 'https://crm.discloud.app';
 
     useEffect(() => {
         loadData();
@@ -21,25 +188,9 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
 
     const loadData = async () => {
         try {
-            await Promise.all([
-                loadSettings(),
-                loadConfigs(),
-                loadCampaigns(),
-                loadLogs()
-            ]);
+            await Promise.all([loadConfigs(), loadCampaigns(), loadLogs()]);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const loadSettings = async () => {
-        try {
-            const data = await api.getHotmartSettings();
-            setSettings(data.settings || {
-                enable_distribution: false
-            });
-        } catch (error) {
-            console.error('Error loading Hotmart settings:', error);
         }
     };
 
@@ -70,77 +221,28 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
         }
     };
 
-    const handleSaveSettings = async () => {
-        setSaving(true);
-        try {
-            await api.updateHotmartSettings(settings);
-            alert('✅ Configurações salvas com sucesso!');
-            loadSettings();
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            alert('❌ Erro ao salvar configurações');
-        } finally {
-            setSaving(false);
-        }
-    };
-
     const handleCreateWebhook = async () => {
         try {
-            await api.createHotmartConfig({
-                campaign_id: null,
-                webhook_secret: ''
-            });
-            alert('✅ Webhook criado com sucesso!');
+            await api.createHotmartConfig({ campaign_id: null, webhook_secret: '', platform_name: 'hotmart' });
             loadConfigs();
         } catch (error) {
-            console.error('Error creating webhook:', error);
             alert('❌ Erro ao criar webhook');
         }
     };
 
-    const handleUpdateConfig = async (id, updates) => {
-        try {
-            await api.updateHotmartConfig(id, updates);
-            loadConfigs();
-        } catch (error) {
-            console.error('Error updating config:', error);
-            alert('❌ Erro ao atualizar webhook');
-        }
+    const handleSaveConfig = async (id, updates) => {
+        await api.updateHotmartConfig(id, updates);
+        // Não recarrega a lista — evita reset dos inputs
     };
 
     const handleDeleteConfig = async (id) => {
-        if (!confirm('Tem certeza que deseja deletar este webhook?')) {
-            return;
-        }
-
+        if (!confirm('Tem certeza que deseja deletar este webhook?')) return;
         try {
             await api.deleteHotmartConfig(id);
-            alert('✅ Webhook deletado com sucesso!');
             loadConfigs();
         } catch (error) {
-            console.error('Error deleting config:', error);
             alert('❌ Erro ao deletar webhook');
         }
-    };
-
-    const handleGenerateSecret = async (configId) => {
-        try {
-            const data = await api.generateHotmartSecret();
-            const config = configs.find(c => c.id === configId);
-            await handleUpdateConfig(configId, {
-                ...config,
-                webhook_secret: data.secret
-            });
-        } catch (error) {
-            console.error('Error generating secret:', error);
-            alert('❌ Erro ao gerar secret');
-        }
-    };
-
-    const copyToClipboard = (text, id) => {
-        navigator.clipboard.writeText(text);
-        setCopied(id);
-        setTimeout(() => setCopied(null), 2000);
     };
 
     const getStatusBadge = (status) => {
@@ -149,43 +251,28 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
             error: { bg: '#ef4444', icon: X },
             duplicate: { bg: '#f59e0b', icon: AlertCircle }
         };
-        const config = styles[status] || styles.error;
-        const Icon = config.icon;
-
+        const cfg = styles[status] || styles.error;
+        const Icon = cfg.icon;
         return (
-            <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '4px 8px',
-                borderRadius: 4,
-                background: config.bg,
-                color: 'white',
-                fontSize: '0.75rem',
-                fontWeight: 600
-            }}>
-                <Icon size={12} />
-                {status}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, background: cfg.bg, color: 'white', fontSize: '0.75rem', fontWeight: 600 }}>
+                <Icon size={12} />{status}
             </span>
         );
     };
 
-    if (loading) {
-        return <div>Carregando...</div>;
-    }
+    if (loading) return <div>Carregando...</div>;
 
     return (
         <div style={{ maxWidth: 1200 }}>
             <h2>Integração Webhook</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                Configure múltiplos webhooks para receber leads de diferentes plataformas de pagamento (Hotmart, Looma, etc.)
+                Configure múltiplos webhooks para receber leads de diferentes plataformas de pagamento (Hotmart, Looma, Kiwify, etc.)
             </p>
-
 
             {/* Webhook Configurations */}
             <div className="card" style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <h3>Webhooks Configurados</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h3 style={{ margin: 0 }}>Webhooks Configurados</h3>
                     <button
                         className="btn btn-primary"
                         onClick={handleCreateWebhook}
@@ -202,136 +289,15 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
                     </p>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {configs.map(config => {
-                            const webhookUrl = `${baseUrl}/api/hotmart/webhook${config.webhook_number}`;
-                            return (
-                                <div key={config.id} className="card" style={{ background: 'var(--bg-secondary)', padding: 16 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                        <h4 style={{ margin: 0 }}>Webhook #{config.webhook_number}</h4>
-                                        <button
-                                            className="btn btn-ghost btn-sm"
-                                            onClick={() => handleDeleteConfig(config.id)}
-                                            style={{ color: '#ef4444' }}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-
-                                    {/* Webhook URL */}
-                                    <div style={{ marginBottom: 12 }}>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>URL do Webhook</label>
-                                        <div style={{ display: 'flex', gap: 8 }}>
-                                            <input
-                                                type="text"
-                                                value={webhookUrl}
-                                                readOnly
-                                                className="input"
-                                                style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.875rem' }}
-                                            />
-                                            <button
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => copyToClipboard(webhookUrl, `url-${config.id}`)}
-                                            >
-                                                {copied === `url-${config.id}` ? <Check size={16} /> : <Copy size={16} />}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Nome da Plataforma / Gateway */}
-                                    <div style={{ marginBottom: 12 }}>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>Nome da Plataforma (Ex: Looma, Kiwify, Hotmart)</label>
-                                        <input
-                                            type="text"
-                                            value={config.platform_name || 'hotmart'}
-                                            onChange={(e) => handleUpdateConfig(config.id, {
-                                                ...config,
-                                                platform_name: e.target.value.toLowerCase()
-                                            })}
-                                            className="input"
-                                            placeholder="Ex: looma"
-                                        />
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                                            Este nome será usado no filtro "Gateway (Origem)" na aba de Leads.
-                                        </p>
-                                    </div>
-
-                                    {/* Campaign */}
-                                    <div style={{ marginBottom: 12 }}>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>Campanha</label>
-                                        <select
-                                            value={config.campaign_id || ''}
-                                            onChange={(e) => handleUpdateConfig(config.id, {
-                                                ...config,
-                                                campaign_id: parseInt(e.target.value) || null
-                                            })}
-                                            className="input"
-                                        >
-                                            <option value="">Sem campanha</option>
-                                            {campaigns.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Webhook Secret */}
-                                    <div style={{ marginBottom: 12 }}>
-                                        <label className="label" style={{ fontSize: '0.75rem' }}>Webhook Secret (opcional)</label>
-                                        <div style={{ display: 'flex', gap: 8 }}>
-                                            <input
-                                                type="password"
-                                                value={config.webhook_secret || ''}
-                                                onChange={(e) => handleUpdateConfig(config.id, {
-                                                    ...config,
-                                                    webhook_secret: e.target.value
-                                                })}
-                                                className="input"
-                                                placeholder="Deixe vazio para desabilitar validação"
-                                                style={{ flex: 1 }}
-                                            />
-                                            <button
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => handleGenerateSecret(config.id)}
-                                            >
-                                                Gerar
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Enabled Toggle */}
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={config.is_enabled}
-                                            onChange={(e) => handleUpdateConfig(config.id, {
-                                                ...config,
-                                                is_enabled: e.target.checked
-                                            })}
-                                        />
-                                        <span style={{ fontSize: '0.875rem' }}>
-                                            {config.is_enabled ? 'Ativo' : 'Desativado'}
-                                        </span>
-                                    </label>
-
-                                    {/* Round-Robin Toggle */}
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 12 }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={config.enable_round_robin || false}
-                                            onChange={(e) => handleUpdateConfig(config.id, {
-                                                ...config,
-                                                enable_round_robin: e.target.checked
-                                            })}
-                                        />
-                                        <span style={{ fontSize: '0.875rem' }}>
-                                            Ativar distribuição Round-Robin
-                                        </span>
-                                    </label>
-                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: 28, marginTop: 4 }}>
-                                        Leads deste webhook serão distribuídos automaticamente para vendedoras ativas
-                                    </p>
-                                </div>
-                            );
-                        })}
+                        {configs.map(config => (
+                            <WebhookCard
+                                key={config.id}
+                                config={config}
+                                campaigns={campaigns}
+                                onSave={handleSaveConfig}
+                                onDelete={handleDeleteConfig}
+                            />
+                        ))}
                     </div>
                 )}
             </div>
@@ -340,11 +306,7 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
             <div className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <h3>Log de Atividades</h3>
-                    <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={loadLogs}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    >
+                    <button className="btn btn-ghost btn-sm" onClick={loadLogs} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <RefreshCw size={14} />
                         Atualizar
                     </button>
@@ -360,7 +322,7 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
                             <thead>
                                 <tr>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Data</th>
-                                    <th style={{ textAlign: 'left', padding: 8 }}>Webhook</th>
+                                    <th style={{ textAlign: 'left', padding: 8 }}>Plataforma</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Evento</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Comprador</th>
                                     <th style={{ textAlign: 'left', padding: 8 }}>Produto</th>
@@ -372,20 +334,14 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
                                     const webhookConfig = configs.find(c => c.id === log.webhook_config_id);
                                     return (
                                         <tr key={log.id} style={{ borderTop: '1px solid var(--border)' }}>
-                                            <td style={{ padding: 8 }}>
-                                                {new Date(log.created_at).toLocaleString('pt-BR')}
-                                            </td>
-                                            <td style={{ padding: 8 }}>
-                                                {webhookConfig ? `#${webhookConfig.webhook_number}` : '-'}
+                                            <td style={{ padding: 8 }}>{new Date(log.created_at).toLocaleString('pt-BR')}</td>
+                                            <td style={{ padding: 8, textTransform: 'capitalize', fontWeight: 600, color: 'var(--accent)' }}>
+                                                {webhookConfig?.platform_name || `#${webhookConfig?.webhook_number || '-'}`}
                                             </td>
                                             <td style={{ padding: 8 }}>{log.event_type}</td>
                                             <td style={{ padding: 8 }}>
                                                 {log.buyer_name || '-'}
-                                                {log.buyer_email && (
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                                        {log.buyer_email}
-                                                    </div>
-                                                )}
+                                                {log.buyer_email && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.buyer_email}</div>}
                                             </td>
                                             <td style={{ padding: 8 }}>{log.product_name || '-'}</td>
                                             <td style={{ padding: 8 }}>{getStatusBadge(log.status)}</td>
