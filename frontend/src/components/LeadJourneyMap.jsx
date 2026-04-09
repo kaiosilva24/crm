@@ -397,7 +397,7 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
                                             fontSize: '0.7rem', color: '#34d399', display: 'flex', justifyContent: 'space-between' 
                                         }}>
                                             <span>
-                                                💰 Pago: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: node.data.metadata.financials.currency || 'BRL' }).format(node.data.metadata.financials.gross)}
+                                                💰 {node.data.metadata?.platform ? String(node.data.metadata.platform).toUpperCase() + ' • ' : ''}Pago: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: node.data.metadata.financials.currency || 'BRL' }).format(node.data.metadata.financials.gross)}
                                             </span>
                                             {node.data.metadata.financials.net && (
                                                 <span style={{ fontWeight: 600 }}>

@@ -216,15 +216,17 @@ export default function LeadJourney({ leadId, phone }) {
                                 const { gross, net, currency } = ev.metadata.financials;
                                 const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
                                 const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
+                                const platformName = ev.metadata?.platform ? String(ev.metadata.platform).charAt(0).toUpperCase() + String(ev.metadata.platform).slice(1) : '';
                                 
                                 nodes.push({
                                     id: ev.id + '_finance',
                                     icon: '💰',
                                     color: '#059669',
-                                    label: grossFmt,
+                                    label: platformName ? `${platformName} (${grossFmt})` : grossFmt,
                                     date: ev.created_at,
                                     subLabel: netFmt ? `Rec: ${netFmt}` : 'Pago',
                                     details: [
+                                        platformName && { label: 'Plataforma', value: platformName },
                                         { label: 'Valor Pago', value: grossFmt },
                                         netFmt && { label: 'Líquido Recebido', value: netFmt }
                                     ].filter(Boolean)
