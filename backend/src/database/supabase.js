@@ -1430,9 +1430,24 @@ export const db = {
     }
 };
 
-export function initializeDatabase() {
+export async function initializeDatabase() {
     console.log('✅ PostgreSQL (Oracle) client initialized');
     console.log(`📌 Connected to: ${process.env.DATABASE_URL?.replace(/:([^:@]+)@/, ':***@')}`);
+
+    // Auto-migrations: adicionar colunas novas sem quebrar produção
+    try {
+        const pool = getPool();
+        const migrations = [
+            `ALTER TABLE hotmart_webhook_configs ADD COLUMN IF NOT EXISTS platform_name VARCHAR(100) DEFAULT 'hotmart'`,
+            `ALTER TABLE leads ADD COLUMN IF NOT EXISTS source VARCHAR(100)`,
+        ];
+        for (const sql of migrations) {
+            await pool.query(sql);
+        }
+        console.log('✅ Auto-migrations aplicadas com sucesso');
+    } catch (err) {
+        console.error('⚠️ Erro ao aplicar auto-migrations (não crítico):', err.message);
+    }
 }
 
 export default db;

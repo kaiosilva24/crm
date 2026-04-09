@@ -124,19 +124,24 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 CRM API running on port ${PORT}`);
-    console.log(`📦 Database: Supabase (PostgreSQL)`);
+// Inicializar conexão com banco e subir servidor
+initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log(`🚀 CRM API running on port ${PORT}`);
+        console.log(`📦 Database: PostgreSQL (Oracle)`);
 
-    // Restaurar sessões do WhatsApp com delay (evita rate-limit no startup)
-    console.log('⏰ Aguardando 10 segundos antes de restaurar sessões...');
-    setTimeout(async () => { // Added 'async' here
-        console.log('🔄 Iniciando restauração de sessões WhatsApp e sincronização automática...'); // Updated log message
-        // Restaurar sessões ativas
-        restoreSessions();
+        // Restaurar sessões do WhatsApp com delay (evita rate-limit no startup)
+        console.log('⏰ Aguardando 10 segundos antes de restaurar sessões...');
+        setTimeout(async () => {
+            console.log('🔄 Iniciando restauração de sessões WhatsApp e sincronização automática...');
+            restoreSessions();
 
-        // Inicializar sincronização automática de grupos
-        const { initAutoSync } = await import('./services/autoSyncService.js');
-        initAutoSync();
-    }, 10000); // Aguardar 10 segundos para garantir que o servidor está pronto
+            const { initAutoSync } = await import('./services/autoSyncService.js');
+            initAutoSync();
+        }, 10000);
+    });
+}).catch(err => {
+    console.error('❌ Falha crítica na inicialização do banco:', err);
+    process.exit(1);
 });
+
