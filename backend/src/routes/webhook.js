@@ -37,6 +37,17 @@ router.post('/hotmart', async (req, res) => {
         // Extrair dados do webhook da Hotmart
         const data = req.body.data || req.body;
         const buyer = data.buyer || data;
+        const tracking = data.purchase?.tracking || data.tracking || buyer.tracking || {};
+
+        // Extrair UTMs da Hotmart
+        let utm_source = req.query.utm_source || tracking.source || tracking.utm_source || buyer.sck || data.sck || null;
+        let utm_medium = req.query.utm_medium || tracking.medium || tracking.utm_medium || null;
+        let utm_campaign = req.query.utm_campaign || tracking.campaign || tracking.utm_campaign || null;
+        let utm_content = req.query.utm_content || tracking.content || tracking.utm_content || null;
+        let utm_term = req.query.utm_term || tracking.term || tracking.utm_term || null;
+
+        let campaignId = req.query.campaign || req.query.campaign_id || null;
+        if (campaignId) campaignId = parseInt(campaignId) || null;
 
         // Normalizar telefone
         let phone = (buyer.phone_number || buyer.phone || buyer.checkout_phone || '').replace(/\D/g, '');
@@ -59,6 +70,7 @@ router.post('/hotmart', async (req, res) => {
             product_name: data.product?.name || data.product_name || '',
             transaction_id: data.purchase?.transaction || data.transaction || null,
             status_id: 1,
+            campaign_id: campaignId,
             source: 'hotmart',
             in_group: false
         };
@@ -70,6 +82,20 @@ router.post('/hotmart', async (req, res) => {
         // Verificar se lead já existe
         const existing = await db.getLeadByEmail(leadData.email);
         if (existing) {
+            console.log(`⚠️ Lead já existe (Hotmart), registrando evento de jornada: ${existing.id}`);
+            
+            // Mesmo existindo, registrar evento de re-entrada/webhook com os UTMs!
+            db.createJourneyEvent({
+                lead_id: existing.id,
+                lead_phone: existing.phone || phone,
+                lead_email: existing.email,
+                event_type: 'hotmart_event',
+                event_label: `Evento Hotmart (Compra/Abandono) - Produto: ${leadData.product_name}`,
+                campaign_id: campaignId || existing.campaign_id,
+                utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+                metadata: { original_payload: req.body, transaction: leadData.transaction_id }
+            }).catch(err => console.error('Journey re_entry hotmart error:', err));
+
             return res.json({ message: 'Lead já existe', lead_uuid: existing.uuid });
         }
 
@@ -97,6 +123,18 @@ router.post('/hotmart', async (req, res) => {
 
         // Criar lead
         const lead = await db.createLead(leadData);
+
+        // Registrar a entrada original do lead via Hotmart
+        db.createJourneyEvent({
+            lead_id: lead.id,
+            lead_phone: phone,
+            lead_email: leadData.email,
+            event_type: 'entry',
+            event_label: `Entrada direta via Hotmart - Produto: ${leadData.product_name}`,
+            campaign_id: campaignId,
+            utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+            metadata: { original_payload: req.body, transaction: leadData.transaction_id }
+        }).catch(err => console.error('Journey entry hotmart error:', err));
 
         // 🚀 TRIGGER MIRRORING PROCESS
         // Usar campaign_id se estiver disponível no payload ou query, mas aqui é difícil saber qual campanha ID
