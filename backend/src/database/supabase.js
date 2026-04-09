@@ -4,7 +4,7 @@
  * permitindo trocar o banco sem alterar rotas.
  */
 
-import { supabase as _supabase } from './pg-adapter.js';
+import { supabase as _supabase, getPool } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import NodeCache from 'node-cache';
@@ -171,6 +171,16 @@ export const db = {
     },
 
     // ==================== LEADS ====================
+    async getLeadSources() {
+        try {
+            const result = await getPool().query('SELECT DISTINCT source FROM leads WHERE source IS NOT NULL ORDER BY source;');
+            return result.rows.map(r => r.source);
+        } catch (error) {
+            console.error('Error fetching lead sources:', error);
+            return ['hotmart', 'greatpages'];
+        }
+    },
+
     async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content, source_integration, page = 1, limit = 50 }) {
         // ESTRATÉGIA ESPECIAL para filtro in_group:
         // Como o in_group vem de uma tabela separada (lead_campaign_groups),

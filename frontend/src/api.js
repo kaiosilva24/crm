@@ -60,6 +60,7 @@ export const api = {
     updateApiSettings: (data) => request('/settings/api', { method: 'PATCH', body: JSON.stringify(data) }),
     getDistributionOrder: () => request('/settings/distribution-order'),
     updateDistributionOrder: (order) => request('/settings/distribution-order', { method: 'PUT', body: JSON.stringify({ order }) }),
+    getLeadSources: () => request('/leads/sources'),
     exportLeads: (params = {}) => request(`/settings/export/leads?${new URLSearchParams(params)}`),
     importLeads: (data) => request('/settings/import/leads', { method: 'POST', body: JSON.stringify(data) }),
     // Statuses

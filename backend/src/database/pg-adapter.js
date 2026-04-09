@@ -501,6 +501,7 @@ class QueryBuilder {
 }
 
 // ─── CLIENTE SUPABASE EMULADO ────────────────────────────────
+export { getPool };
 export const supabase = {
   from: (tableName) => new QueryBuilder(tableName),
   auth: {

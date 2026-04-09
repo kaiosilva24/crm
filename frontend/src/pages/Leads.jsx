@@ -19,6 +19,7 @@ export default function Leads() {
     const [statusFilter, setStatusFilter] = useState('');
     const [campaignFilter, setCampaignFilter] = useState('');
     const [sourceIntegrationFilter, setSourceIntegrationFilter] = useState('');
+    const [availableSources, setAvailableSources] = useState([]);
     
     // Filtros UTM/Tráfego
     const [utmMediumFilter, setUtmMediumFilter] = useState('');
@@ -536,6 +537,7 @@ export default function Leads() {
         // Vendedoras e admin carregam campanhas e subcampanhas
         api.getCampaigns({ active_only: true }).then(d => setCampaigns(d.campaigns));
         api.getSubcampaigns({ active_only: true }).then(d => setSubcampaigns(d.subcampaigns || [])).catch(() => { });
+        api.getLeadSources().then(d => setAvailableSources(d.sources || [])).catch(() => {});
         if (isAdmin) {
             api.getSellers().then(d => setSellers(d.sellers || []));
         }
@@ -915,11 +917,11 @@ export default function Leads() {
                         
                         <div style={{ flex: 1, minWidth: 120 }}>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Gateway (Origem)</label>
-                            <select className="form-select" style={{ width: '100%' }} value={sourceIntegrationFilter} onChange={e => setSourceIntegrationFilter(e.target.value)}>
+                            <select className="form-select" style={{ width: '100%', textTransform: 'capitalize' }} value={sourceIntegrationFilter} onChange={e => setSourceIntegrationFilter(e.target.value)}>
                                 <option value="">Todos</option>
-                                <option value="hotmart">Hotmart</option>
-                                <option value="greatpages">GreatPages</option>
-                                <option value="looma">Looma</option>
+                                {availableSources.map(s => (
+                                    <option key={s} value={s}>{s === 'ig' ? 'Instagram' : s === 'fb' ? 'Facebook' : s}</option>
+                                ))}
                             </select>
                         </div>
 

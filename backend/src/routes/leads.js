@@ -11,6 +11,18 @@ const router = Router();
 router.use(authenticate);
 
 /**
+ * GET /api/leads/sources
+ */
+router.get('/sources', async (req, res) => {
+    try {
+        const sources = await db.getLeadSources();
+        res.json({ sources });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar origens' });
+    }
+});
+
+/**
  * GET /api/leads
  */
 router.get('/', async (req, res) => {
