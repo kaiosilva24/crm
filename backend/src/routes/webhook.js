@@ -13,17 +13,58 @@ import fs from 'fs';
 const router = Router();
 
 /**
+ * Função utilitária para gravar log de webhook e exibir na aba 'Log de Atividades'
+ */
+async function logGatewayEvent(payload, status, errorMessage, leadUuid, buyerEmail, buyerName, productName, platform) {
+    try {
+        const eventType = payload?.event || payload?.type || payload?.data?.event || platform.toUpperCase() + '_EVENT';
+
+        // Tenta achar um webhook_config_id associado à plataforma para manter a UI consistente
+        let webhookConfigId = null;
+        try {
+            const { data: configs } = await supabase
+                .from('hotmart_webhook_configs')
+                .select('id')
+                .ilike('platform_name', platform)
+                .limit(1);
+            if (configs && configs.length > 0) webhookConfigId = configs[0].id;
+        } catch (e) {}
+
+        await supabase
+            .from('hotmart_webhook_logs')
+            .insert({
+                event_type: eventType,
+                payload: JSON.stringify(payload),
+                status,
+                error_message: errorMessage,
+                lead_uuid: leadUuid,
+                buyer_email: buyerEmail,
+                buyer_name: buyerName || 'Sem nome',
+                product_name: productName || 'Venda via ' + platform,
+                webhook_config_id: webhookConfigId
+            });
+    } catch (error) {
+        console.error('Erro ao gravar log no gateway:', error);
+    }
+}
+
+/**
  * POST /api/webhook/gateway/:platform
  * Rota universal - aceita webhooks de qualquer plataforma.
  * O nome da plataforma vem na URL e é salvo como 'source' no lead.
  */
 router.post('/gateway/:platform', async (req, res) => {
+    const platform = req.params.platform.toLowerCase();
+    const rawPayload = req.body;
+    let name = 'Desconhecido';
+    let email = '';
+    let product_name = `Webhook ${platform}`;
+    
     try {
-        const platform = req.params.platform.toLowerCase();
-
         // Verificar se webhook está habilitado
         const settings = await db.getApiSettings();
         if (!settings || !settings.webhook_enabled) {
+            await logGatewayEvent(rawPayload, 'error', 'Webhook desabilitado globalmente', null, email, name, product_name, platform);
             return res.status(403).json({ error: 'Webhook desabilitado' });
         }
 
@@ -37,12 +78,12 @@ router.post('/gateway/:platform', async (req, res) => {
         const tracking = data.purchase?.tracking || data.tracking || buyer.tracking || {};
 
         // Extrair dados do lead
-        const name = buyer.name || buyer.nome || buyer.first_name || buyer.full_name || 'Sem nome';
-        const email = (buyer.email || '').toLowerCase().trim();
+        name = buyer.name || buyer.nome || buyer.first_name || buyer.full_name || 'Sem nome';
+        email = (buyer.email || '').toLowerCase().trim();
         let phone = (buyer.phone || buyer.phone_number || buyer.telefone || buyer.checkout_phone || buyer.celular || buyer.mobile || '').replace(/\D/g, '');
         if (phone && (phone.length === 10 || phone.length === 11)) phone = '55' + phone;
 
-        const product_name = data.product?.name || data.product_name || data.produto || data.offer || `Venda via ${platform}`;
+        product_name = data.product?.name || data.product_name || data.produto || data.offer || `Venda via ${platform}`;
 
         // Extrair UTMs
         const utm_source   = req.query.utm_source   || tracking.source   || tracking.utm_source   || buyer.sck || data.sck || null;
@@ -52,6 +93,7 @@ router.post('/gateway/:platform', async (req, res) => {
         const utm_content  = req.query.utm_content  || tracking.content  || tracking.utm_content  || null;
 
         if (!email && !phone) {
+            await logGatewayEvent(rawPayload, 'error', 'Payload sem email nem telefone', null, email, name, product_name, platform);
             return res.status(400).json({ error: 'Payload inválido (sem email nem telefone)' });
         }
 
@@ -70,6 +112,7 @@ router.post('/gateway/:platform', async (req, res) => {
                 metadata: { platform, original_payload: req.body }
             }).catch(err => console.error(`[Gateway/${platform}] Journey event error:`, err));
 
+            await logGatewayEvent(rawPayload, 'duplicate', 'Lead já existe e foi atualizado no funil', existing.uuid, email, name, product_name, platform);
             return res.json({ message: 'Lead já existe', lead_uuid: existing.uuid });
         }
 
@@ -124,10 +167,12 @@ router.post('/gateway/:platform', async (req, res) => {
             await processManychatAutomation(lead, settings);
         } catch(err) {}
 
+        await logGatewayEvent(rawPayload, 'success', null, lead.uuid, email, name, product_name, platform);
         return res.json({ success: true, message: `Lead criado via ${platform}`, lead_uuid: lead.uuid });
 
     } catch (error) {
         console.error(`[Gateway] Erro interno:`, error);
+        await logGatewayEvent(rawPayload, 'error', `Erro ao processar erro: ${error.message}`, null, email, name, product_name, platform);
         return res.status(500).json({ error: 'Erro interno', detail: error.message });
     }
 });
