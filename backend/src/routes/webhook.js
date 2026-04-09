@@ -47,6 +47,7 @@ async function logGatewayEvent(payload, status, errorMessage, leadUuid, buyerEma
     } catch (error) {
         console.error('Erro ao gravar log no gateway:', error);
     }
+}
 
 /**
  * POST /api/webhook/gateway/:platform
