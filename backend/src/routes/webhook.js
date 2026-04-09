@@ -14,122 +14,121 @@ const router = Router();
 
 /**
  * POST /api/webhook/gateway/:platform
- * Rota universal que aceita webhooks de qualquer checkout e marca com o nome fornecido na URL.
+ * Rota universal - aceita webhooks de qualquer plataforma.
+ * O nome da plataforma vem na URL e é salvo como 'source' no lead.
  */
 router.post('/gateway/:platform', async (req, res) => {
     try {
         const platform = req.params.platform.toLowerCase();
-        
+
         // Verificar se webhook está habilitado
         const settings = await db.getApiSettings();
         if (!settings || !settings.webhook_enabled) {
             return res.status(403).json({ error: 'Webhook desabilitado' });
         }
-        
+
+        // Desempacotar payload (suporte a múltiplos formatos)
         let data = req.body;
         if (data.data && typeof data.data === 'object') {
-            data = data.data; // Desempacota payload de algumas plataformas
+            data = data.data;
         }
-        
-        const customer = data.buyer || data.customer || data.client || data.comprador || data;
-        const tracking = data.purchase?.tracking || data.tracking || customer.tracking || {};
-        
-        let name = customer.name || customer.nome || customer.first_name || customer.full_name || 'Sem nome';
-        let email = (customer.email || '').toLowerCase();
-        let phone = customer.phone || customer.telefone || customer.checkout_phone || customer.celular || customer.mobile || '';
-        let product = data.product?.name || data.product_name || data.product || data.produto || data.offer || 'Venda via ' + platform;
-        
+
+        const buyer = data.buyer || data.customer || data.client || data.comprador || data;
+        const tracking = data.purchase?.tracking || data.tracking || buyer.tracking || {};
+
+        // Extrair dados do lead
+        const name = buyer.name || buyer.nome || buyer.first_name || buyer.full_name || 'Sem nome';
+        const email = (buyer.email || '').toLowerCase().trim();
+        let phone = (buyer.phone || buyer.phone_number || buyer.telefone || buyer.checkout_phone || buyer.celular || buyer.mobile || '').replace(/\D/g, '');
+        if (phone && (phone.length === 10 || phone.length === 11)) phone = '55' + phone;
+
+        const product_name = data.product?.name || data.product_name || data.produto || data.offer || `Venda via ${platform}`;
+
+        // Extrair UTMs
+        const utm_source   = req.query.utm_source   || tracking.source   || tracking.utm_source   || buyer.sck || data.sck || null;
+        const utm_medium   = req.query.utm_medium   || tracking.medium   || tracking.utm_medium   || null;
+        const utm_campaign = req.query.utm_campaign || tracking.campaign || tracking.utm_campaign || null;
+        const utm_term     = req.query.utm_term     || tracking.term     || tracking.utm_term     || null;
+        const utm_content  = req.query.utm_content  || tracking.content  || tracking.utm_content  || null;
+
         if (!email && !phone) {
             return res.status(400).json({ error: 'Payload inválido (sem email nem telefone)' });
         }
-        
-        // Extrair UTMs da forma mais abrangente possível
-        let utm_source = req.query.utm_source || tracking.source || tracking.utm_source || customer.sck || data.sck || data.src || null;
-        let utm_medium = req.query.utm_medium || tracking.medium || tracking.utm_medium || null;
-        let utm_campaign = req.query.utm_campaign || tracking.campaign || tracking.utm_campaign || null;
-        let utm_term = req.query.utm_term || tracking.term || tracking.utm_term || null;
-        let utm_content = req.query.utm_content || tracking.content || tracking.utm_content || null;
-        
-        const uuid = uuidv4();
+
+        // Verificar se lead já existe
+        const existing = email ? await db.getLeadByEmail(email) : null;
+        if (existing) {
+            console.log(`[Gateway/${platform}] Lead já existe: ${existing.uuid}`);
+            db.createJourneyEvent({
+                lead_id: existing.id,
+                lead_phone: existing.phone || phone,
+                lead_email: existing.email,
+                event_type: 'gateway_event',
+                event_label: `Re-entrada via ${platform} - Produto: ${product_name}`,
+                campaign_id: existing.campaign_id,
+                utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+                metadata: { platform, original_payload: req.body }
+            }).catch(err => console.error(`[Gateway/${platform}] Journey event error:`, err));
+
+            return res.json({ message: 'Lead já existe', lead_uuid: existing.uuid });
+        }
+
+        // Montar dados do novo lead
         const leadData = {
-            uuid,
+            uuid: uuidv4(),
             first_name: name,
             email: email || '',
             phone: phone || '',
-            product: product,
-            campaign_id: settings.default_campaign_id,
-            seller_id: null,
+            product_name,
             status_id: null,
+            campaign_id: null,
             source: platform,
-            in_group: false
+            in_group: false,
+            seller_id: null
         };
-        
-        const existingLead = await db.findLeadByEmailOrPhone(leadData.email, leadData.phone);
-        let finalUuid = uuid;
-        
-        if (existingLead) {
-            // Em caso de lead existente, não altera status ou vendedor, apenas atualiza contato
-            finalUuid = existingLead.uuid;
-            await db.updateLeadDetails(finalUuid, {
-                first_name: leadData.first_name,
-                email: leadData.email,
-                phone: leadData.phone
-            });
-            console.log(`[Universal Webhook - ${platform}] Atualizou lead existente: ${finalUuid}`);
-            
-            // Gravar evento de reentrada
-            try {
-                await db.supabase.from('lead_journey_events').insert({
-                    lead_id: existingLead.id,
-                    event_type: 'abandonment', // ou re-entry
-                    event_label: `Re-entrada via ${platform}`,
-                    utm_source, utm_medium, utm_campaign, utm_term, utm_content
-                });
-            } catch (err) { console.error('Erro ao gravar evento UTM em reentrada universal:', err); }
-            
-            // Manychat
-            try {
-                const manychatService = await import('../services/manychatService.js');
-                if (settings.manychat_token && settings.manychat_event_name) {
-                    await manychatService.default.sendToManychat(leadData, settings);
+
+        // Round-Robin se habilitado
+        if (settings.round_robin_enabled !== false) {
+            const sellers = await db.getActiveSellersInDistribution();
+            if (sellers.length > 0) {
+                const control = await db.getDistributionControl();
+                const lastSellerId = control?.last_seller_id;
+                let nextIndex = 0;
+                if (lastSellerId) {
+                    const currentIndex = sellers.findIndex(s => s.id === lastSellerId);
+                    nextIndex = (currentIndex + 1) % sellers.length;
                 }
-            } catch (err) {}
-            
-            return res.json({ message: 'Lead importado e atualizado (Universal)', uuid: finalUuid });
-        }
-        
-        // Lead Novo 
-        if (settings.enable_distribution) {
-            leadData.seller_id = await db.getNextDistributableSeller();
-        }
-        
-        const insertedLead = await db.createLead(leadData);
-        if (insertedLead && insertedLead.id) {
-            // Gravar UTM de Entrada
-            try {
-                await db.supabase.from('lead_journey_events').insert({
-                    lead_id: insertedLead.id,
-                    event_type: 'entry',
-                    event_label: `Entrada via ${platform}`,
-                    utm_source, utm_medium, utm_campaign, utm_term, utm_content
-                });
-            } catch (err) { console.error('Erro ao gravar evento UTM de entrada universal:', err); }
-        }
-        
-        console.log(`[Universal Webhook - ${platform}] Criou novo lead: ${uuid}`);
-        
-        // Manychat
-        try {
-            const manychatService = await import('../services/manychatService.js');
-            if (settings.manychat_token && settings.manychat_event_name) {
-                await manychatService.default.sendToManychat(leadData, settings);
+                leadData.seller_id = sellers[nextIndex].id;
+                await db.updateDistributionControl(sellers[nextIndex].id);
             }
-        } catch (err) {}
-        
-        return res.json({ message: 'Lead importado com sucesso (Universal)', uuid });
+        }
+
+        // Criar lead
+        const lead = await db.createLead(leadData);
+        console.log(`[Gateway/${platform}] Novo lead criado: ${lead.uuid}`);
+
+        // Registrar evento de entrada com UTMs
+        db.createJourneyEvent({
+            lead_id: lead.id,
+            lead_phone: phone,
+            lead_email: email,
+            event_type: 'entry',
+            event_label: `Entrada via ${platform} - Produto: ${product_name}`,
+            campaign_id: null,
+            utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+            metadata: { platform, original_payload: req.body }
+        }).catch(err => console.error(`[Gateway/${platform}] Journey entry error:`, err));
+
+        // ManyChat automation
+        try {
+            await processManychatAutomation(lead, settings);
+        } catch(err) {}
+
+        return res.json({ success: true, message: `Lead criado via ${platform}`, lead_uuid: lead.uuid });
+
     } catch (error) {
-        console.error(`Erro no webhook universal:`, error);
-        return res.status(500).json({ error: 'Erro interno' });
+        console.error(`[Gateway] Erro interno:`, error);
+        return res.status(500).json({ error: 'Erro interno', detail: error.message });
     }
 });
 
