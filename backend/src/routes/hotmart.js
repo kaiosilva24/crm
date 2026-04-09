@@ -169,6 +169,7 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
                     campaign_id: config.campaign_id, // Use campaign from webhook config
                     seller_id: sellerId,
                     status_id: null, // Explicitamente null para mostrar "-selecione-"
+                    source: config.platform_name || 'hotmart',
                     in_group: false
                 })
                 .select()
@@ -264,7 +265,8 @@ router.post('/configs', authenticate, authorize('admin'), async (req, res) => {
                 campaign_id,
                 webhook_secret,
                 enable_round_robin: enable_round_robin || false,
-                is_enabled: true
+                is_enabled: true,
+                platform_name: req.body.platform_name || 'hotmart'
             })
             .select()
             .single();
@@ -292,6 +294,7 @@ router.put('/configs/:id', authenticate, authorize('admin'), async (req, res) =>
                 webhook_secret,
                 is_enabled,
                 enable_round_robin,
+                platform_name: req.body.platform_name || 'hotmart',
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)

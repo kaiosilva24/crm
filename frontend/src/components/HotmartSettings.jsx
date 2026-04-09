@@ -237,6 +237,24 @@ export default function HotmartSettings() {  // Webhook Settings (manteve nome d
                                         </div>
                                     </div>
 
+                                    {/* Nome da Plataforma / Gateway */}
+                                    <div style={{ marginBottom: 12 }}>
+                                        <label className="label" style={{ fontSize: '0.75rem' }}>Nome da Plataforma (Ex: Looma, Kiwify, Hotmart)</label>
+                                        <input
+                                            type="text"
+                                            value={config.platform_name || 'hotmart'}
+                                            onChange={(e) => handleUpdateConfig(config.id, {
+                                                ...config,
+                                                platform_name: e.target.value.toLowerCase()
+                                            })}
+                                            className="input"
+                                            placeholder="Ex: looma"
+                                        />
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                            Este nome será usado no filtro "Gateway (Origem)" na aba de Leads.
+                                        </p>
+                                    </div>
+
                                     {/* Campaign */}
                                     <div style={{ marginBottom: 12 }}>
                                         <label className="label" style={{ fontSize: '0.75rem' }}>Campanha</label>
