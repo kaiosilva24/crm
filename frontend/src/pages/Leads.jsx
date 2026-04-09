@@ -919,6 +919,7 @@ export default function Leads() {
                                 <option value="">Todos</option>
                                 <option value="hotmart">Hotmart</option>
                                 <option value="greatpages">GreatPages</option>
+                                <option value="looma">Looma</option>
                             </select>
                         </div>
 
