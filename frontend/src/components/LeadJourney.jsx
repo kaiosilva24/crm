@@ -5,14 +5,16 @@ export const EVENT_ICONS = {
     entry: '🔵',
     re_entry: '🔄',
     seller_assigned: '👤',
-    seller_changed: '👥',
+    seller_changed: '🔄',
     seller_removed: '❌',
     lead_deleted: '🗑️',
     seller_historical: '⏳',
     status_change: '🏷️',
     campaign_change: '📣',
-    sale: '🟢',
+    sale: '💰',
     note: '📝',
+    gateway_event: '🌐',
+    hotmart_event: '🔥',
     default: '⚪'
 };
 
@@ -29,6 +31,8 @@ export const EVENT_COLORS = {
     campaign_change: '#ec4899',
     sale: '#10b981',
     note: '#64748b',
+    gateway_event: '#f59e0b',
+    hotmart_event: '#f97316',
     default: '#94a3b8'
 };
 
@@ -44,6 +48,8 @@ export const EVENT_LABELS_PT = {
     campaign_change: 'Campanha',
     sale: 'Venda',
     note: 'Nota',
+    gateway_event: 'Notificação de API',
+    hotmart_event: 'Notificação Hotmart'
 };
 
 export function formatDateShort(dateStr) {
@@ -142,8 +148,8 @@ export default function LeadJourney({ leadId, phone }) {
                 {(() => {
                     const nodes = [];
                     events.forEach(ev => {
-                        // Se for entrada ou re-entrada, podemos quebrar em vários
-                        if (ev.event_type === 'entry' || ev.event_type === 're_entry') {
+                        // Apenas para a primeira entrada, explodimos UTMs. Re-entradas ficam em um bloco condensado.
+                        if (ev.event_type === 'entry') {
                             nodes.push({
                                 id: ev.id + '_base',
                                 originalId: ev.id,
@@ -212,26 +218,7 @@ export default function LeadJourney({ leadId, phone }) {
                                     subLabel: 'Anúncio'
                                 });
                             }
-                            if (ev.metadata?.financials) {
-                                const { gross, net, currency } = ev.metadata.financials;
-                                const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
-                                const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
-                                const platformName = ev.metadata?.platform ? String(ev.metadata.platform).charAt(0).toUpperCase() + String(ev.metadata.platform).slice(1) : '';
-                                
-                                nodes.push({
-                                    id: ev.id + '_finance',
-                                    icon: '💰',
-                                    color: '#059669',
-                                    label: platformName ? `${platformName} (${grossFmt})` : grossFmt,
-                                    date: ev.created_at,
-                                    subLabel: netFmt ? `Rec: ${netFmt}` : 'Pago',
-                                    details: [
-                                        platformName && { label: 'Plataforma', value: platformName },
-                                        { label: 'Valor Pago', value: grossFmt },
-                                        netFmt && { label: 'Líquido Recebido', value: netFmt }
-                                    ].filter(Boolean)
-                                });
-                            }
+
                             if (ev.seller_name) {
                                 nodes.push({
                                     id: ev.id + '_seller',
@@ -274,6 +261,28 @@ export default function LeadJourney({ leadId, phone }) {
                                     ev.event_label && { label: 'Detalhes', value: ev.event_label }
                                 ].filter(Boolean)
                             });
+                        }
+                        
+                        // Extrai a pílula financeira como um bloco independente na timeline, independente se for uma Entrada, Webhook, Compra, ou Re-entrada.
+                        if (ev.metadata?.financials) {
+                                const { gross, net, currency } = ev.metadata.financials;
+                                const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
+                                const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
+                                const platformName = ev.metadata?.platform ? String(ev.metadata.platform).charAt(0).toUpperCase() + String(ev.metadata.platform).slice(1) : '';
+                                
+                                nodes.push({
+                                    id: ev.id + '_finance',
+                                    icon: '💰',
+                                    color: '#059669',
+                                    label: platformName ? `${platformName} (${grossFmt})` : grossFmt,
+                                    date: ev.created_at,
+                                    subLabel: netFmt ? `Rec: ${netFmt}` : 'Pago',
+                                    details: [
+                                        platformName && { label: 'Plataforma', value: platformName },
+                                        { label: 'Valor Pago', value: grossFmt },
+                                        netFmt && { label: 'Líquido Recebido', value: netFmt }
+                                    ].filter(Boolean)
+                                });
                         }
                     });
 

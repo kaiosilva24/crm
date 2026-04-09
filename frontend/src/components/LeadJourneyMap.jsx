@@ -53,7 +53,7 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
     const getLayout = () => {
         const visualEvents = [];
         events.forEach(ev => {
-            if (ev.event_type === 'entry' || ev.event_type === 're_entry') {
+            if (ev.event_type === 'entry') {
                 visualEvents.push({
                     id: ev.id + '_base',
                     data: ev,
