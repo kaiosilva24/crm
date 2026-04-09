@@ -171,11 +171,32 @@ export const db = {
     },
 
     // ==================== LEADS ====================
-    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, page = 1, limit = 50 }) {
+    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content, page = 1, limit = 50 }) {
         // ESTRATÉGIA ESPECIAL para filtro in_group:
         // Como o in_group vem de uma tabela separada (lead_campaign_groups),
         // precisamos buscar TODOS os leads que correspondem aos outros filtros primeiro,
         // depois aplicar o filtro in_group, e então paginar manualmente.
+        
+        let useJourneyFilter = utm_medium || utm_source || utm_campaign || utm_term || utm_content;
+        let journeyMatchedLeadIds = null;
+        
+        if (useJourneyFilter) {
+            let jQuery = supabase.from('lead_journey_events').select('lead_id');
+            if (utm_medium) jQuery = jQuery.eq('utm_medium', utm_medium);
+            if (utm_source) jQuery = jQuery.eq('utm_source', utm_source);
+            if (utm_campaign) jQuery = jQuery.ilike('utm_campaign', `%${utm_campaign}%`);
+            if (utm_term) jQuery = jQuery.ilike('utm_term', `%${utm_term}%`);
+            if (utm_content) jQuery = jQuery.ilike('utm_content', `%${utm_content}%`);
+            
+            const { data: jData } = await jQuery;
+            const ids = (jData || []).map(r => r.lead_id).filter(Boolean);
+            journeyMatchedLeadIds = [...new Set(ids)];
+            
+            if (journeyMatchedLeadIds.length === 0) {
+                return { leads: [], total: 0 };
+            }
+        }
+
         const useInGroupFilter = in_group !== undefined;
         const fetchLimit = useInGroupFilter ? 5000 : limit;
         const fetchOffset = useInGroupFilter ? 0 : (page - 1) * limit;
@@ -184,6 +205,10 @@ export const db = {
         let query = supabase
             .from('leads')
             .select('*', { count: 'exact' });
+
+        if (journeyMatchedLeadIds && journeyMatchedLeadIds.length > 0) {
+            query = query.in('id', journeyMatchedLeadIds);
+        }
 
         if (!show_inactive) {
             // is_active todos são true no Oracle, então não filtramos para evitar problema
@@ -518,8 +543,32 @@ export const db = {
         let from = 0;
         let hasMore = true;
 
+        let useJourneyFilter = filters.utm_medium || filters.utm_source || filters.utm_campaign || filters.utm_term || filters.utm_content;
+        let journeyMatchedLeadIds = null;
+        
+        if (useJourneyFilter) {
+            let jQuery = supabase.from('lead_journey_events').select('lead_id');
+            if (filters.utm_medium) jQuery = jQuery.eq('utm_medium', filters.utm_medium);
+            if (filters.utm_source) jQuery = jQuery.eq('utm_source', filters.utm_source);
+            if (filters.utm_campaign) jQuery = jQuery.ilike('utm_campaign', `%${filters.utm_campaign}%`);
+            if (filters.utm_term) jQuery = jQuery.ilike('utm_term', `%${filters.utm_term}%`);
+            if (filters.utm_content) jQuery = jQuery.ilike('utm_content', `%${filters.utm_content}%`);
+            
+            const { data: jData } = await jQuery;
+            const ids = (jData || []).map(r => r.lead_id).filter(Boolean);
+            journeyMatchedLeadIds = [...new Set(ids)];
+            
+            if (journeyMatchedLeadIds.length === 0) {
+                return [];
+            }
+        }
+
         while (hasMore) {
             let query = supabase.from('leads').select('uuid, id'); // Select ID for join purposes
+
+            if (journeyMatchedLeadIds && journeyMatchedLeadIds.length > 0) {
+                query = query.in('id', journeyMatchedLeadIds);
+            }
 
             if (!filters.show_inactive) {
                 query = query.or('is_active.eq.true,is_active.is.null');

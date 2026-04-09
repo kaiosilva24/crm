@@ -18,6 +18,14 @@ export default function Leads() {
     const [searchByObservation, setSearchByObservation] = useState(false); // Toggle para pesquisa por observação
     const [statusFilter, setStatusFilter] = useState('');
     const [campaignFilter, setCampaignFilter] = useState('');
+    
+    // Filtros UTM/Tráfego
+    const [utmMediumFilter, setUtmMediumFilter] = useState('');
+    const [utmSourceFilter, setUtmSourceFilter] = useState('');
+    const [utmCampaignFilter, setUtmCampaignFilter] = useState('');
+    const [utmTermFilter, setUtmTermFilter] = useState('');
+    const [utmContentFilter, setUtmContentFilter] = useState('');
+    const [showTrafficFilters, setShowTrafficFilters] = useState(false);
     const [subcampaignFilter, setSubcampaignFilter] = useState('');
     const [inGroupFilter, setInGroupFilter] = useState('');
     const [selectedLead, setSelectedLead] = useState(null);
@@ -103,11 +111,11 @@ export default function Leads() {
 
     // Atualizar ref quando filtros mudam
     useEffect(() => {
-        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page };
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page]);
+        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter };
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter]);
 
     const loadLeads = useCallback(async () => {
-        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page } = filtersRef.current;
+        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter } = filtersRef.current;
         const params = { page, limit: LIMIT };
         if (search) {
             if (searchByObservation) {
@@ -123,6 +131,13 @@ export default function Leads() {
         if (sellerFilter) params.seller_id = sellerFilter;
         if (checkingFilter) params.checking = checkingFilter;
         if (saleFilter) params.sale_completed = saleFilter;
+        
+        if (utmMediumFilter) params.utm_medium = utmMediumFilter;
+        if (utmSourceFilter) params.utm_source = utmSourceFilter;
+        if (utmCampaignFilter) params.utm_campaign = utmCampaignFilter;
+        if (utmTermFilter) params.utm_term = utmTermFilter;
+        if (utmContentFilter) params.utm_content = utmContentFilter;
+
         try {
             const data = await api.getLeads(params);
             setLeads(data.leads);
@@ -309,6 +324,12 @@ export default function Leads() {
             if (subcampaignFilter) params.subcampaign_id = subcampaignFilter;
             if (sellerFilter) params.seller_id = sellerFilter;
             if (inGroupFilter) params.in_group = inGroupFilter;
+
+            if (utmMediumFilter) params.utm_medium = utmMediumFilter;
+            if (utmSourceFilter) params.utm_source = utmSourceFilter;
+            if (utmCampaignFilter) params.utm_campaign = utmCampaignFilter;
+            if (utmTermFilter) params.utm_term = utmTermFilter;
+            if (utmContentFilter) params.utm_content = utmContentFilter;
 
             const data = await api.exportLeads(params);
             const allLeads = data.leads || [];
@@ -728,6 +749,12 @@ export default function Leads() {
             if (sellerFilter) params.seller_id = sellerFilter;
             if (checkingFilter) params.checking = checkingFilter;
             if (saleFilter) params.sale_completed = saleFilter;
+            
+            if (utmMediumFilter) params.utm_medium = utmMediumFilter;
+            if (utmSourceFilter) params.utm_source = utmSourceFilter;
+            if (utmCampaignFilter) params.utm_campaign = utmCampaignFilter;
+            if (utmTermFilter) params.utm_term = utmTermFilter;
+            if (utmContentFilter) params.utm_content = utmContentFilter;
 
             const data = await api.getAllLeadUuids(params);
             setSelectedUuids(new Set(data.uuids));
@@ -840,6 +867,13 @@ export default function Leads() {
                         <option value="true">✅ Com venda</option>
                         <option value="false">❌ Sem venda</option>
                     </select>
+                    <button
+                        onClick={() => setShowTrafficFilters(!showTrafficFilters)}
+                        className="btn btn-ghost"
+                        style={{ border: showTrafficFilters ? '2px solid #8b5cf6' : '1px solid var(--border)', color: showTrafficFilters ? '#8b5cf6' : 'var(--text-secondary)' }}
+                    >
+                        Tráfego UTM {showTrafficFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
                     {isAdmin && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                             <button
@@ -870,6 +904,49 @@ export default function Leads() {
                         </div>
                     )}
                 </div>
+
+                {/* Filtros UTM (Ocultos por padrão) */}
+                {showTrafficFilters && (
+                    <div className="fade-in" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', background: 'rgba(139, 92, 246, 0.05)', padding: '16px', borderRadius: 8 }}>
+                        
+                        <div style={{ flex: 1, minWidth: 120 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Origem (Medium)</label>
+                            <select className="form-select" style={{ width: '100%' }} value={utmMediumFilter} onChange={e => setUtmMediumFilter(e.target.value)}>
+                                <option value="">Todas</option>
+                                <option value="organico">Orgânico</option>
+                                <option value="paid">Pago (Ads)</option>
+                            </select>
+                        </div>
+                        
+                        <div style={{ flex: 1, minWidth: 120 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Plataforma (Source)</label>
+                            <select className="form-select" style={{ width: '100%' }} value={utmSourceFilter} onChange={e => setUtmSourceFilter(e.target.value)}>
+                                <option value="">Todas</option>
+                                <option value="ig">Instagram</option>
+                                <option value="fb">Facebook</option>
+                                <option value="yt">Youtube</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="google">Google</option>
+                            </select>
+                        </div>
+
+                        <div style={{ flex: 2, minWidth: 150 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Campanha UTM</label>
+                            <input className="form-input" placeholder="Ex: LP11ABRIL..." value={utmCampaignFilter} onChange={e => setUtmCampaignFilter(e.target.value)} />
+                        </div>
+
+                        <div style={{ flex: 2, minWidth: 150 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Conjunto UTM</label>
+                            <input className="form-input" placeholder="Ex: Publico 01..." value={utmTermFilter} onChange={e => setUtmTermFilter(e.target.value)} />
+                        </div>
+
+                        <div style={{ flex: 2, minWidth: 150 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Anúncio UTM</label>
+                            <input className="form-input" placeholder="Ex: Video Final..." value={utmContentFilter} onChange={e => setUtmContentFilter(e.target.value)} />
+                        </div>
+
+                    </div>
+                )}
             </div>
 
             {/* Barra de ações em massa */}
