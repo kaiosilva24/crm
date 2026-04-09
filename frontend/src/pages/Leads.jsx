@@ -544,14 +544,14 @@ export default function Leads() {
     // Recarregar quando filtros ou página mudam (SEM DEBOUNCE - filtro instantâneo)
     useEffect(() => {
         loadLeads();
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, loadLeads]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, page, loadLeads]);
 
     // Reset página quando filtros mudam
     useEffect(() => {
         setPage(1);
         setSelectedUuids(new Set());
         setSelectAll(false);
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter]);
 
     // Fechar dropdown de exportação ao clicar fora
     useEffect(() => {
