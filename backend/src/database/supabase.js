@@ -171,7 +171,7 @@ export const db = {
     },
 
     // ==================== LEADS ====================
-    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content, page = 1, limit = 50 }) {
+    async getLeads({ status, search, search_observation, campaign_id, subcampaign_id, in_group, checking, sale_completed, show_inactive, seller_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content, source_integration, page = 1, limit = 50 }) {
         // ESTRATÉGIA ESPECIAL para filtro in_group:
         // Como o in_group vem de uma tabela separada (lead_campaign_groups),
         // precisamos buscar TODOS os leads que correspondem aos outros filtros primeiro,
@@ -226,6 +226,7 @@ export const db = {
         }
         if (campaign_id) query = query.eq('campaign_id', parseInt(campaign_id));
         if (subcampaign_id) query = query.eq('subcampaign_id', parseInt(subcampaign_id));
+        if (source_integration) query = query.eq('source', source_integration);
 
         if (search) {
             query = query.or(`first_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -579,6 +580,7 @@ export const db = {
                 query = query.eq('status_id', filters.status);
             }
             if (filters.campaign_id) query = query.eq('campaign_id', filters.campaign_id);
+            if (filters.source_integration) query = query.eq('source', filters.source_integration);
 
             // Se tiver campaign_id E in_group, não filtra no banco (filtramos na memória usando lead_campaign_groups)
             // Se NÃO tiver campaign_id, usa o campo legado (comportamento padrão)
