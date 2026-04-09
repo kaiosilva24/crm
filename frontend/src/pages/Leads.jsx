@@ -18,6 +18,7 @@ export default function Leads() {
     const [searchByObservation, setSearchByObservation] = useState(false); // Toggle para pesquisa por observação
     const [statusFilter, setStatusFilter] = useState('');
     const [campaignFilter, setCampaignFilter] = useState('');
+    const [sourceIntegrationFilter, setSourceIntegrationFilter] = useState('');
     
     // Filtros UTM/Tráfego
     const [utmMediumFilter, setUtmMediumFilter] = useState('');
@@ -111,11 +112,11 @@ export default function Leads() {
 
     // Atualizar ref quando filtros mudam
     useEffect(() => {
-        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter };
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter]);
+        filtersRef.current = { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, sourceIntegrationFilter };
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, sourceIntegrationFilter]);
 
     const loadLeads = useCallback(async () => {
-        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter } = filtersRef.current;
+        const { search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, page, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, sourceIntegrationFilter } = filtersRef.current;
         const params = { page, limit: LIMIT };
         if (search) {
             if (searchByObservation) {
@@ -137,6 +138,8 @@ export default function Leads() {
         if (utmCampaignFilter) params.utm_campaign = utmCampaignFilter;
         if (utmTermFilter) params.utm_term = utmTermFilter;
         if (utmContentFilter) params.utm_content = utmContentFilter;
+        
+        if (sourceIntegrationFilter) params.source_integration = sourceIntegrationFilter;
 
         try {
             const data = await api.getLeads(params);
@@ -330,6 +333,7 @@ export default function Leads() {
             if (utmCampaignFilter) params.utm_campaign = utmCampaignFilter;
             if (utmTermFilter) params.utm_term = utmTermFilter;
             if (utmContentFilter) params.utm_content = utmContentFilter;
+            if (sourceIntegrationFilter) params.source_integration = sourceIntegrationFilter;
 
             const data = await api.exportLeads(params);
             const allLeads = data.leads || [];
@@ -544,14 +548,14 @@ export default function Leads() {
     // Recarregar quando filtros ou página mudam (SEM DEBOUNCE - filtro instantâneo)
     useEffect(() => {
         loadLeads();
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, page, loadLeads]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, sourceIntegrationFilter, page, loadLeads]);
 
     // Reset página quando filtros mudam
     useEffect(() => {
         setPage(1);
         setSelectedUuids(new Set());
         setSelectAll(false);
-    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter]);
+    }, [search, searchByObservation, statusFilter, campaignFilter, subcampaignFilter, inGroupFilter, sellerFilter, checkingFilter, saleFilter, utmMediumFilter, utmSourceFilter, utmCampaignFilter, utmTermFilter, utmContentFilter, sourceIntegrationFilter]);
 
     // Fechar dropdown de exportação ao clicar fora
     useEffect(() => {
@@ -909,6 +913,15 @@ export default function Leads() {
                 {showTrafficFilters && (
                     <div className="fade-in" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', background: 'rgba(139, 92, 246, 0.05)', padding: '16px', borderRadius: 8 }}>
                         
+                        <div style={{ flex: 1, minWidth: 120 }}>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Gateway (Origem)</label>
+                            <select className="form-select" style={{ width: '100%' }} value={sourceIntegrationFilter} onChange={e => setSourceIntegrationFilter(e.target.value)}>
+                                <option value="">Todos</option>
+                                <option value="hotmart">Hotmart</option>
+                                <option value="greatpages">GreatPages</option>
+                            </select>
+                        </div>
+
                         <div style={{ flex: 1, minWidth: 120 }}>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Origem (Medium)</label>
                             <select className="form-select" style={{ width: '100%' }} value={utmMediumFilter} onChange={e => setUtmMediumFilter(e.target.value)}>
