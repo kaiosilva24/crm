@@ -390,6 +390,23 @@ export default function LeadJourneyMap({ leadId, phone, onClose }) {
                                         </div>
                                     </div>
                                     
+                                    {node.data?.metadata?.financials && (
+                                        <div style={{ 
+                                            background: 'rgba(5, 150, 105, 0.1)', border: '1px solid rgba(5, 150, 105, 0.2)', 
+                                            borderRadius: 6, padding: '6px 8px', margin: '4px 0 8px 0', 
+                                            fontSize: '0.7rem', color: '#34d399', display: 'flex', justifyContent: 'space-between' 
+                                        }}>
+                                            <span>
+                                                💰 Pago: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: node.data.metadata.financials.currency || 'BRL' }).format(node.data.metadata.financials.gross)}
+                                            </span>
+                                            {node.data.metadata.financials.net && (
+                                                <span style={{ fontWeight: 600 }}>
+                                                    💎 Liq: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: node.data.metadata.financials.currency || 'BRL' }).format(node.data.metadata.financials.net)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: 8, marginTop: 'auto' }}>
                                         <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                                             {formatDateShort(node.date)}

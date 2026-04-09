@@ -212,6 +212,24 @@ export default function LeadJourney({ leadId, phone }) {
                                     subLabel: 'Anúncio'
                                 });
                             }
+                            if (ev.metadata?.financials) {
+                                const { gross, net, currency } = ev.metadata.financials;
+                                const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
+                                const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
+                                
+                                nodes.push({
+                                    id: ev.id + '_finance',
+                                    icon: '💰',
+                                    color: '#059669',
+                                    label: grossFmt,
+                                    date: ev.created_at,
+                                    subLabel: netFmt ? `Rec: ${netFmt}` : 'Pago',
+                                    details: [
+                                        { label: 'Valor Pago', value: grossFmt },
+                                        netFmt && { label: 'Líquido Recebido', value: netFmt }
+                                    ].filter(Boolean)
+                                });
+                            }
                             if (ev.seller_name) {
                                 nodes.push({
                                     id: ev.id + '_seller',

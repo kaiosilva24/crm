@@ -8,6 +8,7 @@ import { db, supabase } from '../database/supabase.js';
 import { normalizePhone } from '../utils/phoneNormalizer.js';
 import { processSalesMirroring } from '../services/mirrorService.js';
 import { processManychatAutomation } from './manychat.js';
+import { extractFinancials } from '../utils/financialExtractor.js';
 import fs from 'fs';
 
 const router = Router();
@@ -46,7 +47,6 @@ async function logGatewayEvent(payload, status, errorMessage, leadUuid, buyerEma
     } catch (error) {
         console.error('Erro ao gravar log no gateway:', error);
     }
-}
 
 /**
  * POST /api/webhook/gateway/:platform
@@ -99,6 +99,8 @@ router.post('/gateway/:platform', async (req, res) => {
 
         // Verificar se lead já existe
         const existing = email ? await db.getLeadByEmail(email) : null;
+        let financials = extractFinancials(rawPayload, platform);
+
         if (existing) {
             console.log(`[Gateway/${platform}] Lead já existe: ${existing.uuid}`);
             db.createJourneyEvent({
@@ -109,7 +111,7 @@ router.post('/gateway/:platform', async (req, res) => {
                 event_label: `Re-entrada via ${platform} - Produto: ${product_name}`,
                 campaign_id: existing.campaign_id,
                 utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-                metadata: { platform, original_payload: req.body }
+                metadata: { platform, original_payload: req.body, financials }
             }).catch(err => console.error(`[Gateway/${platform}] Journey event error:`, err));
 
             await logGatewayEvent(rawPayload, 'duplicate', 'Lead já existe e foi atualizado no funil', existing.uuid, email, name, product_name, platform);
@@ -159,7 +161,7 @@ router.post('/gateway/:platform', async (req, res) => {
             event_label: `Entrada via ${platform} - Produto: ${product_name}`,
             campaign_id: null,
             utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-            metadata: { platform, original_payload: req.body }
+            metadata: { platform, original_payload: req.body, financials }
         }).catch(err => console.error(`[Gateway/${platform}] Journey entry error:`, err));
 
         // ManyChat automation
@@ -246,6 +248,8 @@ router.post('/hotmart', async (req, res) => {
 
         // Verificar se lead já existe
         const existing = await db.getLeadByEmail(leadData.email);
+        const financials = extractFinancials(req.body, 'hotmart');
+
         if (existing) {
             console.log(`⚠️ Lead já existe (Hotmart), registrando evento de jornada: ${existing.id}`);
             
@@ -258,7 +262,7 @@ router.post('/hotmart', async (req, res) => {
                 event_label: `Evento Hotmart (Compra/Abandono) - Produto: ${leadData.product_name}`,
                 campaign_id: campaignId || existing.campaign_id,
                 utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-                metadata: { original_payload: req.body, transaction: leadData.transaction_id }
+                metadata: { original_payload: req.body, transaction: leadData.transaction_id, financials }
             }).catch(err => console.error('Journey re_entry hotmart error:', err));
 
             return res.json({ message: 'Lead já existe', lead_uuid: existing.uuid });
@@ -298,7 +302,7 @@ router.post('/hotmart', async (req, res) => {
             event_label: `Entrada direta via Hotmart - Produto: ${leadData.product_name}`,
             campaign_id: campaignId,
             utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-            metadata: { original_payload: req.body, transaction: leadData.transaction_id }
+            metadata: { original_payload: req.body, transaction: leadData.transaction_id, financials }
         }).catch(err => console.error('Journey entry hotmart error:', err));
 
         // 🚀 TRIGGER MIRRORING PROCESS
