@@ -216,14 +216,41 @@ router.post('/greatpages', async (req, res) => {
         let phone = body.TELEFONE || body.telefone || body.phone || body.Phone || body.whatsapp || body.WhatsApp || body.celular;
 
         // Extrair UTMs (Meta Ads, Google Ads, etc.)
-        const utm_source   = body.utm_source   || body.UTM_SOURCE   || body['utm-source']   || null;
-        const utm_medium   = body.utm_medium   || body.UTM_MEDIUM   || body['utm-medium']   || null;
-        const utm_campaign = body.utm_campaign || body.UTM_CAMPAIGN || body['utm-campaign'] || null;
+        let utm_source   = body.utm_source   || body.UTM_SOURCE   || body['utm-source']   || null;
+        let utm_medium   = body.utm_medium   || body.UTM_MEDIUM   || body['utm-medium']   || null;
+        let utm_campaign = body.utm_campaign || body.UTM_CAMPAIGN || body['utm-campaign'] || null;
         const utm_content  = body.utm_content  || body.UTM_CONTENT  || body['utm-content']  || null;
         const utm_term     = body.utm_term     || body.UTM_TERM     || body['utm-term']     || null;
 
+        // Referência (Origem Orgânica / URL)
+        const referral = body.Referral_Source || body.referral_source || '';
+        const urlRef = body.URL || body.url || '';
+
+        // Detecção Orgânica via Referência se UTMs vierem em branco
+        if (!utm_source && !utm_medium) {
+            const refLower = referral.toLowerCase();
+            const urlLower = urlRef.toLowerCase();
+
+            if (refLower.includes('instagram.com')) {
+                utm_source = 'ig';
+                utm_medium = 'organico';
+            } else if (refLower.includes('facebook.com')) {
+                utm_source = 'fb';
+                utm_medium = 'organico';
+            } else if (refLower.includes('tiktok.com')) {
+                utm_source = 'tiktok';
+                utm_medium = 'organico';
+            } else if (refLower.includes('youtube.com')) {
+                utm_source = 'yt';
+                utm_medium = 'organico';
+            } else if (urlLower.includes('org') || urlLower.includes('organico')) {
+                utm_source = 'organico';
+                utm_medium = 'organico';
+            }
+        }
+
         console.log(`   📋 Dados extraídos: Nome="${name}", Email="${email}", Telefone="${phone}"`);
-        if (utm_campaign) console.log(`   📣 UTM: source=${utm_source} | medium=${utm_medium} | campaign=${utm_campaign} | content=${utm_content} | term=${utm_term}`);
+        if (utm_campaign || utm_source) console.log(`   📣 UTM: source=${utm_source} | medium=${utm_medium} | campaign=${utm_campaign} | content=${utm_content} | term=${utm_term}`);
 
         if (!email && !phone) {
             console.log('   ❌ Nenhum email ou telefone encontrado no payload');

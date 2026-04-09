@@ -16,15 +16,10 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const BASE = 'https://api.manychat.com';
 const WA_CUSTOM_FIELD_NAME = 'Telefone WhatsApp';
-const TEST_PHONE = '5562999981718'; // número completo com país
+const TEST_PHONE = '5562999981718'; // número válido do Kaio
 const TAG_NAME = '[LEAD]-[SONO]';
-
 async function getToken() {
-    const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-    await client.connect();
-    const { rows } = await client.query(`SELECT manychat_api_token FROM manychat_settings WHERE manychat_api_token IS NOT NULL LIMIT 1`);
-    await client.end();
-    return rows[0]?.manychat_api_token;
+    return '563759373725607:5a18d5ba7dc02285e3536afb33460766';
 }
 
 async function api(method, endpoint, data, token) {
