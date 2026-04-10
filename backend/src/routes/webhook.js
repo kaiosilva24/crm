@@ -158,7 +158,7 @@ router.post('/gateway/:platform', async (req, res) => {
         }
 
 
-        // Montar dados do novo lead
+        // Montar dados do novo lead com a campanha configurada no webhook
         const leadData = {
             uuid: uuidv4(),
             first_name: name,
@@ -166,14 +166,27 @@ router.post('/gateway/:platform', async (req, res) => {
             phone: phone || '',
             product_name,
             status_id: null,
-            campaign_id: null,
+            campaign_id: gatewayCampaignId || null,  // ← campanha da config do webhook
             source: platform,
             in_group: false,
             seller_id: null
         };
 
-        // Round-Robin se habilitado
-        if (settings.round_robin_enabled !== false) {
+        // Buscar enable_round_robin da config do webhook específico
+        let webhookEnableRoundRobin = settings.round_robin_enabled !== false;
+        try {
+            const { data: rrConfig } = await supabase
+                .from('hotmart_webhook_configs')
+                .select('enable_round_robin')
+                .ilike('platform_name', platform)
+                .eq('is_enabled', true)
+                .order('webhook_number', { ascending: true })
+                .limit(1);
+            if (rrConfig && rrConfig.length > 0) webhookEnableRoundRobin = rrConfig[0].enable_round_robin !== false;
+        } catch(e) {}
+
+        // Round-Robin conforme configuração do webhook
+        if (webhookEnableRoundRobin) {
             const sellers = await db.getActiveSellersInDistribution();
             if (sellers.length > 0) {
                 const control = await db.getDistributionControl();
@@ -185,12 +198,13 @@ router.post('/gateway/:platform', async (req, res) => {
                 }
                 leadData.seller_id = sellers[nextIndex].id;
                 await db.updateDistributionControl(sellers[nextIndex].id);
+                console.log(`[Gateway/${platform}] Round-Robin: vendedor ${sellers[nextIndex].name || sellers[nextIndex].id}`);
             }
         }
 
         // Criar lead
         const lead = await db.createLead(leadData);
-        console.log(`[Gateway/${platform}] Novo lead criado: ${lead.uuid}`);
+        console.log(`[Gateway/${platform}] Novo lead criado: ${lead.uuid} | campanha: ${gatewayCampaignId || 'nenhuma'}`);
 
         // Registrar evento de entrada com UTMs
         db.createJourneyEvent({
@@ -199,7 +213,7 @@ router.post('/gateway/:platform', async (req, res) => {
             lead_email: email,
             event_type: 'entry',
             event_label: `Entrada via ${platform} - Produto: ${product_name}`,
-            campaign_id: null,
+            campaign_id: gatewayCampaignId || null,  // ← campanha também no evento
             utm_source, utm_medium, utm_campaign, utm_content, utm_term,
             metadata: { platform, original_payload: req.body, financials }
         }).catch(err => console.error(`[Gateway/${platform}] Journey entry error:`, err));
