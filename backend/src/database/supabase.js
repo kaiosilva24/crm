@@ -191,16 +191,32 @@ export const db = {
         let journeyMatchedLeadIds = null;
         
         if (useJourneyFilter) {
-            let jQuery = supabase.from('lead_journey_events').select('lead_id');
-            if (utm_medium) jQuery = jQuery.eq('utm_medium', utm_medium);
-            if (utm_source) jQuery = jQuery.eq('utm_source', utm_source);
-            if (utm_campaign) jQuery = jQuery.ilike('utm_campaign', `%${utm_campaign}%`);
-            if (utm_term) jQuery = jQuery.ilike('utm_term', `%${utm_term}%`);
-            if (utm_content) jQuery = jQuery.ilike('utm_content', `%${utm_content}%`);
-            
-            const { data: jData } = await jQuery;
-            const ids = (jData || []).map(r => r.lead_id).filter(Boolean);
-            journeyMatchedLeadIds = [...new Set(ids)];
+            let sql = `SELECT DISTINCT lead_id FROM lead_journey_events WHERE 1=1 `;
+            const params = [];
+            let pIdx = 1;
+
+            if (utm_medium === 'paid') {
+                sql += ` AND utm_medium IN ('cpc', 'paid', 'cpm', 'ppc', 'paidsocial', 'paid_social', 'cpa')`;
+            } else if (utm_medium === 'organico') {
+                sql += ` AND (utm_medium NOT IN ('cpc', 'paid', 'cpm', 'ppc', 'paidsocial', 'paid_social', 'cpa') OR utm_medium IS NULL)`;
+            } else if (utm_medium) {
+                sql += ` AND utm_medium = $${pIdx++}`;
+                params.push(utm_medium);
+            }
+
+            if (utm_source) { sql += ` AND utm_source = $${pIdx++}`; params.push(utm_source); }
+            if (utm_campaign) { sql += ` AND utm_campaign ILIKE $${pIdx++}`; params.push(`%${utm_campaign}%`); }
+            if (utm_term) { sql += ` AND utm_term ILIKE $${pIdx++}`; params.push(`%${utm_term}%`); }
+            if (utm_content) { sql += ` AND utm_content ILIKE $${pIdx++}`; params.push(`%${utm_content}%`); }
+
+            try {
+                const pool = getPool();
+                const result = await pool.query(sql, params);
+                journeyMatchedLeadIds = result.rows.map(r => r.lead_id);
+            } catch (err) {
+                console.error("Erro na busca avançada de leads por UTM:", err);
+                journeyMatchedLeadIds = [];
+            }
             
             if (journeyMatchedLeadIds.length === 0) {
                 return { leads: [], total: 0 };
@@ -558,16 +574,32 @@ export const db = {
         let journeyMatchedLeadIds = null;
         
         if (useJourneyFilter) {
-            let jQuery = supabase.from('lead_journey_events').select('lead_id');
-            if (filters.utm_medium) jQuery = jQuery.eq('utm_medium', filters.utm_medium);
-            if (filters.utm_source) jQuery = jQuery.eq('utm_source', filters.utm_source);
-            if (filters.utm_campaign) jQuery = jQuery.ilike('utm_campaign', `%${filters.utm_campaign}%`);
-            if (filters.utm_term) jQuery = jQuery.ilike('utm_term', `%${filters.utm_term}%`);
-            if (filters.utm_content) jQuery = jQuery.ilike('utm_content', `%${filters.utm_content}%`);
-            
-            const { data: jData } = await jQuery;
-            const ids = (jData || []).map(r => r.lead_id).filter(Boolean);
-            journeyMatchedLeadIds = [...new Set(ids)];
+            let sql = `SELECT DISTINCT lead_id FROM lead_journey_events WHERE 1=1 `;
+            const params = [];
+            let pIdx = 1;
+
+            if (filters.utm_medium === 'paid') {
+                sql += ` AND utm_medium IN ('cpc', 'paid', 'cpm', 'ppc', 'paidsocial', 'paid_social', 'cpa')`;
+            } else if (filters.utm_medium === 'organico') {
+                sql += ` AND (utm_medium NOT IN ('cpc', 'paid', 'cpm', 'ppc', 'paidsocial', 'paid_social', 'cpa') OR utm_medium IS NULL)`;
+            } else if (filters.utm_medium) {
+                sql += ` AND utm_medium = $${pIdx++}`;
+                params.push(filters.utm_medium);
+            }
+
+            if (filters.utm_source) { sql += ` AND utm_source = $${pIdx++}`; params.push(filters.utm_source); }
+            if (filters.utm_campaign) { sql += ` AND utm_campaign ILIKE $${pIdx++}`; params.push(`%${filters.utm_campaign}%`); }
+            if (filters.utm_term) { sql += ` AND utm_term ILIKE $${pIdx++}`; params.push(`%${filters.utm_term}%`); }
+            if (filters.utm_content) { sql += ` AND utm_content ILIKE $${pIdx++}`; params.push(`%${filters.utm_content}%`); }
+
+            try {
+                const pool = getPool();
+                const result = await pool.query(sql, params);
+                journeyMatchedLeadIds = result.rows.map(r => r.lead_id);
+            } catch (err) {
+                console.error("Erro na busca avançada de leads por UTM (getAllLeadUuids):", err);
+                journeyMatchedLeadIds = [];
+            }
             
             if (journeyMatchedLeadIds.length === 0) {
                 return [];
