@@ -117,9 +117,12 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             return res.status(400).json({ error: 'Invalid payload' });
         }
 
-        // 🔄 INTERCEPT: Pagamento recorrente (parcela do Parcelamento Inteligente)
+        // 🔄 INTERCEPT: Pagamento recorrente (parcela do Parcelamento Inteligente ou Assinatura)
         // NÃO cria lead, NÃO entra em campanha — apenas registra evento de jornada
-        if (payload?.event === 'PURCHASE_RECURRENT_APPROVED') {
+        const isRecurrenceEvent = payload?.event === 'PURCHASE_RECURRENT_APPROVED' || 
+            (payload?.event === 'PURCHASE_APPROVED' && leadData.recurrence_number > 1);
+
+        if (isRecurrenceEvent) {
             await handleRecurrentPayment(payload, config, leadData);
             return res.status(200).json({
                 message: 'Pagamento recorrente registrado com sucesso',
@@ -649,7 +652,7 @@ function extractHotmartData(payload) {
             payment_type: paymentType,
             installments: installmentsNumber,
             recurrence_number: recurrenceNumber,
-            is_smart_installment: paymentType === 'FINANCED_INSTALLMENT'
+            is_smart_installment: paymentType === 'FINANCED_INSTALLMENT' || data?.purchase?.business_model === 'I' || (recurrenceNumber && recurrenceNumber > 0)
         };
     } catch (error) {
         return null;
