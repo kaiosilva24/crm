@@ -8,6 +8,7 @@
 export function normalizePaymentMethod(raw) {
     if (!raw) return null;
     const v = String(raw).toLowerCase().replace(/_/g, ' ');
+    if (v.includes('financed') || v.includes('parcelamento inteligente')) return 'Parcelamento Inteligente';
     if (v.includes('credit') || v.includes('cartao') || v.includes('card')) return 'Cartão de Crédito';
     if (v.includes('debit')) return 'Cartão de Débito';
     if (v.includes('pix')) return 'PIX';
@@ -25,20 +26,28 @@ export function extractFinancials(payload, platform) {
     let paymentMethod = null;
     let installments = null;
     let productName = null;
+    let recurrenceNumber = null;
+    let isSmartInstallment = false;
 
     try {
         const data = payload?.data || payload;
 
         // 1. Hotmart
-        // purchase.payment.type = "CREDIT_CARD" | "PIX" | "BILLET"
-        // purchase.payment.installments_number = 1, 2, 3...
+        // purchase.payment.type = "CREDIT_CARD" | "FINANCED_INSTALLMENT" | "PIX" | "BILLET"
+        // FINANCED_INSTALLMENT = Parcelamento Inteligente (pago mês a mês, não consome limite total)
+        // purchase.payment.installments_number = total de parcelas (ex: 9)
+        // purchase.recurrence_number = qual parcela está sendo paga agora (ex: 4 = 4ª parcela)
         if (data?.purchase?.price?.value !== undefined) {
             gross = data.purchase.price.value;
             currency = data.purchase.price.currency_code || currency;
 
             const payment = data.purchase?.payment || {};
-            paymentMethod = normalizePaymentMethod(payment.type);
+            const rawType = payment.type || null;
+
+            isSmartInstallment = rawType === 'FINANCED_INSTALLMENT';
+            paymentMethod = isSmartInstallment ? 'Parcelamento Inteligente' : normalizePaymentMethod(rawType);
             installments = payment.installments_number || null;
+            recurrenceNumber = data.purchase?.recurrence_number || null;
 
             productName = data.product?.name || data.offer?.name || null;
 
@@ -47,6 +56,19 @@ export function extractFinancials(payload, platform) {
                 if (myCommission && myCommission.value !== undefined) {
                     net = myCommission.value;
                 }
+            }
+
+            if (gross !== null && !isNaN(gross)) {
+                return {
+                    gross,
+                    net: (net !== null && !isNaN(net)) ? net : null,
+                    currency,
+                    payment_method: paymentMethod,
+                    installments: (installments && parseInt(installments) > 1) ? parseInt(installments) : null,
+                    recurrence_number: recurrenceNumber ? parseInt(recurrenceNumber) : null,
+                    is_smart_installment: isSmartInstallment,
+                    product_name: productName
+                };
             }
         }
 
@@ -92,11 +114,13 @@ export function extractFinancials(payload, platform) {
 
         if (gross !== null && !isNaN(gross)) {
             return {
-                gross: gross,
+                gross,
                 net: (net !== null && !isNaN(net)) ? net : null,
-                currency: currency,
+                currency,
                 payment_method: paymentMethod || null,
                 installments: (installments && parseInt(installments) > 1) ? parseInt(installments) : null,
+                recurrence_number: null,
+                is_smart_installment: false,
                 product_name: productName || null
             };
         }

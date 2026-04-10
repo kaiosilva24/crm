@@ -9,6 +9,8 @@ import { supabase } from '../database/supabase.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { processSalesMirroring } from '../services/mirrorService.js';
 import { processManychatAutomation } from './manychat.js';
+import { extractFinancials } from '../utils/financialExtractor.js';
+import { db } from '../database/supabase.js';
 
 const router = Router();
 
@@ -202,6 +204,11 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             console.log(`✅ Created new lead: ${uuid} ${sellerId ? `(assigned to seller ${sellerId})` : ''}`);
         }
 
+        // Extrair dados financeiros do payload para registrar no histórico
+        const financials = extractFinancials(payload, config.platform_name || 'hotmart');
+        const eventType = payload?.event || 'PURCHASE_APPROVED';
+        const isRecurrent = eventType === 'PURCHASE_RECURRENT_APPROVED';
+
         // Log webhook activity
         await logWebhook(
             payload,
@@ -211,11 +218,52 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             leadData.email,
             leadData.name,
             leadData.product,
-            config.id // Add webhook config ID to log
+            config.id
         );
 
+        // Registrar evento de jornada com dados financeiros
+        try {
+            const { data: leadRecord } = await supabase
+                .from('leads')
+                .select('id, phone')
+                .eq('uuid', leadUuid)
+                .single();
+
+            if (leadRecord) {
+                const recNum = financials?.recurrence_number;
+                const totalInst = financials?.installments;
+                let eventLabel;
+                if (isRecurrent && recNum) {
+                    eventLabel = totalInst
+                        ? `Parcela ${recNum}/${totalInst} — Parcelamento Inteligente — Produto: ${leadData.product}`
+                        : `Parcela Nº ${recNum} — Parcelamento Inteligente — Produto: ${leadData.product}`;
+                } else if (status === 'duplicate') {
+                    eventLabel = `Re-compra via ${config.platform_name || 'hotmart'} — Produto: ${leadData.product}`;
+                } else {
+                    eventLabel = `Compra via ${config.platform_name || 'hotmart'} — Produto: ${leadData.product}`;
+                }
+
+                await supabase.from('lead_journey_events').insert({
+                    lead_id: leadRecord.id,
+                    lead_phone: normalizePhone(leadData.phone),
+                    lead_email: leadData.email,
+                    event_type: isRecurrent ? 'hotmart_event' : (status === 'duplicate' ? 'gateway_event' : 'hotmart_event'),
+                    event_label: eventLabel,
+                    campaign_id: config.campaign_id,
+                    metadata: {
+                        platform: config.platform_name || 'hotmart',
+                        event_type: eventType,
+                        financials: financials,
+                        original_payload: payload
+                    }
+                });
+                console.log(`📍 Journey event criado: ${eventLabel}`);
+            }
+        } catch (journeyErr) {
+            console.error('⚠️ Erro ao criar evento de jornada (não crítico):', journeyErr.message);
+        }
+
         // Normalize the phone inside leadData BEFORE sending to mirroring and ManyChat
-        // This ensures the automation triggers use exactly the same DDI logic as the CRM database.
         const normPhone = normalizePhone(leadData.phone);
         if (normPhone) {
             leadData.phone = normPhone;
@@ -529,7 +577,15 @@ function extractHotmartData(payload) {
     try {
         const { event, data } = payload;
 
-        if (event !== 'PURCHASE_COMPLETE' && event !== 'PURCHASE_APPROVED') {
+        // Eventos aceitos:
+        // PURCHASE_APPROVED / PURCHASE_COMPLETE = compra normal
+        // PURCHASE_RECURRENT_APPROVED = parcela mensal do Parcelamento Inteligente
+        const validEvents = [
+            'PURCHASE_COMPLETE',
+            'PURCHASE_APPROVED',
+            'PURCHASE_RECURRENT_APPROVED'
+        ];
+        if (!validEvents.includes(event)) {
             return null;
         }
 
@@ -540,11 +596,22 @@ function extractHotmartData(payload) {
             return null;
         }
 
+        // Extrair dados de pagamento para exibição no histórico
+        const payment = data?.purchase?.payment || {};
+        const paymentType = payment.type || null;           // CREDIT_CARD, FINANCED_INSTALLMENT, PIX, BILLET
+        const installmentsNumber = payment.installments_number || null;
+        const recurrenceNumber = data?.purchase?.recurrence_number || null;  // 1=primeira parcela, 2=segunda...
+
         return {
             name: buyer.name || buyer.first_name || 'Lead Webhook',
             email: buyer.email,
             phone: buyer.checkout_phone || buyer.phone || '',
-            product: product.name || 'Produto'
+            product: product.name || 'Produto',
+            // Metadados de pagamento
+            payment_type: paymentType,
+            installments: installmentsNumber,
+            recurrence_number: recurrenceNumber,
+            is_smart_installment: paymentType === 'FINANCED_INSTALLMENT'
         };
     } catch (error) {
         return null;

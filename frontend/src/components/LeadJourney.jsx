@@ -263,29 +263,51 @@ export default function LeadJourney({ leadId, phone }) {
                             });
                         }
                         
-                        // Extrai a pílula financeira como um bloco independente na timeline, independente se for uma Entrada, Webhook, Compra, ou Re-entrada.
+                        // Extrai a pílula financeira — suporta Parcelamento Inteligente e crédito normal
                         if (ev.metadata?.financials) {
-                                const { gross, net, currency, payment_method, installments, product_name } = ev.metadata.financials;
-                                const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
-                                const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
+                                const fin = ev.metadata.financials;
+                                const { gross, net, currency, payment_method, installments, recurrence_number, is_smart_installment, product_name } = fin;
+                                const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(v);
+                                const grossFmt = fmt(gross);
+                                const netFmt = net ? fmt(net) : null;
                                 const platformName = ev.metadata?.platform ? String(ev.metadata.platform).charAt(0).toUpperCase() + String(ev.metadata.platform).slice(1) : '';
 
-                                // Label: valor + parcelas se houver
-                                const installLabel = installments && installments > 1 ? ` ${installments}x` : '';
-                                const methodEmoji = payment_method?.includes('Crédito') ? '💳' : payment_method?.includes('PIX') ? '⚡' : payment_method?.includes('Boleto') ? '📄' : '💰';
+                                // Detectar parcelamento inteligente
+                                const isSmartInst = is_smart_installment || payment_method === 'Parcelamento Inteligente';
+                                let methodEmoji = '💰';
+                                let labelPrimary = grossFmt;
+                                let cardColor = '#059669';
+
+                                if (isSmartInst) {
+                                    methodEmoji = '🔄';
+                                    cardColor = '#7c3aed';
+                                    const parcelaLabel = recurrence_number && installments
+                                        ? ` (${recurrence_number}/${installments})`
+                                        : recurrence_number ? ` Nº${recurrence_number}` : installments ? ` ${installments}x` : '';
+                                    labelPrimary = `${grossFmt}${parcelaLabel}`;
+                                } else if (payment_method?.includes('Crédito')) {
+                                    methodEmoji = '💳';
+                                    if (installments && installments > 1) labelPrimary = `${grossFmt} ${installments}x`;
+                                } else if (payment_method?.includes('PIX')) {
+                                    methodEmoji = '⚡';
+                                } else if (payment_method?.includes('Boleto')) {
+                                    methodEmoji = '📄';
+                                }
 
                                 nodes.push({
                                     id: ev.id + '_finance',
                                     icon: methodEmoji,
-                                    color: '#059669',
-                                    label: `${grossFmt}${installLabel}`,
+                                    color: cardColor,
+                                    label: labelPrimary,
                                     date: ev.created_at,
                                     subLabel: payment_method || (netFmt ? `Rec: ${netFmt}` : 'Pago'),
                                     details: [
                                         product_name && { label: '📦 Produto', value: product_name },
                                         platformName && { label: '🏪 Plataforma', value: platformName },
-                                        { label: '💵 Valor Pago', value: grossFmt },
-                                        installments && installments > 1 && { label: '📆 Parcelas', value: `${installments}x de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross / installments)}` },
+                                        { label: '💵 Valor da Parcela', value: grossFmt },
+                                        isSmartInst && recurrence_number && installments && { label: '📆 Parcela', value: `${recurrence_number} de ${installments} — Parcelamento Inteligente` },
+                                        isSmartInst && recurrence_number && installments && { label: '💡 Valor Total', value: fmt(gross * installments) },
+                                        !isSmartInst && installments && installments > 1 && { label: '📆 Parcelas', value: `${installments}x de ${fmt(gross / installments)}` },
                                         payment_method && { label: '💳 Método', value: payment_method },
                                         netFmt && { label: '📈 Líquido Recebido', value: netFmt }
                                     ].filter(Boolean)
