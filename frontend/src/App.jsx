@@ -9,6 +9,7 @@ import SellerSettings from './pages/SellerSettings';
 import Campaigns from './pages/Campaigns';
 import Groups from './pages/Groups';
 import WappiImport from './pages/WappiImport';
+import UtmDashboard from './pages/UtmDashboard';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children, adminOnly = false }) {
@@ -33,6 +34,7 @@ export default function App() {
                     <Route path="/my-settings" element={<PrivateRoute><Layout><SellerSettings /></Layout></PrivateRoute>} />
                     <Route path="/groups" element={<PrivateRoute adminOnly><Layout><Groups /></Layout></PrivateRoute>} />
                     <Route path="/wappi-groups" element={<PrivateRoute adminOnly><Layout><WappiImport /></Layout></PrivateRoute>} />
+                    <Route path="/analytics" element={<PrivateRoute adminOnly><Layout><UtmDashboard /></Layout></PrivateRoute>} />
                 </Routes>
             </BrowserRouter>
         </AuthProvider>

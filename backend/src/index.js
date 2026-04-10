@@ -37,6 +37,7 @@ import exclusionLogsRoutes from './routes/exclusionLogs.js';
 import cartAbandonmentRoutes from './routes/cartAbandonment.js';
 import manychatRoutes from './routes/manychat.js';
 import journeyRoutes from './routes/journey.js';
+import analyticsRoutes from './routes/analytics.js';
 import { restoreSessions } from './services/whatsappService.js';
 
 const PORT = process.env.PORT || 8080;
@@ -112,6 +113,7 @@ app.use('/api/exclusion-logs', exclusionLogsRoutes);
 app.use('/api/cart-abandonment', cartAbandonmentRoutes);
 app.use('/api/manychat', manychatRoutes);
 app.use('/api/journey', journeyRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // ======== Front-End Integration ========
 // Serve os arquivos estáticos do frontend

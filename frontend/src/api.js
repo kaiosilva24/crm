@@ -126,4 +126,6 @@ export const api = {
     // Lead Journey
     getLeadJourney: (leadId) => request(`/journey/lead/${leadId}`),
     getLeadJourneyByPhone: (phone) => request(`/journey/phone/${encodeURIComponent(phone)}`),
+    // Analytics
+    getUtmAnalytics: (params = {}) => request(`/analytics/utm?${new URLSearchParams(params)}`),
 };

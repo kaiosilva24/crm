@@ -1,0 +1,21 @@
+{
+    "event": "charge.succeeded",
+    "data": {
+        "customer": {
+            "name": "Carla Ferreira (Teste Looma Final)",
+            "email": "carla.final@hotmail.com",
+            "phone": "31988776655"
+        },
+        "product": {
+            "name": "Mentoria Express"
+        },
+        "amount": 497.00,
+        "net_amount": 420.00,
+        "currency": "BRL",
+        "utm": {
+            "source": "instagram",
+            "campaign": "Remarketing_7D",
+            "medium": "stories"
+        }
+    }
+}

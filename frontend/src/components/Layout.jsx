@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { LayoutDashboard, Users, FileText, LogOut, Settings, FolderOpen, DownloadCloud, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Settings, FolderOpen, DownloadCloud, Menu, X, BarChart2 } from 'lucide-react';
 
 export default function Layout({ children }) {
     const { user, logout, isAdmin } = useAuth();
@@ -40,6 +40,9 @@ export default function Layout({ children }) {
                                 <Users size={20} /> Grupos
                             </NavLink>
 
+                            <NavLink to="/analytics" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                                <BarChart2 size={20} /> Analytics UTM
+                            </NavLink>
                             <NavLink to="/settings" onClick={() => setIsSidebarOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <Settings size={20} /> Configurações
                             </NavLink>
