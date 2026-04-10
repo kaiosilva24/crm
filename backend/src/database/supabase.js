@@ -180,10 +180,10 @@ export const db = {
                     WHERE event_type = 'entry'
                     ORDER BY lead_id, created_at ASC
                 )
-                SELECT DISTINCT utm_source FROM first_entries WHERE utm_source IS NOT NULL ORDER BY utm_source;
+                SELECT DISTINCT utm_source FROM first_entries ORDER BY utm_source;
             `;
             const result = await getPool().query(sql);
-            return result.rows.map(r => r.utm_source);
+            return result.rows.map(r => r.utm_source === null ? 'null' : r.utm_source);
         } catch (error) {
             console.error('Error fetching utm sources:', error);
             return [];
@@ -231,7 +231,12 @@ export const db = {
                 params.push(utm_medium);
             }
 
-            if (utm_source) { sql += ` AND utm_source = $${pIdx++}`; params.push(utm_source); }
+            if (utm_source === 'null') {
+                sql += ` AND utm_source IS NULL`;
+            } else if (utm_source) { 
+                sql += ` AND utm_source = $${pIdx++}`; 
+                params.push(utm_source); 
+            }
             if (utm_campaign) { sql += ` AND utm_campaign ILIKE $${pIdx++}`; params.push(`%${utm_campaign}%`); }
             if (utm_term) { sql += ` AND utm_term ILIKE $${pIdx++}`; params.push(`%${utm_term}%`); }
             if (utm_content) { sql += ` AND utm_content ILIKE $${pIdx++}`; params.push(`%${utm_content}%`); }
@@ -622,7 +627,12 @@ export const db = {
                 params.push(filters.utm_medium);
             }
 
-            if (filters.utm_source) { sql += ` AND utm_source = $${pIdx++}`; params.push(filters.utm_source); }
+            if (filters.utm_source === 'null') {
+                sql += ` AND utm_source IS NULL`;
+            } else if (filters.utm_source) { 
+                sql += ` AND utm_source = $${pIdx++}`; 
+                params.push(filters.utm_source); 
+            }
             if (filters.utm_campaign) { sql += ` AND utm_campaign ILIKE $${pIdx++}`; params.push(`%${filters.utm_campaign}%`); }
             if (filters.utm_term) { sql += ` AND utm_term ILIKE $${pIdx++}`; params.push(`%${filters.utm_term}%`); }
             if (filters.utm_content) { sql += ` AND utm_content ILIKE $${pIdx++}`; params.push(`%${filters.utm_content}%`); }

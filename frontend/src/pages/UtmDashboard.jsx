@@ -19,15 +19,16 @@ const SOURCE_ICONS = {
 const getSourceIcon = (s) => SOURCE_ICONS[(s || '').toLowerCase()] || SOURCE_ICONS.default;
 
 const formatSourceLabel = (raw) => {
-    if (!raw) return 'Desconhecido';
-    const lower = raw.toLowerCase();
+    if (!raw || String(raw).toLowerCase() === 'null') return 'Direto / Sem UTM';
+    const lower = String(raw).toLowerCase();
+    if (lower === 'direto / sem utm') return 'Direto / Sem UTM';
     if (lower === 'ig' || lower === 'instagram') return 'Instagram';
     if (lower === 'fb' || lower === 'facebook' || lower === 'fb_ads' || lower === 'meta_ads') return 'Facebook/Meta';
     if (lower === 'yt' || lower === 'youtube') return 'YouTube';
     if (lower === 'tt' || lower === 'tiktok') return 'TikTok';
     if (lower === 'organico') return 'Orgânico';
     if (lower === 'an') return 'GreatPages';
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
+    return String(raw).charAt(0).toUpperCase() + String(raw).slice(1);
 };
 
 const PLATFORM_COLORS = {

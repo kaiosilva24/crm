@@ -97,14 +97,14 @@ export default function Leads() {
     const [mapLeadData, setMapLeadData] = useState(null);
 
     const formatSourceLabel = (raw) => {
-        if (!raw) return 'Desconhecido';
+        if (!raw || raw === 'null') return 'Direto / Sem UTM';
         const lower = raw.toLowerCase();
         if (lower === 'ig' || lower === 'instagram') return 'Instagram';
         if (lower === 'fb' || lower === 'facebook' || lower === 'fb_ads' || lower === 'meta_ads') return 'Facebook/Meta';
         if (lower === 'yt' || lower === 'youtube') return 'YouTube';
         if (lower === 'tt' || lower === 'tiktok') return 'TikTok';
         if (lower === 'organico') return 'Orgânico';
-        if (lower === 'an') return 'GreatPages (an)';
+        if (lower === 'an') return 'GreatPages';
         return raw.charAt(0).toUpperCase() + raw.slice(1);
     };
 
