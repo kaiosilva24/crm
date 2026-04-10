@@ -129,4 +129,5 @@ export const api = {
     getLeadJourneyByPhone: (phone) => request(`/journey/phone/${encodeURIComponent(phone)}`),
     // Analytics
     getUtmAnalytics: (params = {}) => request(`/analytics/utm?${new URLSearchParams(params)}`),
+    getInstallmentsAnalytics: (params = {}) => request(`/analytics/installments?${new URLSearchParams(params)}`),
 };
