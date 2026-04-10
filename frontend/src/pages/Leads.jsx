@@ -96,6 +96,18 @@ export default function Leads() {
     const [expandedJourneys, setExpandedJourneys] = useState(new Set());
     const [mapLeadData, setMapLeadData] = useState(null);
 
+    const formatSourceLabel = (raw) => {
+        if (!raw) return 'Desconhecido';
+        const lower = raw.toLowerCase();
+        if (lower === 'ig' || lower === 'instagram') return 'Instagram';
+        if (lower === 'fb' || lower === 'facebook' || lower === 'fb_ads' || lower === 'meta_ads') return 'Facebook/Meta';
+        if (lower === 'yt' || lower === 'youtube') return 'YouTube';
+        if (lower === 'tt' || lower === 'tiktok') return 'TikTok';
+        if (lower === 'organico') return 'Orgânico';
+        if (lower === 'an') return 'GreatPages (an)';
+        return raw.charAt(0).toUpperCase() + raw.slice(1);
+    };
+
     const toggleJourney = (uuid) => {
         setExpandedJourneys(prev => {
             const next = new Set(prev);
@@ -941,7 +953,7 @@ export default function Leads() {
                             <select className="form-select" style={{ width: '100%' }} value={utmSourceFilter} onChange={e => setUtmSourceFilter(e.target.value)}>
                                 <option value="">Todas</option>
                                 {utmSourcesList.map(s => (
-                                    <option key={s} value={s}>{s}</option>
+                                    <option key={s} value={s}>{formatSourceLabel(s)} ({s})</option>
                                 ))}
                             </select>
                         </div>

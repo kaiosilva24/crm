@@ -173,7 +173,16 @@ export const db = {
     // ==================== LEADS ====================
     async getUtmSources() {
         try {
-            const result = await getPool().query('SELECT DISTINCT utm_source FROM lead_journey_events WHERE utm_source IS NOT NULL ORDER BY utm_source;');
+            const sql = `
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id) utm_source
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ORDER BY lead_id, created_at ASC
+                )
+                SELECT DISTINCT utm_source FROM first_entries WHERE utm_source IS NOT NULL ORDER BY utm_source;
+            `;
+            const result = await getPool().query(sql);
             return result.rows.map(r => r.utm_source);
         } catch (error) {
             console.error('Error fetching utm sources:', error);
