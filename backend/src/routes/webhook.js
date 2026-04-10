@@ -98,20 +98,26 @@ router.post('/gateway/:platform', async (req, res) => {
             return res.status(400).json({ error: 'Payload inválido (sem email nem telefone)' });
         }
 
-        // Buscar configuração do webhook para saber a campanha configurada
-        // A URL usada é /api/webhook/gateway/:platform, que mapeia para hotmart_webhook_configs
+        // Buscar configuração do webhook (id, campanha, round-robin) em uma única query
         let gatewayCampaignId = null;
+        let gatewayWebhookId = null;
+        let webhookEnableRoundRobin = settings.round_robin_enabled !== false;
         try {
             const { data: whConfigs } = await supabase
                 .from('hotmart_webhook_configs')
-                .select('campaign_id')
+                .select('id, campaign_id, enable_round_robin')
                 .ilike('platform_name', platform)
                 .eq('is_enabled', true)
                 .order('webhook_number', { ascending: true })
                 .limit(1);
-            if (whConfigs && whConfigs.length > 0) gatewayCampaignId = whConfigs[0].campaign_id;
+            if (whConfigs && whConfigs.length > 0) {
+                gatewayCampaignId = whConfigs[0].campaign_id;
+                gatewayWebhookId = whConfigs[0].id;
+                webhookEnableRoundRobin = whConfigs[0].enable_round_robin !== false;
+            }
+            console.log(`[Gateway/${platform}] Config: id=${gatewayWebhookId}, campaign=${gatewayCampaignId}, rr=${webhookEnableRoundRobin}`);
         } catch(e) {
-            console.warn(`[Gateway/${platform}] Não foi possível buscar config de campanha:`, e.message);
+            console.warn(`[Gateway/${platform}] Não foi possível buscar config do webhook:`, e.message);
         }
 
         // Verificar se lead já existe — SOMENTE na mesma campanha configurada
@@ -172,18 +178,7 @@ router.post('/gateway/:platform', async (req, res) => {
             seller_id: null
         };
 
-        // Buscar enable_round_robin da config do webhook específico
-        let webhookEnableRoundRobin = settings.round_robin_enabled !== false;
-        try {
-            const { data: rrConfig } = await supabase
-                .from('hotmart_webhook_configs')
-                .select('enable_round_robin')
-                .ilike('platform_name', platform)
-                .eq('is_enabled', true)
-                .order('webhook_number', { ascending: true })
-                .limit(1);
-            if (rrConfig && rrConfig.length > 0) webhookEnableRoundRobin = rrConfig[0].enable_round_robin !== false;
-        } catch(e) {}
+        // Round-Robin já configurado acima na query da config
 
         // Round-Robin conforme configuração do webhook
         if (webhookEnableRoundRobin) {
@@ -218,10 +213,15 @@ router.post('/gateway/:platform', async (req, res) => {
             metadata: { platform, original_payload: req.body, financials }
         }).catch(err => console.error(`[Gateway/${platform}] Journey entry error:`, err));
 
-        // ManyChat automation
-        try {
-            await processManychatAutomation(lead, settings);
-        } catch(err) {}
+        // ManyChat automation — passa o ID do webhook config para disparar a automação correta
+        if (gatewayWebhookId) {
+            processManychatAutomation(gatewayWebhookId, {
+                name,
+                email,
+                phone,
+                product: product_name
+            });
+        }
 
         await logGatewayEvent(rawPayload, 'success', null, lead.uuid, email, name, product_name, platform);
         return res.json({ success: true, message: `Lead criado via ${platform}`, lead_uuid: lead.uuid });
