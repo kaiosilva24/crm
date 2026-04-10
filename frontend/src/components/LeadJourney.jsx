@@ -265,22 +265,29 @@ export default function LeadJourney({ leadId, phone }) {
                         
                         // Extrai a pílula financeira como um bloco independente na timeline, independente se for uma Entrada, Webhook, Compra, ou Re-entrada.
                         if (ev.metadata?.financials) {
-                                const { gross, net, currency } = ev.metadata.financials;
+                                const { gross, net, currency, payment_method, installments, product_name } = ev.metadata.financials;
                                 const grossFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross);
                                 const netFmt = net ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(net) : null;
                                 const platformName = ev.metadata?.platform ? String(ev.metadata.platform).charAt(0).toUpperCase() + String(ev.metadata.platform).slice(1) : '';
-                                
+
+                                // Label: valor + parcelas se houver
+                                const installLabel = installments && installments > 1 ? ` ${installments}x` : '';
+                                const methodEmoji = payment_method?.includes('Crédito') ? '💳' : payment_method?.includes('PIX') ? '⚡' : payment_method?.includes('Boleto') ? '📄' : '💰';
+
                                 nodes.push({
                                     id: ev.id + '_finance',
-                                    icon: '💰',
+                                    icon: methodEmoji,
                                     color: '#059669',
-                                    label: platformName ? `${platformName} (${grossFmt})` : grossFmt,
+                                    label: `${grossFmt}${installLabel}`,
                                     date: ev.created_at,
-                                    subLabel: netFmt ? `Rec: ${netFmt}` : 'Pago',
+                                    subLabel: payment_method || (netFmt ? `Rec: ${netFmt}` : 'Pago'),
                                     details: [
-                                        platformName && { label: 'Plataforma', value: platformName },
-                                        { label: 'Valor Pago', value: grossFmt },
-                                        netFmt && { label: 'Líquido Recebido', value: netFmt }
+                                        product_name && { label: '📦 Produto', value: product_name },
+                                        platformName && { label: '🏪 Plataforma', value: platformName },
+                                        { label: '💵 Valor Pago', value: grossFmt },
+                                        installments && installments > 1 && { label: '📆 Parcelas', value: `${installments}x de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(gross / installments)}` },
+                                        payment_method && { label: '💳 Método', value: payment_method },
+                                        netFmt && { label: '📈 Líquido Recebido', value: netFmt }
                                     ].filter(Boolean)
                                 });
                         }
