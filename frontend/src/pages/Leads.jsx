@@ -97,8 +97,9 @@ export default function Leads() {
     const [mapLeadData, setMapLeadData] = useState(null);
 
     const formatSourceLabel = (raw) => {
-        if (!raw || raw === 'null') return 'Direto / Sem UTM';
-        const lower = raw.toLowerCase();
+        if (!raw) return 'Direto / Sem UTM';
+        const lower = String(raw).toLowerCase();
+        if (lower === 'null' || lower === 'direto / sem utm') return 'Direto / Sem UTM';
         if (lower === 'ig' || lower === 'instagram') return 'Instagram';
         if (lower === 'fb' || lower === 'facebook' || lower === 'fb_ads' || lower === 'meta_ads') return 'Facebook/Meta';
         if (lower === 'yt' || lower === 'youtube') return 'YouTube';
