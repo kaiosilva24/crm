@@ -115,15 +115,34 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             return res.status(400).json({ error: 'Invalid payload' });
         }
 
-        // Check for duplicate lead in the SAME CAMPAIGN
-        // This allows the same email/phone to exist in different campaigns
-        const { data: existingLead } = await supabase
-            .from('leads')
-            .select('uuid')
-            .eq('campaign_id', config.campaign_id)
-            .or(`email.eq.${leadData.email},phone.eq.${leadData.phone}`)
-            .limit(1)
-            .single();
+        // Check for duplicate lead in the SAME CAMPAIGN ONLY
+        // Uses separate queries to guarantee campaign_id filter is always applied
+        // (Supabase .or() does not reliably AND with previous .eq() filters)
+        let existingLead = null;
+
+        if (leadData.email && config.campaign_id) {
+            const { data: byEmail } = await supabase
+                .from('leads')
+                .select('uuid')
+                .eq('campaign_id', config.campaign_id)
+                .eq('email', leadData.email)
+                .limit(1);
+            if (byEmail && byEmail.length > 0) existingLead = byEmail[0];
+        }
+
+        if (!existingLead && leadData.phone && config.campaign_id) {
+            const normPhoneCheck = normalizePhone(leadData.phone);
+            if (normPhoneCheck) {
+                const phoneEnd = normPhoneCheck.slice(-8);
+                const { data: byPhone } = await supabase
+                    .from('leads')
+                    .select('uuid')
+                    .eq('campaign_id', config.campaign_id)
+                    .ilike('phone', `%${phoneEnd}`)
+                    .limit(1);
+                if (byPhone && byPhone.length > 0) existingLead = byPhone[0];
+            }
+        }
 
         let leadUuid;
         let status = 'success';
