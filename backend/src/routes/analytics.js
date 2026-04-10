@@ -24,10 +24,14 @@ router.get('/utm', async (req, res) => {
         const interval = PERIOD_INTERVALS[period] || PERIOD_INTERVALS['30d'];
         const pool = supabase._pool;
 
-        // Build base WHERE clause
-        let whereBase = interval ? `WHERE lje.created_at >= ${interval}` : 'WHERE 1=1';
-        if (utm_source) whereBase += ` AND lje.utm_source = '${utm_source.replace(/'/g, "''")}'`;
-        if (platform) whereBase += ` AND lje.metadata->>'platform' = '${platform.replace(/'/g, "''")}'`;
+        // Filtros dinâmicos (sem alias lje para CTEs)
+        const periodFilter = interval ? `AND created_at >= ${interval}` : '';
+        const sourceFilter = utm_source ? `AND utm_source = '${utm_source.replace(/'/g, "''")}'` : '';
+        const platformFilter = platform ? `AND metadata->>'platform' = '${platform.replace(/'/g, "''")}'` : '';
+        const extraFilters = `${sourceFilter} ${platformFilter}`;
+
+        // Mediums considerados como tráfego PAGO
+        const PAID_MEDIUMS = `('cpc','paid','cpm','ppc','paidsocial','paid_social','cpa')`;
 
         const [
             kpiResult,
@@ -39,98 +43,169 @@ router.get('/utm', async (req, res) => {
             topContentResult
         ] = await Promise.all([
 
-            // ── KPIs Financeiros totais ──────────────────────────────────────
+            // ── KPIs: classifica cada lead pelo SEU PRIMEIRO evento de entrada ──
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        utm_medium,
+                        metadata
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ${periodFilter}
+                    ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                ),
+                financial_totals AS (
+                    SELECT
+                        COUNT(DISTINCT lead_id)::int AS vendas_rastreadas,
+                        COALESCE(SUM((metadata->'financials'->>'gross')::numeric), 0) AS total_gross,
+                        COALESCE(SUM((metadata->'financials'->>'net')::numeric), 0) AS total_net
+                    FROM lead_journey_events
+                    WHERE metadata->'financials' IS NOT NULL
+                    ${periodFilter}
+                )
                 SELECT
-                    COUNT(DISTINCT lje.id)::int AS total_events,
-                    COUNT(DISTINCT lje.lead_id)::int AS total_leads,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS total_gross,
-                    COALESCE(SUM((lje.metadata->'financials'->>'net')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS total_net,
-                    COUNT(DISTINCT lje.lead_id) FILTER (WHERE lje.metadata->'financials' IS NOT NULL)::int AS vendas_rastreadas,
-                    COUNT(DISTINCT lje.lead_id) FILTER (WHERE lje.utm_medium IN ('cpc','paid','cpm','ppc'))::int AS leads_pagos,
-                    COUNT(DISTINCT lje.lead_id) FILTER (WHERE lje.utm_medium IN ('organic','organico') OR lje.utm_medium IS NULL)::int AS leads_organicos
-                FROM lead_journey_events lje
-                ${whereBase}
+                    (SELECT COUNT(*) FROM first_entries)::int AS total_leads,
+                    (SELECT total_gross FROM financial_totals) AS total_gross,
+                    (SELECT total_net FROM financial_totals) AS total_net,
+                    (SELECT vendas_rastreadas FROM financial_totals) AS vendas_rastreadas,
+                    COUNT(*) FILTER (WHERE utm_medium IN ${PAID_MEDIUMS})::int AS leads_pagos,
+                    COUNT(*) FILTER (WHERE utm_medium NOT IN ${PAID_MEDIUMS} OR utm_medium IS NULL)::int AS leads_organicos
+                FROM first_entries
             `),
 
-            // ── Leads por Source (Top 10) ────────────────────────────────────
+            // ── Leads por Source — baseado no 1º evento de entrada por lead ──
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        COALESCE(utm_source, 'Direto / Sem UTM') AS source,
+                        metadata
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ${periodFilter}
+                    ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                )
                 SELECT
-                    COALESCE(lje.utm_source, 'Direto / Sem UTM') AS source,
-                    COUNT(DISTINCT lje.lead_id)::int AS leads,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS gross_revenue,
-                    COALESCE(SUM((lje.metadata->'financials'->>'net')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS net_revenue
-                FROM lead_journey_events lje
-                ${whereBase}
+                    source,
+                    COUNT(DISTINCT lead_id)::int AS leads,
+                    COALESCE(SUM((metadata->'financials'->>'gross')::numeric) FILTER (WHERE metadata->'financials' IS NOT NULL), 0) AS gross_revenue,
+                    COALESCE(SUM((metadata->'financials'->>'net')::numeric) FILTER (WHERE metadata->'financials' IS NOT NULL), 0) AS net_revenue
+                FROM first_entries
                 GROUP BY source
                 ORDER BY leads DESC
                 LIMIT 10
             `),
 
-            // ── Leads por Medium ─────────────────────────────────────────────
+            // ── Leads por Medium — baseado no 1º evento de entrada por lead ──
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        COALESCE(utm_medium, 'Sem Medium') AS medium
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ${periodFilter}
+                    ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                )
                 SELECT
-                    COALESCE(lje.utm_medium, 'Sem Medium') AS medium,
-                    COUNT(DISTINCT lje.lead_id)::int AS leads
-                FROM lead_journey_events lje
-                ${whereBase}
+                    medium,
+                    COUNT(DISTINCT lead_id)::int AS leads
+                FROM first_entries
                 GROUP BY medium
                 ORDER BY leads DESC
                 LIMIT 8
             `),
 
-            // ── Plataformas de Venda ─────────────────────────────────────────
+            // ── Plataformas de Venda (todos os eventos com financials) ────────
             pool.query(`
                 SELECT
-                    lje.metadata->>'platform' AS platform,
-                    COUNT(DISTINCT lje.lead_id)::int AS vendas,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric), 0) AS gross,
-                    COALESCE(SUM((lje.metadata->'financials'->>'net')::numeric), 0) AS net
-                FROM lead_journey_events lje
-                ${whereBase.replace('WHERE', 'WHERE lje.metadata->'+'>'+"'platform' IS NOT NULL AND")}
-                AND lje.metadata->'financials' IS NOT NULL
+                    metadata->>'platform' AS platform,
+                    COUNT(DISTINCT lead_id)::int AS vendas,
+                    COALESCE(SUM((metadata->'financials'->>'gross')::numeric), 0) AS gross,
+                    COALESCE(SUM((metadata->'financials'->>'net')::numeric), 0) AS net
+                FROM lead_journey_events
+                WHERE metadata->>'platform' IS NOT NULL
+                  AND metadata->'financials' IS NOT NULL
+                  ${periodFilter}
+                  ${platformFilter}
                 GROUP BY platform
                 ORDER BY vendas DESC
             `),
 
-            // ── Top Campanhas (Top 10) ───────────────────────────────────────
+            // ── Top Campanhas — baseado no 1º evento de entrada por lead ─────
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        utm_campaign,
+                        metadata
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                      AND utm_campaign IS NOT NULL
+                      ${periodFilter}
+                      ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                )
                 SELECT
-                    lje.utm_campaign AS campaign,
-                    COUNT(DISTINCT lje.lead_id)::int AS leads,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS gross_revenue
-                FROM lead_journey_events lje
-                ${whereBase}
-                AND lje.utm_campaign IS NOT NULL
+                    utm_campaign AS campaign,
+                    COUNT(DISTINCT lead_id)::int AS leads,
+                    COALESCE(SUM((metadata->'financials'->>'gross')::numeric) FILTER (WHERE metadata->'financials' IS NOT NULL), 0) AS gross_revenue
+                FROM first_entries
                 GROUP BY campaign
                 ORDER BY leads DESC
                 LIMIT 10
             `),
 
-            // ── Timeline diária (Pago vs Orgânico) ──────────────────────────
+            // ── Timeline diária — baseado no 1º evento de entrada por lead ───
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        utm_medium,
+                        created_at,
+                        metadata
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ${periodFilter}
+                    ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                )
                 SELECT
-                    DATE(lje.created_at AT TIME ZONE 'America/Sao_Paulo') AS date,
-                    COUNT(DISTINCT lje.lead_id)::int AS total,
-                    COUNT(DISTINCT lje.lead_id) FILTER (WHERE lje.utm_medium IN ('cpc','paid','cpm','ppc'))::int AS pago,
-                    COUNT(DISTINCT lje.lead_id) FILTER (WHERE lje.utm_medium IN ('organic','organico') OR lje.utm_medium IS NULL)::int AS organico,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS revenue
-                FROM lead_journey_events lje
-                ${whereBase}
+                    DATE(created_at AT TIME ZONE 'America/Sao_Paulo') AS date,
+                    COUNT(DISTINCT lead_id)::int AS total,
+                    COUNT(DISTINCT lead_id) FILTER (WHERE utm_medium IN ${PAID_MEDIUMS})::int AS pago,
+                    COUNT(DISTINCT lead_id) FILTER (WHERE utm_medium NOT IN ${PAID_MEDIUMS} OR utm_medium IS NULL)::int AS organico,
+                    COALESCE(SUM((metadata->'financials'->>'gross')::numeric) FILTER (WHERE metadata->'financials' IS NOT NULL), 0) AS revenue
+                FROM first_entries
                 GROUP BY date
                 ORDER BY date ASC
             `),
 
-            // ── Top Conteúdos/Anúncios ───────────────────────────────────────
+            // ── Top Criativos (utm_content) — baseado no 1º evento por lead ──
             pool.query(`
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id)
+                        lead_id,
+                        utm_content,
+                        utm_source,
+                        metadata
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                      AND utm_content IS NOT NULL
+                      ${periodFilter}
+                      ${extraFilters}
+                    ORDER BY lead_id, created_at ASC
+                )
                 SELECT
-                    lje.utm_content AS content,
-                    lje.utm_source AS source,
-                    COUNT(DISTINCT lje.lead_id)::int AS leads,
-                    COALESCE(SUM((lje.metadata->'financials'->>'gross')::numeric) FILTER (WHERE lje.metadata->'financials' IS NOT NULL), 0) AS gross_revenue
-                FROM lead_journey_events lje
-                ${whereBase}
-                AND lje.utm_content IS NOT NULL
+                    utm_content AS content,
+                    utm_source AS source,
+                    COUNT(DISTINCT lead_id)::int AS leads,
+                    COALESCE(SUM((metadata->'financials'->>'gross')::numeric) FILTER (WHERE metadata->'financials' IS NOT NULL), 0) AS gross_revenue
+                FROM first_entries
                 GROUP BY content, source
                 ORDER BY leads DESC
                 LIMIT 10
