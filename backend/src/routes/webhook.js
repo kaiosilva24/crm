@@ -98,12 +98,50 @@ router.post('/gateway/:platform', async (req, res) => {
             return res.status(400).json({ error: 'Payload inválido (sem email nem telefone)' });
         }
 
-        // Verificar se lead já existe
-        const existing = email ? await db.getLeadByEmail(email) : null;
+        // Buscar configuração do webhook para saber a campanha configurada
+        // A URL usada é /api/webhook/gateway/:platform, que mapeia para hotmart_webhook_configs
+        let gatewayCampaignId = null;
+        try {
+            const { data: whConfigs } = await supabase
+                .from('hotmart_webhook_configs')
+                .select('campaign_id')
+                .ilike('platform_name', platform)
+                .eq('is_enabled', true)
+                .order('webhook_number', { ascending: true })
+                .limit(1);
+            if (whConfigs && whConfigs.length > 0) gatewayCampaignId = whConfigs[0].campaign_id;
+        } catch(e) {
+            console.warn(`[Gateway/${platform}] Não foi possível buscar config de campanha:`, e.message);
+        }
+
+        // Verificar se lead já existe — SOMENTE na mesma campanha configurada
+        // Se não há campanha configurada, nunca bloqueia como duplicado (permite criar)
         let financials = extractFinancials(rawPayload, platform);
+        let existing = null;
+
+        if (gatewayCampaignId && email) {
+            const { data: byEmail } = await supabase
+                .from('leads')
+                .select('id, uuid, email, phone, campaign_id')
+                .eq('campaign_id', gatewayCampaignId)
+                .eq('email', email)
+                .limit(1);
+            if (byEmail && byEmail.length > 0) existing = byEmail[0];
+        }
+
+        if (!existing && gatewayCampaignId && phone) {
+            const phoneEnd = phone.slice(-8);
+            const { data: byPhone } = await supabase
+                .from('leads')
+                .select('id, uuid, email, phone, campaign_id')
+                .eq('campaign_id', gatewayCampaignId)
+                .ilike('phone', `%${phoneEnd}`)
+                .limit(1);
+            if (byPhone && byPhone.length > 0) existing = byPhone[0];
+        }
 
         if (existing) {
-            console.log(`[Gateway/${platform}] Lead já existe: ${existing.uuid}`);
+            console.log(`[Gateway/${platform}] Lead já existe na campanha ${gatewayCampaignId}: ${existing.uuid}`);
             db.createJourneyEvent({
                 lead_id: existing.id,
                 lead_phone: existing.phone || phone,
@@ -115,9 +153,10 @@ router.post('/gateway/:platform', async (req, res) => {
                 metadata: { platform, original_payload: req.body, financials }
             }).catch(err => console.error(`[Gateway/${platform}] Journey event error:`, err));
 
-            await logGatewayEvent(rawPayload, 'duplicate', 'Lead já existe e foi atualizado no funil', existing.uuid, email, name, product_name, platform);
-            return res.json({ message: 'Lead já existe', lead_uuid: existing.uuid });
+            await logGatewayEvent(rawPayload, 'duplicate', 'Lead já existe nesta campanha e foi atualizado no funil', existing.uuid, email, name, product_name, platform);
+            return res.json({ message: 'Lead já existe nesta campanha', lead_uuid: existing.uuid });
         }
+
 
         // Montar dados do novo lead
         const leadData = {
