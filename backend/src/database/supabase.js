@@ -191,7 +191,15 @@ export const db = {
         let journeyMatchedLeadIds = null;
         
         if (useJourneyFilter) {
-            let sql = `SELECT DISTINCT lead_id FROM lead_journey_events WHERE 1=1 `;
+            let sql = `
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id) 
+                        lead_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ORDER BY lead_id, created_at ASC
+                )
+                SELECT lead_id FROM first_entries WHERE 1=1 `;
             const params = [];
             let pIdx = 1;
 
@@ -574,7 +582,15 @@ export const db = {
         let journeyMatchedLeadIds = null;
         
         if (useJourneyFilter) {
-            let sql = `SELECT DISTINCT lead_id FROM lead_journey_events WHERE 1=1 `;
+            let sql = `
+                WITH first_entries AS (
+                    SELECT DISTINCT ON (lead_id) 
+                        lead_id, utm_medium, utm_source, utm_campaign, utm_term, utm_content
+                    FROM lead_journey_events
+                    WHERE event_type = 'entry'
+                    ORDER BY lead_id, created_at ASC
+                )
+                SELECT lead_id FROM first_entries WHERE 1=1 `;
             const params = [];
             let pIdx = 1;
 
