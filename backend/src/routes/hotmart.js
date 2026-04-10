@@ -117,6 +117,16 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             return res.status(400).json({ error: 'Invalid payload' });
         }
 
+        // 🔄 INTERCEPT: Pagamento recorrente (parcela do Parcelamento Inteligente)
+        // NÃO cria lead, NÃO entra em campanha — apenas registra evento de jornada
+        if (payload?.event === 'PURCHASE_RECURRENT_APPROVED') {
+            await handleRecurrentPayment(payload, config, leadData);
+            return res.status(200).json({
+                message: 'Pagamento recorrente registrado com sucesso',
+                status: 'recurrence_payment'
+            });
+        }
+
         // Check for duplicate lead in the SAME CAMPAIGN ONLY
         // Uses separate queries to guarantee campaign_id filter is always applied
         // (Supabase .or() does not reliably AND with previous .eq() filters)
@@ -202,6 +212,31 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             }
 
             console.log(`✅ Created new lead: ${uuid} ${sellerId ? `(assigned to seller ${sellerId})` : ''}`);
+
+            // 💰 Fase 3: criar plano de parcelamento se for FINANCED_INSTALLMENT
+            if (leadData.is_smart_installment && leadData.installments && leadData.installments > 1) {
+                const financialsForPlan = extractFinancials(payload, config.platform_name || 'hotmart');
+                await createInstallmentPlan({
+                    lead_uuid: uuid,
+                    lead_email: leadData.email,
+                    lead_name: leadData.name,
+                    product_name: leadData.product,
+                    platform: config.platform_name || 'hotmart',
+                    gross_installment_value: financialsForPlan?.gross ?? null,
+                    net_installment_value: financialsForPlan?.net ?? null,
+                    currency: financialsForPlan?.currency || 'BRL',
+                    total_installments: parseInt(leadData.installments),
+                    installments_paid: 1,
+                    first_payment_at: new Date().toISOString(),
+                    last_payment_at: new Date().toISOString(),
+                    next_expected_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    is_historical: false,
+                    metrics_start_date: new Date().toISOString(),
+                    hotmart_transaction: payload?.data?.purchase?.transaction || null,
+                    status: 'active'
+                });
+                console.log(`💳 Plano de parcelamento criado: ${leadData.installments}x R$ ${financialsForPlan?.gross} — lead ${uuid}`);
+            }
         }
 
         // Extrair dados financeiros do payload para registrar no histórico
@@ -756,6 +791,114 @@ async function logWebhook(payload, status, errorMessage, leadUuid, buyerEmail, b
             });
     } catch (error) {
         console.error('Error logging webhook:', error);
+    }
+}
+
+/**
+ * Lida com pagamentos recorrentes (PURCHASE_RECURRENT_APPROVED)
+ * - Busca lead globalmente (sem filtro de campanha)
+ * - Registra evento de jornada financeira
+ * - Atualiza installment_plans se existir
+ * - NÃO cria novo lead, NÃO entra em campanha
+ */
+async function handleRecurrentPayment(payload, config, leadData) {
+    try {
+        // 1. Busca GLOBAL — sem filtro de campaign_id
+        let lead = null;
+
+        if (leadData.email) {
+            const { data } = await supabase
+                .from('leads')
+                .select('uuid, id, phone')
+                .eq('email', leadData.email)
+                .limit(1);
+            if (data?.length) lead = data[0];
+        }
+
+        if (!lead && leadData.phone) {
+            const tail = normalizePhone(leadData.phone)?.slice(-8);
+            if (tail) {
+                const { data } = await supabase
+                    .from('leads')
+                    .select('uuid, id, phone')
+                    .ilike('phone', `%${tail}`)
+                    .limit(1);
+                if (data?.length) lead = data[0];
+            }
+        }
+
+        const fin = extractFinancials(payload, 'hotmart');
+        const recNum = fin?.recurrence_number;
+        const totalInst = fin?.installments;
+
+        if (lead) {
+            // 2. Evento de jornada financeira
+            const label = recNum && totalInst
+                ? `Parcela ${recNum}/${totalInst} \u2014 Parcelamento Inteligente \u2014 ${leadData.product}`
+                : `Parcela recorrente \u2014 ${leadData.product}`;
+
+            await supabase.from('lead_journey_events').insert({
+                lead_id: lead.id,
+                lead_email: leadData.email,
+                lead_phone: normalizePhone(leadData.phone),
+                event_type: 'hotmart_event',
+                event_label: label,
+                campaign_id: null,   // Não vincula a campanha ativa
+                metadata: {
+                    platform: config.platform_name || 'hotmart',
+                    event_type: 'PURCHASE_RECURRENT_APPROVED',
+                    financials: fin,
+                    original_payload: payload
+                }
+            });
+
+            // 3. Atualizar installment_plans se existir o registro
+            if (recNum && totalInst) {
+                const isCompleted = recNum >= totalInst;
+                await supabase
+                    .from('installment_plans')
+                    .update({
+                        installments_paid: recNum,
+                        last_payment_at: new Date().toISOString(),
+                        next_expected_at: isCompleted ? null
+                            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        status: isCompleted ? 'completed' : 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('lead_uuid', lead.uuid)
+                    .ilike('product_name', `%${(leadData.product || '').split(' ').slice(0, 3).join(' ')}%`);
+            }
+
+            await logWebhook(payload, 'recurrence_payment', null, lead.uuid,
+                leadData.email, leadData.name, leadData.product, config.id);
+
+            console.log(`\ud83d\udd04 Recorr\u00eancia registrada para lead ${lead.uuid} \u2014 ${label}`);
+        } else {
+            // Lead não encontrado — comprou mas nunca entrou no sistema
+            await logWebhook(payload, 'recurrence_no_lead',
+                'Lead nao encontrado para recorrencia (compra anterior ao sistema)',
+                null, leadData.email, leadData.name, leadData.product, config.id);
+
+            console.log(`\u26a0\ufe0f Recorr\u00eancia sem lead cadastrado: ${leadData.email || leadData.phone} \u2014 ${leadData.product}`);
+        }
+    } catch (err) {
+        console.error('\u274c Erro em handleRecurrentPayment:', err.message);
+        // Não propaga o erro — retorna 200 para Hotmart não reenviar
+    }
+}
+
+/**
+ * Cria um registro de plano de parcelamento inteligente
+ * Chamado na 1ª compra FINANCED_INSTALLMENT
+ */
+async function createInstallmentPlan(plan) {
+    try {
+        const { error } = await supabase.from('installment_plans').insert(plan);
+        if (error) {
+            console.error('\u26a0\ufe0f Erro ao criar installment_plan (nao critico):', error.message);
+        }
+    } catch (err) {
+        console.error('\u26a0\ufe0f Excecao em createInstallmentPlan (nao critico):', err.message);
     }
 }
 

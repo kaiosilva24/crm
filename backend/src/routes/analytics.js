@@ -229,4 +229,102 @@ router.get('/utm', async (req, res) => {
     }
 });
 
+
+/**
+ * GET /api/analytics/installments
+ * Resumo dos planos de Parcelamento Inteligente (Hotmart)
+ */
+router.get('/installments', async (req, res) => {
+    try {
+        const { data: plans, error } = await supabase
+            .from('installment_plans')
+            .select('*')
+            .order('status')
+            .order('next_expected_at');
+
+        if (error) throw error;
+        const allPlans = plans || [];
+
+        const livePlans = allPlans.filter(p => !p.is_historical);
+        const historicalPlans = allPlans.filter(p => p.is_historical);
+        const activePlans = allPlans.filter(p => p.status === 'active');
+        const liveActive = livePlans.filter(p => p.status === 'active');
+        const histActive = historicalPlans.filter(p => p.status === 'active');
+
+        const sumGross = (arr) => arr.reduce((acc, p) => {
+            const rem = (p.total_installments - p.installments_paid);
+            return acc + (rem * (p.gross_installment_value || 0));
+        }, 0);
+        const sumNet = (arr) => arr.reduce((acc, p) => {
+            const rem = (p.total_installments - p.installments_paid);
+            return acc + (rem * (p.net_installment_value || 0));
+        }, 0);
+        const revenueNextDays = (days) => {
+            const cutoff = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+            return activePlans
+                .filter(p => p.next_expected_at && new Date(p.next_expected_at) <= cutoff)
+                .reduce((acc, p) => acc + (p.gross_installment_value || 0), 0);
+        };
+
+        const byProduct = {};
+        for (const p of activePlans) {
+            const key = p.product_name || 'Desconhecido';
+            if (!byProduct[key]) byProduct[key] = { product: key, active_plans: 0, gross_monthly: 0, gross_remaining: 0, net_remaining: 0 };
+            byProduct[key].active_plans++;
+            byProduct[key].gross_monthly += (p.gross_installment_value || 0);
+            const rem = p.total_installments - p.installments_paid;
+            byProduct[key].gross_remaining += rem * (p.gross_installment_value || 0);
+            byProduct[key].net_remaining += rem * (p.net_installment_value || 0);
+        }
+
+        const plansList = allPlans.map(p => {
+            const remaining = p.total_installments - p.installments_paid;
+            return {
+                id: p.id, lead_uuid: p.lead_uuid, lead_name: p.lead_name,
+                lead_email: p.lead_email, product: p.product_name, platform: p.platform,
+                progress: `${p.installments_paid}/${p.total_installments}`,
+                installments_paid: p.installments_paid, total_installments: p.total_installments,
+                installments_remaining: remaining,
+                gross_monthly: p.gross_installment_value, net_monthly: p.net_installment_value,
+                gross_remaining: +(remaining * (p.gross_installment_value || 0)).toFixed(2),
+                net_remaining: +(remaining * (p.net_installment_value || 0)).toFixed(2),
+                currency: p.currency, has_coproduction: p.has_coproduction, status: p.status,
+                first_payment_at: p.first_payment_at, next_expected_at: p.next_expected_at,
+                is_historical: p.is_historical, migration_source: p.migration_source
+            };
+        });
+
+        res.json({
+            live_summary: {
+                note: 'Planos ao vivo — metricas confiaveis',
+                total_plans: livePlans.length,
+                active_plans: liveActive.length,
+                completed_plans: livePlans.filter(p => p.status === 'completed').length,
+                gross_expected_total: +sumGross(liveActive).toFixed(2),
+                net_expected_total: +sumNet(liveActive).toFixed(2)
+            },
+            historical_summary: {
+                note: 'Migrados do CSV — rastreamento apenas, nao entram em metricas',
+                total_plans: historicalPlans.length,
+                active_plans: histActive.length,
+                completed_plans: historicalPlans.filter(p => p.status === 'completed').length,
+                gross_expected_total: +sumGross(histActive).toFixed(2),
+                net_expected_total: +sumNet(histActive).toFixed(2)
+            },
+            revenue_forecast: {
+                next_30_days: +revenueNextDays(30).toFixed(2),
+                next_60_days: +revenueNextDays(60).toFixed(2),
+                next_90_days: +revenueNextDays(90).toFixed(2),
+                total_remaining_gross: +sumGross(activePlans).toFixed(2),
+                total_remaining_net: +sumNet(activePlans).toFixed(2)
+            },
+            by_product: Object.values(byProduct).sort((a, b) => b.gross_remaining - a.gross_remaining),
+            plans: plansList
+        });
+    } catch (error) {
+        console.error('Erro ao buscar installments analytics:', error);
+        res.status(500).json({ error: 'Erro ao buscar dados de parcelamentos', detail: error.message });
+    }
+});
+
 export default router;
