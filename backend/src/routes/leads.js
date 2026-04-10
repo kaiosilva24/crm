@@ -23,6 +23,18 @@ router.get('/sources', async (req, res) => {
 });
 
 /**
+ * GET /api/leads/utm-sources
+ */
+router.get('/utm-sources', async (req, res) => {
+    try {
+        const sources = await db.getUtmSources();
+        res.json({ sources });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar UTM sources' });
+    }
+});
+
+/**
  * GET /api/leads
  */
 router.get('/', async (req, res) => {

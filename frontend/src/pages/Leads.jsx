@@ -20,6 +20,7 @@ export default function Leads() {
     const [campaignFilter, setCampaignFilter] = useState('');
     const [sourceIntegrationFilter, setSourceIntegrationFilter] = useState('');
     const [availableSources, setAvailableSources] = useState([]);
+    const [utmSourcesList, setUtmSourcesList] = useState([]);
     
     // Filtros UTM/Tráfego
     const [utmMediumFilter, setUtmMediumFilter] = useState('');
@@ -538,6 +539,7 @@ export default function Leads() {
         api.getCampaigns({ active_only: true }).then(d => setCampaigns(d.campaigns));
         api.getSubcampaigns({ active_only: true }).then(d => setSubcampaigns(d.subcampaigns || [])).catch(() => { });
         api.getLeadSources().then(d => setAvailableSources(d.sources || [])).catch(() => {});
+        api.getUtmSources().then(d => setUtmSourcesList(d.sources || [])).catch(() => {});
         if (isAdmin) {
             api.getSellers().then(d => setSellers(d.sellers || []));
         }
@@ -938,11 +940,9 @@ export default function Leads() {
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>Plataforma (Source)</label>
                             <select className="form-select" style={{ width: '100%' }} value={utmSourceFilter} onChange={e => setUtmSourceFilter(e.target.value)}>
                                 <option value="">Todas</option>
-                                <option value="ig">Instagram</option>
-                                <option value="fb">Facebook</option>
-                                <option value="yt">Youtube</option>
-                                <option value="tiktok">TikTok</option>
-                                <option value="google">Google</option>
+                                {utmSourcesList.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
                             </select>
                         </div>
 

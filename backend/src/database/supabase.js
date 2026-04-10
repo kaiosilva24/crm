@@ -171,6 +171,16 @@ export const db = {
     },
 
     // ==================== LEADS ====================
+    async getUtmSources() {
+        try {
+            const result = await getPool().query('SELECT DISTINCT utm_source FROM lead_journey_events WHERE utm_source IS NOT NULL ORDER BY utm_source;');
+            return result.rows.map(r => r.utm_source);
+        } catch (error) {
+            console.error('Error fetching utm sources:', error);
+            return [];
+        }
+    },
+
     async getLeadSources() {
         try {
             const result = await getPool().query('SELECT DISTINCT source FROM leads WHERE source IS NOT NULL ORDER BY source;');
