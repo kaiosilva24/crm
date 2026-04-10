@@ -18,6 +18,18 @@ const SOURCE_ICONS = {
 };
 const getSourceIcon = (s) => SOURCE_ICONS[(s || '').toLowerCase()] || SOURCE_ICONS.default;
 
+const formatSourceLabel = (raw) => {
+    if (!raw) return 'Desconhecido';
+    const lower = raw.toLowerCase();
+    if (lower === 'ig' || lower === 'instagram') return 'Instagram';
+    if (lower === 'fb' || lower === 'facebook' || lower === 'fb_ads' || lower === 'meta_ads') return 'Facebook/Meta';
+    if (lower === 'yt' || lower === 'youtube') return 'YouTube';
+    if (lower === 'tt' || lower === 'tiktok') return 'TikTok';
+    if (lower === 'organico') return 'Orgânico';
+    if (lower === 'an') return 'GreatPages';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
 const PLATFORM_COLORS = {
     hotmart: '#f97316', looma: '#6366f1', kiwify: '#10b981',
     eduzz: '#3b82f6', monetizze: '#ec4899', default: '#94a3b8'
@@ -129,7 +141,11 @@ export default function UtmDashboard() {
     useEffect(() => { load(); }, [load]);
 
     const kpis = data?.kpis || {};
-    const bySource = data?.by_source || [];
+    const bySource = (data?.by_source || []).map(r => ({
+        ...r,
+        raw_source: r.source,
+        source: formatSourceLabel(r.source)
+    }));
     const byMedium = data?.by_medium || [];
     const byPlatform = data?.by_platform || [];
     const byCampaign = data?.by_campaign || [];
@@ -215,7 +231,7 @@ export default function UtmDashboard() {
                     <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Filtrando por:</span>
                         <span style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 20, padding: '3px 12px', fontSize: '0.8rem', color: '#a5b4fc', fontWeight: 600 }}>
-                            {getSourceIcon(activeSource)} {activeSource}
+                            {getSourceIcon(activeSource)} {formatSourceLabel(activeSource)}
                         </span>
                         <button onClick={() => setActiveSource(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>✕ limpar</button>
                     </div>
@@ -396,9 +412,9 @@ export default function UtmDashboard() {
                                     <tbody>
                                         {bySource.map((s, i) => (
                                             <tr key={i} className="source-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', transition: 'background 0.15s' }}
-                                                onClick={() => setActiveSource(activeSource === s.source ? null : s.source)}>
-                                                <td style={{ padding: '10px 10px', fontWeight: 600, color: activeSource === s.source ? '#a5b4fc' : '#e2e8f0' }}>
-                                                    <span style={{ marginRight: 6 }}>{getSourceIcon(s.source)}</span>{s.source}
+                                                onClick={() => setActiveSource(activeSource === s.raw_source ? null : s.raw_source)}>
+                                                <td style={{ padding: '10px 10px', fontWeight: 600, color: activeSource === s.raw_source ? '#a5b4fc' : '#e2e8f0' }}>
+                                                    <span style={{ marginRight: 6 }}>{getSourceIcon(s.raw_source)}</span>{s.source}
                                                 </td>
                                                 <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{fmtInt(s.leads)}</td>
                                                 <td style={{ padding: '10px 10px', color: '#10b981', fontWeight: 700 }}>{fmt(s.gross_revenue)}</td>
@@ -429,7 +445,7 @@ export default function UtmDashboard() {
                                                     <td style={{ padding: '10px 10px', color: '#e2e8f0', fontWeight: 600, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         🖼️ {c.content}
                                                     </td>
-                                                    <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{getSourceIcon(c.source)} {c.source}</td>
+                                                    <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{getSourceIcon(c.source)} {formatSourceLabel(c.source)}</td>
                                                     <td style={{ padding: '10px 10px', color: '#94a3b8' }}>{fmtInt(c.leads)}</td>
                                                     <td style={{ padding: '10px 10px', color: '#10b981', fontWeight: 700 }}>{fmt(c.gross_revenue)}</td>
                                                 </tr>

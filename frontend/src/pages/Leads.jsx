@@ -953,7 +953,7 @@ export default function Leads() {
                             <select className="form-select" style={{ width: '100%' }} value={utmSourceFilter} onChange={e => setUtmSourceFilter(e.target.value)}>
                                 <option value="">Todas</option>
                                 {utmSourcesList.map(s => (
-                                    <option key={s} value={s}>{formatSourceLabel(s)} ({s})</option>
+                                    <option key={s} value={s}>{formatSourceLabel(s)}</option>
                                 ))}
                             </select>
                         </div>
