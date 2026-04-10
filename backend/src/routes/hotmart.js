@@ -216,7 +216,10 @@ router.post('/webhook:number(\\d+)?', async (req, res) => {
             // 💰 Fase 3: criar plano de parcelamento se for FINANCED_INSTALLMENT
             if (leadData.is_smart_installment && leadData.installments && leadData.installments > 1) {
                 const financialsForPlan = extractFinancials(payload, config.platform_name || 'hotmart');
+                // Buscar o id inteiro do lead recem criado
+                const { data: newLead } = await supabase.from('leads').select('id').eq('uuid', uuid).single();
                 await createInstallmentPlan({
+                    lead_id: newLead?.id || null,
                     lead_uuid: uuid,
                     lead_email: leadData.email,
                     lead_name: leadData.name,
@@ -834,8 +837,8 @@ async function handleRecurrentPayment(payload, config, leadData) {
         if (lead) {
             // 2. Evento de jornada financeira
             const label = recNum && totalInst
-                ? `Parcela ${recNum}/${totalInst} \u2014 Parcelamento Inteligente \u2014 ${leadData.product}`
-                : `Parcela recorrente \u2014 ${leadData.product}`;
+                ? `Parcela ${recNum}/${totalInst} — Parcelamento Inteligente — ${leadData.product}`
+                : `Parcela recorrente — ${leadData.product}`;
 
             await supabase.from('lead_journey_events').insert({
                 lead_id: lead.id,
@@ -843,7 +846,7 @@ async function handleRecurrentPayment(payload, config, leadData) {
                 lead_phone: normalizePhone(leadData.phone),
                 event_type: 'hotmart_event',
                 event_label: label,
-                campaign_id: null,   // Não vincula a campanha ativa
+                campaign_id: null,
                 metadata: {
                     platform: config.platform_name || 'hotmart',
                     event_type: 'PURCHASE_RECURRENT_APPROVED',
@@ -865,14 +868,14 @@ async function handleRecurrentPayment(payload, config, leadData) {
                         status: isCompleted ? 'completed' : 'active',
                         updated_at: new Date().toISOString()
                     })
-                    .eq('lead_uuid', lead.uuid)
+                    .eq('lead_id', lead.id)
                     .ilike('product_name', `%${(leadData.product || '').split(' ').slice(0, 3).join(' ')}%`);
             }
 
             await logWebhook(payload, 'recurrence_payment', null, lead.uuid,
                 leadData.email, leadData.name, leadData.product, config.id);
 
-            console.log(`\ud83d\udd04 Recorr\u00eancia registrada para lead ${lead.uuid} \u2014 ${label}`);
+            console.log(`🔄 Recorrência registrada para lead ${lead.uuid} — ${label}`);
         } else {
             // Lead não encontrado — comprou mas nunca entrou no sistema
             await logWebhook(payload, 'recurrence_no_lead',
