@@ -24,13 +24,13 @@ router.get('/utm', async (req, res) => {
         const interval = PERIOD_INTERVALS[period] || PERIOD_INTERVALS['30d'];
         const pool = supabase._pool;
 
-        // Filtros dinâmicos (sem alias lje para CTEs)
+        // Filtros dinÃ¢micos (sem alias lje para CTEs)
         const periodFilter = interval ? `AND created_at >= ${interval}` : '';
         const sourceFilter = utm_source ? `AND utm_source = '${utm_source.replace(/'/g, "''")}'` : '';
         const platformFilter = platform ? `AND metadata->>'platform' = '${platform.replace(/'/g, "''")}'` : '';
         const extraFilters = `${sourceFilter} ${platformFilter}`;
 
-        // Mediums considerados como tráfego PAGO
+        // Mediums considerados como trÃ¡fego PAGO
         const PAID_MEDIUMS = `('cpc','paid','cpm','ppc','paidsocial','paid_social','cpa')`;
 
         const [
@@ -43,7 +43,7 @@ router.get('/utm', async (req, res) => {
             topContentResult
         ] = await Promise.all([
 
-            // ── KPIs: classifica cada lead pelo SEU PRIMEIRO evento de entrada ──
+            // ââ KPIs: classifica cada lead pelo SEU PRIMEIRO evento de entrada ââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -75,7 +75,7 @@ router.get('/utm', async (req, res) => {
                 FROM first_entries
             `),
 
-            // ── Leads por Source — baseado no 1º evento de entrada por lead ──
+            // ââ Leads por Source â baseado no 1Âº evento de entrada por lead ââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -99,7 +99,7 @@ router.get('/utm', async (req, res) => {
                 LIMIT 10
             `),
 
-            // ── Leads por Medium — baseado no 1º evento de entrada por lead ──
+            // ââ Leads por Medium â baseado no 1Âº evento de entrada por lead ââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -120,7 +120,7 @@ router.get('/utm', async (req, res) => {
                 LIMIT 8
             `),
 
-            // ── Plataformas de Venda (todos os eventos com financials) ────────
+            // ââ Plataformas de Venda (todos os eventos com financials) ââââââââ
             pool.query(`
                 SELECT
                     metadata->>'platform' AS platform,
@@ -136,7 +136,7 @@ router.get('/utm', async (req, res) => {
                 ORDER BY vendas DESC
             `),
 
-            // ── Top Campanhas — baseado no 1º evento de entrada por lead ─────
+            // ââ Top Campanhas â baseado no 1Âº evento de entrada por lead âââââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -160,7 +160,7 @@ router.get('/utm', async (req, res) => {
                 LIMIT 10
             `),
 
-            // ── Timeline diária — baseado no 1º evento de entrada por lead ───
+            // ââ Timeline diÃ¡ria â baseado no 1Âº evento de entrada por lead âââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -185,7 +185,7 @@ router.get('/utm', async (req, res) => {
                 ORDER BY date ASC
             `),
 
-            // ── Top Criativos (utm_content) — baseado no 1º evento por lead ──
+            // ââ Top Criativos (utm_content) â baseado no 1Âº evento por lead ââ
             pool.query(`
                 WITH first_entries AS (
                     SELECT DISTINCT ON (lead_id)
@@ -296,7 +296,7 @@ router.get('/installments', async (req, res) => {
 
         res.json({
             live_summary: {
-                note: 'Planos ao vivo � metricas confiaveis',
+                note: 'Planos ao vivo  metricas confiaveis',
                 total_plans: livePlans.length,
                 active_plans: liveActive.length,
                 completed_plans: livePlans.filter(p => p.status === 'completed').length,
@@ -304,7 +304,7 @@ router.get('/installments', async (req, res) => {
                 net_expected_total: +sumNet(liveActive).toFixed(2)
             },
             historical_summary: {
-                note: 'Migrados do CSV � rastreamento apenas, nao entram em metricas',
+                note: 'Migrados do CSV  rastreamento apenas, nao entram em metricas',
                 total_plans: historicalPlans.length,
                 active_plans: histActive.length,
                 completed_plans: historicalPlans.filter(p => p.status === 'completed').length,
