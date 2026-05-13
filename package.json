@@ -5,6 +5,7 @@
   "main": "backend/src/index.js",
   "type": "module",
   "scripts": {
+    "build": "cd frontend && npm install && npm run build",
     "start": "node backend/src/index.js"
   },
   "dependencies": {
@@ -27,6 +28,6 @@
     "uuid": "^9.0.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

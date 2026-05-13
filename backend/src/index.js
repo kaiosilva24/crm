@@ -71,8 +71,8 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Permitir qualquer subdomínio do Vercel e Discloud
-        if (origin.endsWith('.vercel.app') || origin.endsWith('.discloud.app')) {
+        // Permitir qualquer subdomínio do Vercel, Discloud e Railway
+        if (origin.endsWith('.vercel.app') || origin.endsWith('.discloud.app') || origin.endsWith('.railway.app')) {
             return callback(null, true);
         }
 
